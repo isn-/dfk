@@ -34,6 +34,8 @@ add_library(dfk
   src/bufman_hk.c
   src/bufman.c)
 
+enable_testing()
+
 if(DFK_ENABLE_UNIT_TESTS)
   add_subdirectory(ut)
 endif()
