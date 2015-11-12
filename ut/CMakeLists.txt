@@ -25,7 +25,7 @@ file(WRITE ${ut_init_c}
 #include \"ut.h\"
 #include \"ut_init.h\"
 
-void ut_register_all_test_cases()
+void ut_register_all_test_cases(void)
 {\n")
 
 foreach(source ${ut_sources})
