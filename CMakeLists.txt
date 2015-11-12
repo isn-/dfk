@@ -25,6 +25,7 @@ check_include_files(assert.h HAVE_ASSERT_H)
 check_include_files(stddef.h HAVE_STDDEF_H)
 check_include_files(stdint.h HAVE_STDINT_H)
 check_include_files(string.h HAVE_STRING_H)
+check_include_files(stdio.h HAVE_STDIO_H)
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"
   ${CMAKE_CURRENT_BINARY_DIR}/dfk/config.h @ONLY)
