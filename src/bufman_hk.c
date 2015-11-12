@@ -12,7 +12,7 @@ int dfk_bufman_hk_alloc(dfk_context_t* ctx, dfk_bufman_hk_t** hk)
   assert(hk);
   newhk = (dfk_bufman_hk_t*) ctx->malloc(
     ctx->bufman_housekeeping_buffer_size);
-  if (*hk == NULL) {
+  if (newhk == NULL) {
     return dfk_err_out_of_memory;
   }
   newhk->next = NULL;

@@ -61,7 +61,7 @@ int dfk_bufman_alloc(dfk_bufman_t* bm, dfk_bufman_alloc_request_t* req, dfk_buf_
 
   if (housekeeping_is_new) {
     if (bm->_.hk) {
-      ((dfk_bufman_hk_t*) bm->_.hk)->prev = hk;
+      bm->_.hk->prev = hk;
       hk->next = bm->_.hk;
     }
     bm->_.hk = hk;
@@ -103,7 +103,7 @@ static int release_functor(dfk_bufman_t* bm, dfk_bufman_hk_t* hk, dfk_buf_ex_t* 
   size_t i;
   int err;
   (void) hk;
-  if (&buf->buf == userdata) {
+  if (buf->buf.data == userdata) {
     buf->used = 0;
     bm->context->free(buf->buf.data);
     if (dfk_bufman_hk_empty(hk)) {
@@ -113,16 +113,16 @@ static int release_functor(dfk_bufman_t* bm, dfk_bufman_hk_t* hk, dfk_buf_ex_t* 
         }
       }
       if (hk->prev) {
-        ((dfk_bufman_hk_t*) hk->prev)->next = hk->next;
+        hk->prev->next = hk->next;
       }
       if (hk->next) {
-        ((dfk_bufman_hk_t*) hk->next)->prev = hk->prev;
+        hk->next->prev = hk->prev;
       }
       if ((err = dfk_bufman_hk_free(bm->context, hk)) != dfk_err_ok) {
         return err;
       }
     }
-    return -1;
+    return 1;
   }
   return dfk_err_ok;
 }
@@ -131,7 +131,7 @@ int dfk_bufman_release(dfk_bufman_t* bm, dfk_buf_t* buf)
 {
   assert(bm);
   assert(buf);
-  if (bufman_for_each(bm, release_functor, buf) == -1) {
+  if (bufman_for_each(bm, release_functor, buf->data) == 1) {
     return dfk_err_ok;
   }
   return dfk_err_not_found;
@@ -188,7 +188,7 @@ static int lifetime_functor(dfk_bufman_t* bm, dfk_bufman_hk_t* hk, dfk_buf_ex_t*
   lifetime_arg* arg = userdata;
   (void) bm;
   (void) hk;
-  if (&buf->buf == arg->buf) {
+  if (buf->buf.data == arg->buf->data) {
     *arg->lifetime= buf->lifetime;
     return 1;
   }

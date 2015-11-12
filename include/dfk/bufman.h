@@ -7,7 +7,7 @@
 
 typedef struct {
   struct {
-    void* hk;
+    struct dfk_bufman_hk_t* hk;
   } _;
   dfk_context_t* context;
   int do_memzero;

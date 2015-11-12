@@ -13,9 +13,9 @@ typedef struct {
 } dfk_buf_ex_t;
 
 
-typedef struct {
-  void* next;
-  void* prev;
+typedef struct dfk_bufman_hk_t {
+  struct dfk_bufman_hk_t* next;
+  struct dfk_bufman_hk_t* prev;
   dfk_buf_ex_t self;
   size_t nbuffers;
   dfk_buf_ex_t buffers[1];
