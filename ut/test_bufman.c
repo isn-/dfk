@@ -10,7 +10,7 @@ typedef struct {
 static void fixture_setup(fixture* f)
 {
   EXPECT(dfk_bufman_init(&f->bm) == 0);
-  f->req.lifetime = 0;
+  f->req.lifetime = 10;
   f->req.size = 100;
   f->req.usage = "fun";
   f->req.usagelen = 3;
@@ -27,8 +27,31 @@ TEST_F(buffer_manager, plain_alloc)
 {
   size_t i;
   ASSERT(fixture->buf.size >= fixture->req.size);
+  /* Check that data is accessible. If fixture->buf points to
+   * not valid chunk of memory, valgrind or asan will report
+   * an error.
+   */
   for (i = 0; i < fixture->req.size; ++i) {
     (void) fixture->buf.data[i];
   }
+}
+
+TEST_F(buffer_manager, lifetime)
+{
+  int64_t lifetime;
+  EXPECT(dfk_bufman_lifetime(&fixture->bm, &fixture->buf, &lifetime) == 0);
+  EXPECT(lifetime == 10);
+}
+
+TEST_F(buffer_manager, cache)
+{
+  const char* first_buf = fixture->buf.data;
+  dfk_buf_t newbuf;
+  fixture->bm.do_cache = 1;
+  EXPECT(dfk_bufman_release(&fixture->bm, &fixture->buf) == 0);
+  fixture->req.usage = "joy";
+  fixture->req.lifetime = 5;
+  EXPECT(dfk_bufman_alloc(&fixture->bm, &fixture->req, &newbuf) == 0);
+  EXPECT(newbuf.data == first_buf);
 }
 
