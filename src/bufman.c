@@ -6,6 +6,7 @@
 
 int dfk_bufman_init(dfk_bufman_t* bm)
 {
+  assert(bm);
   bm->_.hk = NULL;
   bm->do_memzero = 1;
   bm->do_cache = 0;
@@ -15,65 +16,178 @@ int dfk_bufman_init(dfk_bufman_t* bm)
 
 int dfk_bufman_free(dfk_bufman_t* bm)
 {
+  dfk_bufman_hk_t* hk, *hkcopy;
   assert(bm);
-  return dfk_bufman_hk_free(bm->context, bm->_.hk);
-}
-
-int dfk_bufman_alloc(dfk_bufman_t* bm, dfk_bufman_alloc_request_t* req, dfk_buf_t* buf)
-{
-  dfk_bufman_hk_t* hk;
-  int housekeeping_is_new = 0;
-  char* new_buf;
-  size_t usagelen;
-  size_t size = DFK_PAGE_SIZE * (1 + (req->size / DFK_PAGE_SIZE));
-  int err;
-
-  assert(bm);
-  assert(req);
-  assert(buf);
-
-  if (!bm->_.hk || dfk_bufman_hk_empty(bm->_.hk)) {
-    if ((err = dfk_bufman_hk_alloc(bm->context, &hk)) != dfk_err_ok) {
-      return err;
+  hk = bm->_.hk;
+  while (hk) {
+    size_t i;
+    for (i = 0; i < hk->nbuffers; ++i) {
+      if (!hk->buffers[i].released) {
+        bm->context->free(hk->buffers[i].buf.data);
+      }
     }
-    housekeeping_is_new = 1;
-  } else {
-    hk = bm->_.hk;
+    hkcopy = hk;
+    hk = hk->next;
+    bm->context->free(hkcopy->self.buf.data);
   }
-  new_buf = bm->context->malloc(size);
-  if (!new_buf) {
-    if (housekeeping_is_new) {
-      dfk_bufman_hk_free(bm->context, hk);
-    }
-    return dfk_err_out_of_memory;
-  }
-  if (bm->do_memzero) {
-    memset(new_buf, '\0', size);
-  }
-  hk->buffers[hk->nbuffers].buf.data = new_buf;
-  hk->buffers[hk->nbuffers].buf.size = size;
-  hk->buffers[hk->nbuffers].lifetime = req->lifetime;
-  hk->buffers[hk->nbuffers].used = 1;
-  usagelen = req->usagelen < 8 ? req->usagelen : 7;
-  memcpy(hk->buffers[hk->nbuffers].usage, req->usage, usagelen);
-  hk->buffers[hk->nbuffers].usage[usagelen] = '\0';
-  hk->nbuffers = hk->nbuffers + 1;
-
-  if (housekeeping_is_new) {
-    if (bm->_.hk) {
-      bm->_.hk->prev = hk;
-      hk->next = bm->_.hk;
-    }
-    bm->_.hk = hk;
-  }
-
-  buf->data = new_buf;
-  buf->size = size;
-
+#ifdef DFK_ENABLE_CLEANUP
+  bm->do_memzero = -1;
+  bm->do_cache = -1;
+  bm->context = NULL;
+#endif
   return dfk_err_ok;
 }
 
-static int bufman_for_each(dfk_bufman_t* bm, int (*functor)(dfk_bufman_t*, dfk_bufman_hk_t*, dfk_buf_ex_t*, void*), void* userdata)
+static int alloc_new_hk(dfk_context_t* context, dfk_buf_t* hkbuf, dfk_buf_ex_t** found_buffer)
+{
+  dfk_bufman_hk_t* hk;
+  int err;
+  assert(hkbuf);
+  assert(found_buffer);
+  hkbuf->data = context->malloc(hkbuf->size);
+  if (hkbuf->data == NULL) {
+    return dfk_err_out_of_memory;
+  }
+  hk = (dfk_bufman_hk_t*) hkbuf->data;
+  if ((err = dfk_bufman_hk_init(hk, hkbuf)) != dfk_err_ok) {
+    return err;
+  }
+  hk->nbuffers = 1;
+  *found_buffer = &hk->buffers[0];
+  if ((err = dfk_buf_ex_init(*found_buffer)) != dfk_err_ok) {
+    return err;
+  }
+  return dfk_err_ok;
+}
+
+int dfk_bufman_alloc(dfk_bufman_t* bm, dfk_bufman_alloc_request_t* req, dfk_buf_t** outbuf)
+{
+  size_t size, usagelen;
+  int err;
+  int hk_action = -1;
+  dfk_buf_t hkbuf = {NULL, DFK_BUFFER_MANAGER_HOUSEKEEPING_SIZE};
+  dfk_buf_ex_t* found_buffer = NULL;
+
+  assert(bm);
+  assert(req);
+  assert(outbuf);
+
+  /* Align buffer to the page size
+   */
+  size = DFK_PAGE_SIZE * (1 + (req->size / DFK_PAGE_SIZE));
+
+  /* First time initialization.
+   * No housekeeping has ever been previously allocated.
+   * Create a new housekeeping, save pointer to the first
+   * buffer into found_buffer variable.
+   */
+  if (!bm->_.hk) {
+    if ((err = alloc_new_hk(bm->context, &hkbuf, &found_buffer)) != dfk_err_ok) {
+      goto dfk_bufman_alloc_cleanup;
+    }
+    hk_action = 1;
+  } else {
+    /* Find existing buffer, or allocate a new housekeeping if
+     * all others are empty
+     */
+    dfk_bufman_hk_t* hk = bm->_.hk;
+    size_t i;
+    while (!found_buffer && hk) {
+      for (i = 0; i < hk->nbuffers; ++i) {
+        if (!hk->buffers[i].used && hk->buffers[i].buf.size >= size) {
+          found_buffer = &hk->buffers[i];
+          hk_action = 0;
+          break;
+        }
+      }
+      hk = hk->next;
+    }
+    if (!found_buffer) {
+      /* All buffers are used - allocate a new housekeeping,
+       * append it to the end of housekeeping list
+       */
+      if ((err = alloc_new_hk(bm->context, &hkbuf, &found_buffer)) != dfk_err_ok) {
+        goto dfk_bufman_alloc_cleanup;
+      }
+      hk_action = 2;
+    }
+  }
+
+  assert(hk_action != -1);
+
+  /* Fill found_buffer */
+  assert(found_buffer);
+  if (!found_buffer->buf.data) {
+    /* Need to allocate memory */
+    assert(found_buffer->buf.data == NULL);
+    found_buffer->buf.data = bm->context->malloc(size);
+    if (found_buffer->buf.data == NULL) {
+      err = dfk_err_out_of_memory;
+      goto dfk_bufman_alloc_cleanup;
+    }
+    found_buffer->buf.size = size;
+  }
+  found_buffer->lifetime = req->lifetime;
+  memset(found_buffer->usage, 0, sizeof(found_buffer->usage));
+  usagelen = req->usagelen < sizeof(found_buffer->usage)
+      ? req->usagelen
+      : sizeof(found_buffer->usage) - 1;
+  memcpy(found_buffer->usage, req->usage, usagelen);
+  found_buffer->used |= 1;
+
+  /* Perform housekeeping action */
+  switch (hk_action) {
+    case 0: { /* no action - found existing buffer */
+      break;
+    }
+    case 1: { /* first time allocation */
+      bm->_.hk = (dfk_bufman_hk_t*) hkbuf.data;
+      break;
+    }
+    case 2: { /* append new housekeeping */
+      dfk_bufman_hk_t* tail = bm->_.hk;
+      while (tail->next) {
+        tail = tail->next;
+      }
+      assert(hkbuf.data);
+      tail->next = (dfk_bufman_hk_t*) hkbuf.data;
+      tail->next->prev = tail;
+      break;
+    }
+    default: {
+      assert(0 && "no such hk_action" && hk_action);
+    }
+  }
+
+  /* Set result */
+  *outbuf = &found_buffer->buf;
+  return dfk_err_ok;
+
+dfk_bufman_alloc_cleanup:
+  if (hkbuf.data) {
+    bm->context->free(hkbuf.data);
+  }
+  return err;
+}
+
+int dfk_bufman_release(dfk_bufman_t* bm, dfk_buf_t* buf)
+{
+  dfk_buf_ex_t* bufex = (dfk_buf_ex_t*) buf;
+  assert(bm);
+  assert(buf);
+  if (!dfk_buf_ex_valid(bufex)) {
+    return dfk_err_badarg;
+  }
+  if (bm->do_cache) {
+    bufex->used = 0;
+  } else {
+    bufex->released = 1;
+    bm->context->free(buf->data);
+  }
+  return dfk_err_ok;
+}
+
+static int for_each(dfk_bufman_t* bm, int (*functor)(dfk_bufman_t*, dfk_bufman_hk_t*, dfk_buf_ex_t*, void*), void* userdata)
 {
   dfk_bufman_hk_t* hk;
   int err;
@@ -84,9 +198,6 @@ static int bufman_for_each(dfk_bufman_t* bm, int (*functor)(dfk_bufman_t*, dfk_b
 
   hk = bm->_.hk;
   while (hk) {
-    if ((err = functor(bm, hk, &hk->self, userdata)) != dfk_err_ok) {
-      return err;
-    }
     for (i = 0; i < hk->nbuffers; ++i) {
       if ((err = functor(bm, hk, &hk->buffers[i], userdata)) != dfk_err_ok) {
         return err;
@@ -96,45 +207,6 @@ static int bufman_for_each(dfk_bufman_t* bm, int (*functor)(dfk_bufman_t*, dfk_b
   }
 
   return dfk_err_ok;
-}
-
-static int release_functor(dfk_bufman_t* bm, dfk_bufman_hk_t* hk, dfk_buf_ex_t* buf, void* userdata)
-{
-  size_t i;
-  int err;
-  (void) hk;
-  if (buf->buf.data == userdata) {
-    buf->used = 0;
-    bm->context->free(buf->buf.data);
-    if (dfk_bufman_hk_empty(hk)) {
-      for (i = 0; i < hk->nbuffers; ++i) {
-        if (hk->buffers[i].used) {
-          break;
-        }
-      }
-      if (hk->prev) {
-        hk->prev->next = hk->next;
-      }
-      if (hk->next) {
-        hk->next->prev = hk->prev;
-      }
-      if ((err = dfk_bufman_hk_free(bm->context, hk)) != dfk_err_ok) {
-        return err;
-      }
-    }
-    return 1;
-  }
-  return dfk_err_ok;
-}
-
-int dfk_bufman_release(dfk_bufman_t* bm, dfk_buf_t* buf)
-{
-  assert(bm);
-  assert(buf);
-  if (bufman_for_each(bm, release_functor, buf->data) == 1) {
-    return dfk_err_ok;
-  }
-  return dfk_err_not_found;
 }
 
 static int tick_functor(dfk_bufman_t* bm, dfk_bufman_hk_t* hk, dfk_buf_ex_t* buf, void* userdata)
@@ -153,7 +225,7 @@ static int tick_functor(dfk_bufman_t* bm, dfk_bufman_hk_t* hk, dfk_buf_ex_t* buf
 int dfk_bufman_tick(dfk_bufman_t* bm, int64_t now)
 {
   assert(bm);
-  return bufman_for_each(bm, tick_functor, &now);
+  return for_each(bm, tick_functor, &now);
 }
 
 typedef struct {
@@ -175,68 +247,28 @@ int dfk_bufman_for_each(dfk_bufman_t* bm, int (*functor)(dfk_bufman_t*, dfk_buf_
   ud.userdata = userdata;
   assert(bm);
   assert(functor);
-  return bufman_for_each(bm, &for_each_functor, &ud);
-}
-
-typedef struct {
-  dfk_buf_t* buf;
-  int64_t* lifetime;
-} lifetime_arg;
-
-static int lifetime_functor(dfk_bufman_t* bm, dfk_bufman_hk_t* hk, dfk_buf_ex_t* buf, void* userdata)
-{
-  lifetime_arg* arg = userdata;
-  (void) bm;
-  (void) hk;
-  if (buf->buf.data == arg->buf->data) {
-    *arg->lifetime= buf->lifetime;
-    return 1;
-  }
-  return dfk_err_ok;
+  return for_each(bm, &for_each_functor, &ud);
 }
 
 int dfk_bufman_lifetime(dfk_bufman_t* bm, dfk_buf_t* buf, int64_t* lifetime)
 {
-  lifetime_arg arg;
-  arg.buf = buf;
-  arg.lifetime = lifetime;
-  assert(bm);
-  assert(buf);
-  assert(lifetime);
-  if (bufman_for_each(bm, lifetime_functor, &arg) == 1) {
-    return dfk_err_ok;
-  }
-  return dfk_err_not_found;
-}
-
-typedef struct {
-  dfk_buf_t* buf;
-  const char** usage;
-} usage_arg;
-
-static int usage_functor(dfk_bufman_t* bm, dfk_bufman_hk_t* hk, dfk_buf_ex_t* buf, void* userdata)
-{
-  usage_arg* arg = userdata;
+  dfk_buf_ex_t* bufex = (dfk_buf_ex_t*) buf;
   (void) bm;
-  (void) hk;
-  if (&buf->buf == arg->buf) {
-    *arg->usage = buf->usage;
-    return 1;
+  if (!dfk_buf_ex_valid(bufex)) {
+    return dfk_err_badarg;
   }
+  *lifetime = bufex->lifetime;
   return dfk_err_ok;
 }
 
 int dfk_bufman_usage(dfk_bufman_t* bm, dfk_buf_t* buf, const char** usage)
 {
-  usage_arg arg;
-  arg.buf = buf;
-  arg.usage = usage;
-  assert(bm);
-  assert(buf);
-  assert(usage);
-  if (bufman_for_each(bm, usage_functor, &arg) == 1) {
-    return dfk_err_ok;
+  dfk_buf_ex_t* bufex = (dfk_buf_ex_t*) buf;
+  (void) bm;
+  if (!dfk_buf_ex_valid(bufex)) {
+    return dfk_err_badarg;
   }
-  return dfk_err_not_found;
+  *usage = bufex->usage;
+  return dfk_err_ok;
 }
 

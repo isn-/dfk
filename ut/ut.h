@@ -1,5 +1,5 @@
 #pragma once
-
+#include <string.h>
 #include "ut_init.h"
 
 void ut_register_all_test_cases(void);
@@ -12,6 +12,7 @@ void _ut_##group##_##name(fixture*); \
 void ut_##group##_##name(void) \
 { \
   fixture f; \
+  memset(&f, 0, sizeof(f)); \
   fixture_setup(&f); \
   _ut_##group##_##name(&f); \
   fixture_teardown(&f); \

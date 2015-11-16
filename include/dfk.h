@@ -5,6 +5,7 @@ extern "C" {
 #endif
 
 #include <dfk/config.h>
+#include <dfk/error.h>
 #include <dfk/context.h>
 #include <dfk/buf.h>
 #include <dfk/bufman.h>

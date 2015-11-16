@@ -58,8 +58,8 @@ int main(int argc, char** argv)
 {
   ut_case_t* ut;
   int ret = 0;
-  const char* desired_group;
-  const char* desired_name;
+  const char* desired_group = NULL;
+  const char* desired_name = NULL;
   (void) argc;
   (void) argv;
   ut_register_all_test_cases();
