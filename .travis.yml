@@ -11,3 +11,7 @@ script:
   - cmake ..
   - make -j
   - make test
+
+notifications:
+  email:
+  - isn@extrn.org
