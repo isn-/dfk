@@ -55,6 +55,21 @@ TEST_F(buffer_manager, cache)
   fixture->req.lifetime = 5;
   EXPECT(dfk_bufman_alloc(&fixture->bm, &fixture->req, &newbuf) == dfk_err_ok);
   EXPECT(newbuf->data == first_buf);
+  EXPECT(dfk_bufman_release(&fixture->bm, newbuf) == dfk_err_ok);
   fixture->buf = NULL;
+}
+
+TEST_F(buffer_manager, 1k_ops)
+{
+  dfk_buf_t* bufs[1000];
+  size_t i;
+  for (i = 0; i < (sizeof(bufs) / sizeof(bufs[0])); ++i) {
+    EXPECT(dfk_bufman_alloc(&fixture->bm, &fixture->req, &bufs[i]) == dfk_err_ok);
+    EXPECT(bufs[i]->data != NULL);
+    EXPECT(bufs[i]->size >= fixture->req.size);
+  }
+  for (i = 0; i < (sizeof(bufs) / sizeof(bufs[0])); ++i) {
+    EXPECT(dfk_bufman_release(&fixture->bm, bufs[i]) == dfk_err_ok);
+  }
 }
 
