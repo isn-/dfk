@@ -9,6 +9,7 @@ extern "C" {
 #include <dfk/context.h>
 #include <dfk/buf.h>
 #include <dfk/bufman.h>
+#include <dfk/coro.h>
 
 #ifdef __cplusplus
 }

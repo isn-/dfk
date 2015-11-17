@@ -3,7 +3,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(ut_sources
   test_context.c
-  test_bufman.c)
+  test_bufman.c
+  test_coro.c)
 
 set(ut_init_c "${CMAKE_CURRENT_BINARY_DIR}/ut_init.c")
 set(ut_init_h "${CMAKE_CURRENT_BINARY_DIR}/ut_init.h")

@@ -19,6 +19,7 @@ set(DFK_ENABLE_AUTO_TESTS TRUE CACHE BOOL "")
 set(DFK_ENABLE_MAGIC TRUE CACHE BOOL "")
 set(DFK_ENABLE_CLEANUP TRUE CACHE BOOL "")
 set(DFK_BUFFER_MANAGER_HOUSEKEEPING_SIZE 4096 CACHE STRING "")
+set(DFK_DEFAULT_STACK_SIZE 10240 CACHE STRING "")
 
 set(DFK_PAGE_SIZE ${page_size} CACHE STRING "")
 
@@ -51,7 +52,11 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wextra -pedantic -Wmissing-pr
 add_library(dfk
   src/context.c
   src/bufman_hk.c
-  src/bufman.c)
+  src/bufman.c
+  src/coro.c)
+
+target_link_libraries(dfk
+  coro)
 
 enable_testing()
 
