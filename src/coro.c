@@ -1,5 +1,5 @@
-#include <dfk.h>
 #include <assert.h>
+#include <dfk.h>
 
 #define BUFFER_USAGE_STACK "stack"
 

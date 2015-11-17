@@ -20,6 +20,7 @@ set(DFK_ENABLE_MAGIC TRUE CACHE BOOL "")
 set(DFK_ENABLE_CLEANUP TRUE CACHE BOOL "")
 set(DFK_BUFFER_MANAGER_HOUSEKEEPING_SIZE 4096 CACHE STRING "")
 set(DFK_DEFAULT_STACK_SIZE 10240 CACHE STRING "")
+set(DFK_COROUTINE_ASM TRUE CACHE STRING "")
 
 set(DFK_PAGE_SIZE ${page_size} CACHE STRING "")
 
@@ -44,6 +45,9 @@ find_program(VALGRIND valgrind)
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"
   ${CMAKE_CURRENT_BINARY_DIR}/dfk/config.h @ONLY)
 
+if(DFK_COROUTINE_ASM)
+  add_definitions(-DCORO_ASM)
+endif()
 add_subdirectory(thirdparty)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c89")

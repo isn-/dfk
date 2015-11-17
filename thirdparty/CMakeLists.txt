@@ -1,2 +1,11 @@
+if(HAVE_UCONTEXT_H)
+  add_definitions(-DHAVE_UCONTEXT_H)
+endif()
+if(HAVE_SETJMP_H)
+  add_definitions(-DHAVE_SETJMP_H)
+endif()
+if(HAVE_SIGALTSTACK)
+  add_definitions(-DHAVE_SIGALTSTACK)
+endif()
 add_library(coro STATIC
   libcoro/coro.c)
