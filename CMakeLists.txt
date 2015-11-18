@@ -19,11 +19,11 @@ set(DFK_ENABLE_UNIT_TESTS TRUE CACHE BOOL "")
 set(DFK_ENABLE_AUTO_TESTS TRUE CACHE BOOL "")
 set(DFK_ENABLE_MAGIC TRUE CACHE BOOL "")
 set(DFK_ENABLE_CLEANUP TRUE CACHE BOOL "")
+set(DFK_PAGE_SIZE ${page_size} CACHE STRING "")
 set(DFK_BUFFER_MANAGER_HOUSEKEEPING_SIZE 4096 CACHE STRING "")
 set(DFK_DEFAULT_STACK_SIZE 10240 CACHE STRING "")
 set(DFK_COROUTINE_ASM TRUE CACHE STRING "")
-
-set(DFK_PAGE_SIZE ${page_size} CACHE STRING "")
+set(DFK_EVENT_LOOP_LIBUV TRUE CACHE STRING "")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -42,6 +42,10 @@ list(APPEND CMAKE_REQUIRED_INCLUDES signal.h)
 check_function_exists(sigaltstack HAVE_SIGALTSTACK)
 
 find_program(VALGRIND valgrind)
+if(DFK_EVENT_LOOP_LIBUV)
+  find_package(LibUV REQUIRED)
+  include_directories(${LIBUV_INCLUDE_DIRS})
+endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"
   ${CMAKE_CURRENT_BINARY_DIR}/dfk/config.h @ONLY)
@@ -49,6 +53,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"
 if(DFK_COROUTINE_ASM)
   add_definitions(-DCORO_ASM)
 endif()
+
 add_subdirectory(thirdparty)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c89")
@@ -58,7 +63,8 @@ add_library(dfk
   src/context.c
   src/bufman_hk.c
   src/bufman.c
-  src/coro.c)
+  src/coro.c
+  src/event_loop.c)
 
 target_link_libraries(dfk
   coro)
