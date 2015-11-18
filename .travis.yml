@@ -6,12 +6,12 @@ compiler:
   - clang
   - gcc
 script:
+  - ./scripts/bootstrap.sh
   - mkdir build
   - cd build
   - cmake ..
   - make -j
   - make test
-
 notifications:
   email:
   - isn@extrn.org

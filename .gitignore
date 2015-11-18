@@ -32,3 +32,4 @@
 *.dSYM/
 
 build/*
+cpm_packages/*
