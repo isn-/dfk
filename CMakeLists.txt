@@ -58,6 +58,8 @@ add_subdirectory(thirdparty)
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c89")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition")
+add_definitions(-D_XOPEN_SOURCE=500)
+add_definitions(-D_GNU_SOURCE)
 
 add_library(dfk
   src/context.c
