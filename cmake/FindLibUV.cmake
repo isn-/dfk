@@ -109,6 +109,11 @@ if(HAVE_LIBWS232)
   list(APPEND LIBUV_LIBRARIES ws2_32)
 endif()
 
+check_library_exists(pthread pthread_rwlock_trywrlock "pthread.h" HAVE_PTHREAD)
+if(HAVE_PTHREAD)
+  list(APPEND LIBUV_LIBRARIES pthread)
+endif()
+
 include(FindPackageHandleStandardArgs)
 
 # handle the QUIETLY and REQUIRED arguments and set LIBUV_FOUND to TRUE
