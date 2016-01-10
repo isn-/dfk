@@ -17,6 +17,7 @@ fw_page_size(page_size)
 
 set(DFK_ENABLE_UNIT_TESTS TRUE CACHE BOOL "")
 set(DFK_ENABLE_AUTO_TESTS TRUE CACHE BOOL "")
+set(DFK_ENABLE_SAMPLES FALSE CACHE BOOL "")
 set(DFK_PAGE_SIZE ${page_size} CACHE STRING "")
 set(DFK_DEFAULT_STACK_SIZE 10240 CACHE STRING "")
 set(DFK_COROUTINE_ASM TRUE CACHE STRING "")
@@ -66,7 +67,8 @@ add_library(dfk
   src/event_loop.c)
 
 target_link_libraries(dfk
-  coro)
+  coro
+  ${LIBUV_LIBRARIES})
 
 enable_testing()
 
@@ -76,4 +78,8 @@ endif()
 
 if(DFK_ENABLE_AUTO_TESTS)
   add_subdirectory(at)
+endif()
+
+if(DFK_ENABLE_SAMPLES)
+  add_subdirectory(samples)
 endif()
