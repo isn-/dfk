@@ -1,6 +1,6 @@
 #include <assert.h>
+#include <dfk/core.h>
 #include <dfk/coro.h>
-#include <dfk/error.h>
 #include "common.h"
 
 

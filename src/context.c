@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <dfk/core.h>
 #include <dfk/config.h>
 #include <dfk/context.h>
 

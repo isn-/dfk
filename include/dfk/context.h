@@ -1,13 +1,6 @@
 #pragma once
 #include <stddef.h>
 
-typedef enum {
-  dfk_log_error = 0,
-  dfk_log_info = 1,
-  dfk_log_debug = 2
-} dfk_log_e;
-
-
 typedef struct {
   struct {
     struct dfk_coro_t* current_coro;

@@ -64,7 +64,8 @@ add_library(dfk
   src/context.c
   src/buf.c
   src/coro.c
-  src/event_loop.c)
+  src/event_loop.c
+  src/tcp_socket.c)
 
 target_link_libraries(dfk
   coro

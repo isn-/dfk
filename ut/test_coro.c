@@ -1,6 +1,7 @@
-#include <dfk.h>
-#include "ut.h"
 #include <stdio.h>
+#include <dfk/core.h>
+#include <dfk/coro.h>
+#include "ut.h"
 
 static void inc_int(void* arg)
 {

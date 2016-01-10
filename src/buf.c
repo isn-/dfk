@@ -1,6 +1,6 @@
 #include <assert.h>
+#include <dfk/core.h>
 #include <dfk/buf.h>
-#include <dfk/error.h>
 
 int dfk_buf_init(dfk_buf_t* buf, dfk_context_t* ctx, size_t nbytes)
 {
