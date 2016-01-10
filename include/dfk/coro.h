@@ -1,24 +1,34 @@
 #pragma once
-#include <dfk/config.h>
-#include <dfk/buf.h>
-#include <dfk/bufman.h>
 #include <libcoro/coro.h>
+#include <dfk/config.h>
+#include <dfk/context.h>
+#include <dfk/buf.h>
 
-typedef struct {
+struct dfk_coro_t;
+
+typedef struct dfk_coro_t {
   struct {
+    dfk_context_t* context;
     struct coro_context ctx;
+    struct dfk_coro_t* parent;
+    void (*func)(void*);
+    void* arg;
+    char* stack;
+    size_t stack_size;
+    int terminated : 1;
   } _;
-  dfk_buf_t* stack;
 } dfk_coro_t;
 
-int dfk_coro_init(
+
+int dfk_coro_run(
     dfk_coro_t* coro,
-    dfk_bufman_t* bm,
+    dfk_context_t* context,
     void (*func)(void*),
     void* arg,
     size_t stack_size);
-int dfk_coro_free(dfk_coro_t* coro, dfk_bufman_t* bm);
+
 int dfk_coro_yield(dfk_coro_t* from, dfk_coro_t* to);
-int dfk_coro_start(dfk_coro_t* coro);
-int dfk_coro_return(dfk_coro_t* coro);
+int dfk_coro_yield_to(dfk_context_t* ctx, dfk_coro_t* to);
+int dfk_coro_yield_parent(dfk_coro_t* from);
+int dfk_coro_join(dfk_coro_t* coro);
 

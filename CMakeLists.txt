@@ -17,10 +17,7 @@ fw_page_size(page_size)
 
 set(DFK_ENABLE_UNIT_TESTS TRUE CACHE BOOL "")
 set(DFK_ENABLE_AUTO_TESTS TRUE CACHE BOOL "")
-set(DFK_ENABLE_MAGIC TRUE CACHE BOOL "")
-set(DFK_ENABLE_CLEANUP TRUE CACHE BOOL "")
 set(DFK_PAGE_SIZE ${page_size} CACHE STRING "")
-set(DFK_BUFFER_MANAGER_HOUSEKEEPING_SIZE 4096 CACHE STRING "")
 set(DFK_DEFAULT_STACK_SIZE 10240 CACHE STRING "")
 set(DFK_COROUTINE_ASM TRUE CACHE STRING "")
 set(DFK_EVENT_LOOP_LIBUV TRUE CACHE STRING "")
@@ -28,6 +25,7 @@ set(DFK_EVENT_LOOP_LIBUV TRUE CACHE STRING "")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 check_include_files(assert.h HAVE_ASSERT_H)
 check_include_files(stddef.h HAVE_STDDEF_H)
@@ -63,8 +61,7 @@ add_definitions(-D_GNU_SOURCE)
 
 add_library(dfk
   src/context.c
-  src/bufman_hk.c
-  src/bufman.c
+  src/buf.c
   src/coro.c
   src/event_loop.c)
 

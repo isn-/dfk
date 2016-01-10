@@ -1,5 +1,5 @@
 #include <dfk/context.h>
-
+#include "common.h"
 #include "ut.h"
 
 TEST(context, default)
@@ -8,11 +8,10 @@ TEST(context, default)
   char* allocated = NULL;
 
   ASSERT(ctx != NULL);
-  allocated = ctx->malloc(100);
+  allocated = DFK_MALLOC(ctx, 100);
   EXPECT(allocated != NULL);
-  allocated = ctx->realloc(allocated, 1000);
+  allocated = DFK_REALLOC(ctx, allocated, 1000);
   EXPECT(allocated != NULL);
-  ctx->free(allocated);
-  EXPECT(ctx->logger != NULL);
-  EXPECT(ctx->bufman_housekeeping_buffer_size != 0);
+  DFK_FREE(ctx, allocated);
+  EXPECT(ctx->log != NULL);
 }
