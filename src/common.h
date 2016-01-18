@@ -21,7 +21,7 @@ typedef struct {
 if ((ctx)->log) {\
   char msg[512] = {0};\
   int printed;\
-  printed = snprintf(msg, sizeof(msg), "(%s:%d) ", __FILENAME__, __LINE__);\
+  printed = snprintf(msg, sizeof(msg), "%s (%s:%d) ", __FUNCTION__, __FILENAME__, __LINE__);\
   snprintf(msg + printed , sizeof(msg) - printed, __VA_ARGS__);\
   (ctx)->log((ctx)->userdata, channel, msg);\
 }
