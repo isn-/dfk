@@ -86,6 +86,14 @@ static void yield_main(void* parg)
   }
 
   for (i = 0; i < ncoros; ++i) {
+    EXPECT(args[i].state == 0);
+  }
+
+  for (i = 0; i < ncoros; ++i) {
+    dfk_coro_yield_to(ctx, workers + i);
+  }
+
+  for (i = 0; i < ncoros; ++i) {
     EXPECT(args[i].state == 1);
   }
 
@@ -111,3 +119,4 @@ TEST(coro, yield)
   dfk_coro_join(&maincoro);
   EXPECT(flag == 1);
 }
+

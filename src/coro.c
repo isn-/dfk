@@ -1,17 +1,18 @@
-#include <assert.h>
 #include <dfk/core.h>
 #include <dfk/coro.h>
 #include "common.h"
 
+#define CTX(coro) ((coro)->_.context)
+
 
 static dfk_coro_t root;
 
-static void coro_main(void* arg)
+static void dfk_coro_main(void* arg)
 {
   dfk_coro_t* coro = (dfk_coro_t*) arg;
   coro->_.func(coro->_.arg);
   coro->_.terminated |= 1;
-  DFK_DEBUG(coro->_.context,
+  DFK_DEBUG(CTX(coro),
       "coroutine %p func terminated, yield parent",
       (void*) coro);
   dfk_coro_yield_parent(coro);
@@ -24,8 +25,9 @@ int dfk_coro_run(
     void* arg,
     size_t stack_size)
 {
-  assert(coro);
-  assert(context);
+  if (coro == NULL || context == NULL) {
+    return dfk_err_badarg;
+  }
 
   coro->_.context = context;
   if (!stack_size) {
@@ -34,7 +36,7 @@ int dfk_coro_run(
   coro->_.stack = DFK_MALLOC(context, stack_size);
   if (coro->_.stack == NULL) {
     DFK_ERROR(context, "unable to allocate stack of size %lu for a new coro",
-        stack_size);
+        (unsigned long) stack_size);
     return dfk_err_out_of_memory;
   }
   coro->_.stack_size = stack_size;
@@ -46,26 +48,28 @@ int dfk_coro_run(
   coro->_.parent = context->_.current_coro;
   coro->_.terminated = 0;
   DFK_INFO(context, "spawn new coroutine %p, stack size %lu bytes",
-      (void*) coro, stack_size);
-  coro_create(&coro->_.ctx, coro_main, coro, coro->_.stack, coro->_.stack_size);
-  context->_.current_coro = coro;
-  coro_transfer(&coro->_.parent->_.ctx, &coro->_.ctx);
+      (void*) coro, (unsigned long) stack_size);
+  coro_create(&coro->_.ctx, dfk_coro_main, coro, coro->_.stack, coro->_.stack_size);
   return dfk_err_ok;
 }
 
 int dfk_coro_yield(dfk_coro_t* from, dfk_coro_t* to)
 {
-  assert(to);
+  dfk_context_t* context;
+  if (from == NULL || to == NULL) {
+    return dfk_err_badarg;
+  }
+  context = from->_.context ? from->_.context : to->_.context;
   if (from->_.context != to->_.context && from != &root && to != &root) {
-    DFK_ERROR(from->_.context,
+    DFK_ERROR(context,
         "unable to switch from %p to %p, "
         "corotines belong to different contexts",
         (void*) from, (void*) to);
     return dfk_err_diff_context;
   }
-  from->_.context->_.current_coro = to;
-  DFK_DEBUG(from->_.context, "context switch %p -> %p",
+  DFK_DEBUG(context, "(%p) context switch -> (%p)",
       (void*) from, (void*) to);
+  context->_.current_coro = to;
   coro_transfer(&from->_.ctx, &to->_.ctx);
   return dfk_err_ok;
 }
@@ -77,7 +81,9 @@ int dfk_coro_yield_parent(dfk_coro_t* coro)
 
 int dfk_coro_yield_to(dfk_context_t* ctx, dfk_coro_t* to)
 {
-  assert(ctx);
+  if (ctx == NULL) {
+    return dfk_err_badarg;
+  }
   return dfk_coro_yield(ctx->_.current_coro, to);
 }
 
@@ -86,13 +92,15 @@ int dfk_coro_join(dfk_coro_t* coro)
   int err;
   dfk_context_t* context;
 
-  assert(coro);
+  if (coro == NULL) {
+    return dfk_err_badarg;
+  }
 
   context = coro->_.context;
-  DFK_DEBUG(context, "join coroutine %p", (void*) coro);
+  DFK_DEBUG(context, "(%p) join coroutine", (void*) coro);
 
   if (coro == coro->_.context->_.current_coro) {
-    DFK_ERROR(context, "unable to self-join %p", (void*) coro);
+    DFK_ERROR(context, "(%p) unable to self-join", (void*) coro);
     return dfk_err_badarg;
   }
 
@@ -105,11 +113,12 @@ int dfk_coro_join(dfk_coro_t* coro)
   }
 
   DFK_DEBUG(context,
-      "coroutine %p terminated, cleanup resources",
+      "(%p) terminated, cleanup resources",
       (void*) coro);
-
   (void) coro_destroy(&coro->_.ctx);
+  DFK_DEBUG(context, "(%p) free memory allocated for stack", (void*) coro)
   DFK_FREE(coro->_.context, coro->_.stack);
 
   return dfk_err_ok;
 }
+
