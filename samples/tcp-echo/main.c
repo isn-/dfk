@@ -1,6 +1,6 @@
 #include <dfk.h>
 
-static void on_accept(dfk_tcp_socket_t* socket)
+static void connection_handler(dfk_tcp_socket_t* socket)
 {
   char buf[512] = {0};
   size_t nread, nwritten;
@@ -16,6 +16,8 @@ static void on_accept(dfk_tcp_socket_t* socket)
       break;
     }
   }
+
+  (void) dfk_tcp_socket_close(socket);
 }
 
 int main(void)
@@ -25,7 +27,9 @@ int main(void)
   dfk_tcp_socket_t socket;
   dfk_event_loop_init(&loop, ctx);
   dfk_tcp_socket_init(&socket, &loop);
-  dfk_tcp_socket_listen(&socket, "localhost", 10000, on_accept, 128);
+  dfk_tcp_socket_listen(&socket, "localhost", 10000, connection_handler, 0);
   dfk_event_loop_run(&loop);
+  dfk_event_loop_join(&loop);
   return 0;
 }
+
