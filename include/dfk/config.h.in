@@ -3,15 +3,15 @@
 #define DFK_VERSION_MINOR @DFK_VERSION_MINOR@
 #define DFK_VERSION_PATCH @DFK_VERSION_PATCH@
 
-#cmakedefine HAVE_ASSERT_H
-#cmakedefine HAVE_STDDEF_H
-#cmakedefine HAVE_STDINT_H
-#cmakedefine HAVE_STRING_H
-#cmakedefine HAVE_STDIO_H
-#cmakedefine HAVE_SIGNAL_H
-#cmakedefine HAVE_UCONTEXT_H
-#cmakedefine HAVE_SETJMP_H
-#cmakedefine HAVE_SIGALTSTACK
+#cmakedefine DFK_HAVE_ASSERT_H
+#cmakedefine DFK_HAVE_STDDEF_H
+#cmakedefine DFK_HAVE_STDINT_H
+#cmakedefine DFK_HAVE_STRING_H
+#cmakedefine DFK_HAVE_STDIO_H
+#cmakedefine DFK_HAVE_SIGNAL_H
+#cmakedefine DFK_HAVE_UCONTEXT_H
+#cmakedefine DFK_HAVE_SETJMP_H
+#cmakedefine DFK_HAVE_SIGALTSTACK
 
 #cmakedefine DFK_ENABLE_UNIT_TESTS
 #cmakedefine DFK_ENABLE_AUTO_TESTS
