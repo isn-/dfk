@@ -15,6 +15,7 @@ static void default_log(void* ud, int channel, const char* msg)
     case dfk_log_debug: memcpy(strchannel, "debug", 5); break;
     default: snprintf(strchannel, sizeof(strchannel), "%5d", channel);
   }
+  /* At most 512 bytes will printed at once */
   printf("[%.5s] %.503s\n", strchannel, msg);
 }
 
@@ -43,7 +44,8 @@ static dfk_context_t default_context = {
   default_free,
   default_realloc,
   default_log,
-  DFK_DEFAULT_STACK_SIZE
+  DFK_DEFAULT_STACK_SIZE,
+  0
 };
 
 dfk_context_t* dfk_default_context(void)

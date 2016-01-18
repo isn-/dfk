@@ -6,7 +6,9 @@ typedef enum {
   dfk_err_out_of_memory,
   dfk_err_not_found,
   dfk_err_badarg,
-  dfk_err_diff_context
+  dfk_err_diff_context,
+  dfk_err_sys,
+  dfk_err_inprog
 } dfk_error_e;
 
 typedef enum {
@@ -20,3 +22,4 @@ typedef struct {
   char* data;
   size_t size;
 } dfk_iovec_t;
+

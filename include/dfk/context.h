@@ -13,8 +13,10 @@ typedef struct {
   void (*log)(void*, int, const char*);
 
   size_t default_coro_stack_size;
+  int sys_errno;
 
 } dfk_context_t;
 
 
 dfk_context_t* dfk_default_context(void);
+
