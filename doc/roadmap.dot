@@ -1,0 +1,53 @@
+digraph "DFK Library Roadmap" {
+  node [shape=box];
+
+  tcp_socket [label="#1\nTCP socket"];
+  udp_socket [label="#2\nUDP socket"];
+
+  http_parser [label="#3\nJoyent HTTP Parser"];
+
+  http_server [label="#4\nHTTP server"];
+    tcp_socket -> http_server
+    http_parser -> http_server
+
+  curl [label="#5\ncurl library wrapper"];
+    tcp_socket -> curl;
+
+  redis [label="#6\nhiredis library wrapper"];
+    tcp_socket -> redis;
+
+  libpq [label="#7\nlibpq library wrapper"];
+    tcp_socket -> libpq;
+
+  threadpool [label="#8\nThread Pool"];
+
+  ws [label="#9\nWebSocket server"];
+
+  jwt [label="#10\nJWT middleware"];
+    http_server -> jwt;
+
+  python [label="#11\nPython Glue"];
+  lua [label="#12\nLua Glue"];
+
+  beacon [label="#13\nBeaconing"];
+    udp_socket -> beacon;
+
+  dfk010 [label="dfk-0.1.0" shape=oval];
+    tcp_socket -> dfk010
+    http_server -> dfk010
+
+  dfk020 [label="dfk-0.2.0" shape=oval];
+    jwt -> dfk020;
+    redis -> dfk020;
+    curl -> dfk020;
+    libpq -> dfk020;
+
+  future [label="Future" shape=oval];
+    dfk020 -> future [style=dotted];
+
+  future -> udp_socket;
+  future -> ws;
+  future -> threadpool;
+  future -> python;
+  future -> lua;
+}
