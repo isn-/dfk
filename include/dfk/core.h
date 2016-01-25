@@ -1,19 +1,102 @@
+/**
+ * @file dfk/core.h
+ * @brief Basic definitions
+ *
+ * @author Stanislav Ivochkin
+ * @copyright
+ * Copyright (c) 2015, 2016, Stanislav Ivochkin. All Rights Reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * * Redistributions of source code must retain the above copyright notice, this
+ *   list of conditions and the following disclaimer.
+ *
+ * * Redistributions in binary form must reproduce the above copyright notice,
+ *   this list of conditions and the following disclaimer in the documentation
+ *   and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+ * SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+ * CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #pragma once
 #include <stddef.h>
 
+
+/**
+ * @brief Error codes returned by dfk functions
+ */
 typedef enum {
+  /**
+   * No error
+   */
   dfk_err_ok = 0,
-  dfk_err_out_of_memory,
-  dfk_err_not_found,
+
+  /**
+   * Memory allocation function returned NULL
+   */
+  dfk_err_nomem,
+
+  /**
+   * Object not found
+   */
+  dfk_err_notfound,
+
+  /**
+   * @brief Bad argument
+   * @detail Passing NULL pointer to the function that expects non-NULL
+   * will yield this error.
+   */
   dfk_err_badarg,
-  dfk_err_diff_context,
+
+  /**
+   * An operation on objects that belong to different contexts is requested
+   */
+  dfk_err_context,
+
+  /**
+   * System error, see dfk_context_t.sys_errno
+   */
   dfk_err_sys,
-  dfk_err_inprog
+
+  /**
+   * The operation is already in progress
+   */
+  dfk_err_inprog,
+
+  /**
+   * @brief Function can not be called outside/inside of a coroutine.
+   * @detail See function documentation for usage restrictions.
+   */
+  dfk_err_coro
 } dfk_error_e;
 
+/**
+ * @brief Logging stream
+ */
 typedef enum {
+  /**
+   * @brief Error message
+   */
   dfk_log_error = 0,
+  /**
+   * @brief Informational message
+   */
   dfk_log_info = 1,
+  /**
+   * @brief Debug
+   * @detail A very verbose logging level. Disabled by default, can be enabled
+   * by setting DFK_ENABLE_DEBUG compile-time flag.
+   */
   dfk_log_debug = 2
 } dfk_log_e;
 
