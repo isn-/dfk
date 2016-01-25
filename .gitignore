@@ -33,3 +33,6 @@
 
 build/*
 cpm_packages/*
+
+# Misc
+*.log
