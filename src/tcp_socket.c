@@ -232,7 +232,7 @@ int dfk_tcp_socket_connect(
   int err = 0;
   struct sockaddr_in dest;
   uv_connect_t connect;
-  _connect_async_arg_t arg = {0};
+  _connect_async_arg_t arg;
 
   if (sock == NULL || endpoint == NULL) {
     return dfk_err_badarg;
@@ -712,7 +712,7 @@ int dfk_tcp_socket_read(
     size_t* nread)
 {
   int err;
-  _read_async_arg_t arg = {0};
+  _read_async_arg_t arg;
 
   if (sock == NULL || buf == NULL || nread == NULL) {
     return dfk_err_badarg;
@@ -814,7 +814,7 @@ int dfk_tcp_socket_write(
 {
   int err;
   uv_write_t request;
-  _write_async_arg_t arg = {0};
+  _write_async_arg_t arg;
   uv_buf_t uvbuf = uv_buf_init(buf, nbytes);
 
   if (sock == NULL || (buf == NULL && nbytes != 0)) {
