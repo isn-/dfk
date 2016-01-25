@@ -1,8 +1,7 @@
 /**
  * @file dfk/tcp_socket.h
- * @brief TCP socket object and related functions
+ * TCP socket object and related functions
  *
- * @author Stanislav Ivochkin
  * @copyright
  * Copyright (c) 2016, Stanislav Ivochkin. All Rights Reserved.
  *
@@ -37,8 +36,7 @@
 #include <dfk/coro.h>
 
 /**
- * @brief TCP socket object
- * @test All the API
+ * TCP socket object
  */
 typedef struct {
   struct {
@@ -56,32 +54,35 @@ typedef struct {
 } dfk_tcp_socket_t;
 
 /**
- * @brief Initialize tcp_socket object
+ * Initialize tcp_socket object
+ *
  * @param obj an object for in-place initialization
  * @param loop pointer to valid event loop object
  * @return
- *   @li dfk_err_ok
- *   @li dfk_err_badarg
- *   @li dfk_err_sys
+ *  dfk_err_ok,
+ *  dfk_err_badarg,
+ *  dfk_err_sys
  */
 int dfk_tcp_socket_init(dfk_tcp_socket_t* obj, dfk_event_loop_t* loop);
 
 /**
- * @brief Cleaup resources allocated for tcp_socket object
+ * Cleaup resources allocated for tcp_socket object
  */
 int dfk_tcp_socket_free(dfk_tcp_socket_t* obj);
 
 /**
- * @brief Enqueue TCP connect request
- * @note This function should be called during the event loop initialization
+ * Enqueue TCP connect request
+ *
+ * This function should be called during the event loop initialization
  * step, before dfk_event_loop_run function. After the event loop is started,
  * a call to this function will return dfk_err_coro.
+ *
  * @return
- *  @li dfk_err_ok
- *  @li dfk_err_badarg
- *  @li dfk_err_inprog
- *  @li dfk_err_sys
- *  @li dfk_err_out_of_memory
+ *  dfk_err_ok,
+ *  dfk_err_badarg,
+ *  dfk_err_inprog,
+ *  dfk_err_sys,
+ *  dfk_err_out_of_memory
  */
 int dfk_tcp_socket_start_connect(
     dfk_tcp_socket_t* obj,
@@ -90,8 +91,9 @@ int dfk_tcp_socket_start_connect(
     void (*callback)(dfk_tcp_socket_t*, int));
 
 /**
- * @brief Connect to TCP endpoint
- * @note This function should be called within a running coroutine.
+ * Connect to TCP endpoint
+ *
+ * This function should be called within a running coroutine.
  */
 int dfk_tcp_socket_connect(
     dfk_tcp_socket_t* obj,
@@ -99,9 +101,9 @@ int dfk_tcp_socket_connect(
     uint16_t port);
 
 /**
- * @brief Enqueue listen request
- * @see dfk_tcp_socket_listen
- * @note This function should be called during the event loop initialization
+ * Enqueue listen request
+ *
+ * This function should be called during the event loop initialization
  * step, before dfk_event_loop_run function. After the event loop is started,
  * a call to this function will return dfk_err_coro.
  */
@@ -113,9 +115,10 @@ int dfk_tcp_socket_start_listen(
     size_t backlog);
 
 /**
- * @brief Listen for connections on endpoint:port.
- * @detail callback is executed for each incoming connection
- * @note To stop listening, call dfk_tcp_socket_close
+ * Listen for connections on endpoint:port
+ *
+ * To stop listening, call dfk_tcp_socket_close.
+ * Callback is executed for each incoming connection.
  */
 int dfk_tcp_socket_listen(
     dfk_tcp_socket_t* obj,
@@ -125,12 +128,12 @@ int dfk_tcp_socket_listen(
     size_t backlog);
 
 /**
- * @brief Close socket. Any operation currently running will be interrupted
+ * Close socket. Any operation currently running will be interrupted
  */
 int dfk_tcp_socket_close(dfk_tcp_socket_t* obj);
 
 /**
- * @brief Read data from the socket
+ * Read data from the socket
  */
 int dfk_tcp_socket_read(
     dfk_tcp_socket_t* obj,
@@ -138,9 +141,6 @@ int dfk_tcp_socket_read(
     size_t nbytes,
     size_t* nread);
 
-/**
- * @todo Implement it
- */
 int dfk_tcp_socket_readv(
     dfk_tcp_socket_t* obj,
     dfk_iovec_t* iov,
@@ -148,16 +148,13 @@ int dfk_tcp_socket_readv(
     size_t *nread);
 
 /**
- * @brief Write data to socket
+ * Write data to socket
  */
 int dfk_tcp_socket_write(
     dfk_tcp_socket_t* obj,
     char* buf,
     size_t nbytes);
 
-/**
- * @todo Implement it
- */
 int dfk_tcp_socket_writev(
     dfk_tcp_socket_t* obj,
     dfk_iovec_t* iov,

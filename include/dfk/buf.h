@@ -1,8 +1,7 @@
 /**
  * @file dfk/buf.h
- * @brief Buffer object and related functions
+ * Buffer object and related functions
  *
- * @author Stanislav Ivochkin
  * @copyright
  * Copyright (c) 2015, 2016, Stanislav Ivochkin. All Rights Reserved.
  *
@@ -33,7 +32,7 @@
 #include <dfk/context.h>
 
 /**
- * @brief Buffer object
+ * Buffer object
  */
 typedef struct {
   struct {

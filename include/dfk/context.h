@@ -1,8 +1,7 @@
 /**
  * @file dfk/context.h
- * @brief Context object and related functions
+ * Context object and related functions
  *
- * @author Stanislav Ivochkin
  * @copyright
  * Copyright (c) 2015, 2016, Stanislav Ivochkin. All Rights Reserved.
  *

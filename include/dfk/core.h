@@ -1,8 +1,7 @@
 /**
  * @file dfk/core.h
- * @brief Basic definitions
+ * Basic definitions
  *
- * @author Stanislav Ivochkin
  * @copyright
  * Copyright (c) 2015, 2016, Stanislav Ivochkin. All Rights Reserved.
  *
@@ -33,7 +32,7 @@
 
 
 /**
- * @brief Error codes returned by dfk functions
+ * Error codes returned by dfk functions
  */
 typedef enum {
   /**
@@ -52,8 +51,9 @@ typedef enum {
   dfk_err_notfound,
 
   /**
-   * @brief Bad argument
-   * @detail Passing NULL pointer to the function that expects non-NULL
+   * Bad argument
+   *
+   * Passing NULL pointer to the function that expects non-NULL
    * will yield this error.
    */
   dfk_err_badarg,
@@ -74,27 +74,29 @@ typedef enum {
   dfk_err_inprog,
 
   /**
-   * @brief Function can not be called outside/inside of a coroutine.
-   * @detail See function documentation for usage restrictions.
+   * Function can not be called outside/inside of a coroutine.
+   *
+   * See function documentation for usage restrictions.
    */
   dfk_err_coro
 } dfk_error_e;
 
 /**
- * @brief Logging stream
+ * Logging stream
  */
 typedef enum {
   /**
-   * @brief Error message
+   * Error message
    */
   dfk_log_error = 0,
   /**
-   * @brief Informational message
+   * Informational message
    */
   dfk_log_info = 1,
   /**
-   * @brief Debug
-   * @detail A very verbose logging level. Disabled by default, can be enabled
+   * Debug
+   *
+   * A very verbose logging level. Disabled by default, can be enabled
    * by setting DFK_ENABLE_DEBUG compile-time flag.
    */
   dfk_log_debug = 2

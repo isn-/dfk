@@ -1,8 +1,7 @@
 /**
  * @file dfk/event_loop.h
- * @brief Event loop object and related functions
+ * Event loop object and related functions
  *
- * @author Stanislav Ivochkin
  * @copyright
  * Copyright (c) 2015, 2016, Stanislav Ivochkin. All Rights Reserved.
  *
@@ -34,7 +33,7 @@
 #include <dfk/coro.h>
 
 /**
- * @brief Event loop object
+ * Event loop object
  */
 typedef struct {
   struct {
