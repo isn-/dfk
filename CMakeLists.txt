@@ -15,9 +15,10 @@ include(CheckFunctionExists)
 fw_version_from_git(DFK_VERSION DFK_VERSION_MAJOR DFK_VERSION_MINOR DFK_VERSION_PATCH)
 fw_page_size(page_size)
 
-set(DFK_ENABLE_UNIT_TESTS TRUE CACHE BOOL "")
-set(DFK_ENABLE_AUTO_TESTS TRUE CACHE BOOL "")
-set(DFK_ENABLE_SAMPLES FALSE CACHE BOOL "")
+set(DFK_BUILD_UNIT_TESTS TRUE CACHE BOOL "")
+set(DFK_BUILD_AUTO_TESTS TRUE CACHE BOOL "")
+set(DFK_BUILD_SAMPLES FALSE CACHE BOOL "")
+
 set(DFK_PAGE_SIZE ${page_size} CACHE STRING "")
 set(DFK_DEFAULT_STACK_SIZE 10240 CACHE STRING "")
 set(DFK_COROUTINE_ASM TRUE CACHE STRING "")
@@ -70,14 +71,14 @@ target_link_libraries(dfk
 
 enable_testing()
 
-if(DFK_ENABLE_UNIT_TESTS)
+if(DFK_BUILD_UNIT_TESTS)
   add_subdirectory(ut)
 endif()
 
-if(DFK_ENABLE_AUTO_TESTS)
+if(DFK_BUILD_AUTO_TESTS)
   add_subdirectory(at)
 endif()
 
-if(DFK_ENABLE_SAMPLES)
+if(DFK_BUILD_SAMPLES)
   add_subdirectory(samples)
 endif()
