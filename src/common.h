@@ -28,6 +28,11 @@ if ((ctx)->log) {\
 
 #define DFK_ERROR(ctx, ...) DFK_LOG(ctx, 0, __VA_ARGS__)
 #define DFK_INFO(ctx, ...) DFK_LOG(ctx, 1, __VA_ARGS__)
+
+#ifdef DFK_ENABLE_DEBUG
 #define DFK_DEBUG(ctx, ...) DFK_LOG(ctx, 2, __VA_ARGS__)
+#else
+#define DFK_DEBUG(...)
+#endif
 
 #pragma GCC diagnostic pop
