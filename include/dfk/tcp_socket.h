@@ -1,7 +1,4 @@
 /**
- * @file dfk/tcp_socket.h
- * TCP socket object and related functions
- *
  * @copyright
  * Copyright (c) 2016, Stanislav Ivochkin. All Rights Reserved.
  *
@@ -34,6 +31,15 @@
 #include <dfk/buf.h>
 #include <dfk/event_loop.h>
 #include <dfk/coro.h>
+
+
+/**
+ * @file dfk/tcp_socket.h
+ * TCP socket object and related functions
+ *
+ * @defgroup tcp_socket TCP Socket routines
+ * @{
+ */
 
 /**
  * TCP socket object
@@ -141,6 +147,9 @@ int dfk_tcp_socket_read(
     size_t nbytes,
     size_t* nread);
 
+/**
+ * Read data from the socket into several buffers at once
+ */
 int dfk_tcp_socket_readv(
     dfk_tcp_socket_t* obj,
     dfk_iovec_t* iov,
@@ -155,8 +164,13 @@ int dfk_tcp_socket_write(
     char* buf,
     size_t nbytes);
 
+/**
+ * Write data from several buffers to socket at once
+ */
 int dfk_tcp_socket_writev(
     dfk_tcp_socket_t* obj,
     dfk_iovec_t* iov,
     size_t niov);
+
+/** @} */
 
