@@ -1,7 +1,0 @@
-{
- "name":   "dfk",
- "github": "isn-/dfk",
- "input":  "include/dfk",
- "prefix": "dfk_",
- "branch": "gh-pages"
-}
