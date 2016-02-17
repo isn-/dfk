@@ -44,7 +44,7 @@ typedef struct {
 #define DFK_REALLOC(ctx, p, nbytes) (ctx)->realloc((ctx)->userdata, p, nbytes)
 
 #define DFK_LOG(ctx, channel, ...) \
-if ((ctx)->log) {\
+if ((ctx) && (ctx)->log) {\
   char msg[512] = {0};\
   int printed;\
   printed = snprintf(msg, sizeof(msg), "%s (%s:%d) ", __FUNCTION__, __FILENAME__, __LINE__);\
