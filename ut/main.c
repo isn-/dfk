@@ -86,8 +86,6 @@ int main(int argc, char** argv)
   int ret = 0;
   const char* desired_group = NULL;
   const char* desired_name = NULL;
-  (void) argc;
-  (void) argv;
   ut_register_all_test_cases();
   if (argc > 1) {
     desired_group = argv[1];
