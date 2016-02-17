@@ -12,6 +12,8 @@ add_executable(ut-dfk
   ${ut_sources}
   ${ut_init_h}
   ${ut_init_c}
+  naivetp/naivetp.h
+  naivetp/naivetp.c
   main.c)
 
 target_link_libraries(ut-dfk dfk)
