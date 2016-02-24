@@ -70,8 +70,7 @@ static void* conn_thread(void* arg)
       break;
     }
   }
-  DFK_INFO(c->ctx, "{%p} close", (void*) c);
-  (void) close(c->sock);
+  DFK_INFO(c->ctx, "{%p} terminated", (void*) c);
   return c;
 }
 
@@ -99,8 +98,7 @@ static void* main_thread(void* arg)
       break;
     }
   }
-  DFK_INFO(s->ctx, "{%p} close", (void*) s);
-  (void) close(s->sock);
+  DFK_INFO(s->ctx, "{%p} terminated", (void*) s);
   return NULL;
 }
 
@@ -172,10 +170,27 @@ void naivetp_server_stop(naivetp_server_t* srv)
   }
 
   client = srv->clients;
-  (void) shutdown(srv->sock, SHUT_RDWR);
+  DFK_INFO(srv->ctx, "{%p} shut down listener", (void*) srv);
+  if (shutdown(srv->sock, SHUT_RDWR) != 0) {
+    if (errno != ENOTCONN) {
+      DFK_ERROR(srv->ctx, "{%p} socket shutdown failed: %s", (void*) srv, strerror(errno));
+    }
+  }
+  if (close(srv->sock) != 0) {
+    DFK_ERROR(srv->ctx, "{%p} socket close failed: %s", (void*) srv, strerror(errno));
+  }
   pthread_join(srv->thread, &retval);
+  DFK_INFO(srv->ctx, "{%p} listener terminated", (void*) srv);
   while (client) {
-    (void) shutdown(client->sock, SHUT_RDWR);
+    DFK_INFO(srv->ctx, "{%p} shut down client %p", (void*) srv, (void*) client);
+    if (shutdown(client->sock, SHUT_RDWR) != 0) {
+      if (errno != ENOTCONN) {
+        DFK_ERROR(srv->ctx, "{%p} socket shutdown failed: %s", (void*) srv, strerror(errno));
+      }
+    }
+    if (close(client->sock) != 0) {
+      DFK_ERROR(srv->ctx, "{%p} socket close failed: %s", (void*) srv, strerror(errno));
+    }
     pthread_join(client->thread, &retval);
     client = client->next;
     srv->ctx->free(NULL, retval);
