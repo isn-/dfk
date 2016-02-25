@@ -27,14 +27,36 @@
 #include <unistd.h>
 #include "ut.h"
 #include <dfk/context.h>
+#include <dfk/tcp_socket.h>
+#include <dfk/event_loop.h>
 #include "naivetp/naivetp.h"
+
+
+static void on_connect(dfk_tcp_socket_t* sock)
+{
+  *((int*) sock->userdata) = 1;
+  dfk_tcp_socket_close(sock);
+}
 
 TEST(tcp_socket, connect_disconnect)
 {
   dfk_context_t* ctx = dfk_default_context();
   naivetp_server_t* ntp_server = naivetp_server_start(ctx, 10020);
-  sleep(10);
+  int connected = 0;
+  dfk_tcp_socket_t sock;
+  dfk_coro_t coro;
+  dfk_event_loop_t loop;
+
+  ASSERT(ntp_server);
+  ASSERT_OK(dfk_event_loop_init(&loop, ctx));
+  ASSERT_OK(dfk_tcp_socket_init(&sock, &loop));
+  ASSERT_OK(dfk_tcp_socket_start_connect(&sock, "127.0.0.1", 10020, on_connect, &coro, 0));
+  sock.userdata = &connected;
+  ASSERT_OK(dfk_event_loop_run(&loop));
+  ASSERT_OK(dfk_event_loop_join(&loop));
+  EXPECT(connected == 1);
+  ASSERT_OK(dfk_tcp_socket_free(&sock));
+  ASSERT_OK(dfk_event_loop_free(&loop));
   naivetp_server_stop(ntp_server);
-  EXPECT(0 == 0);
 }
 

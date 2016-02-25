@@ -57,3 +57,6 @@ if (!(expr)) { \
   return; \
 }
 
+#define EXPECT_OK(expr) EXPECT((expr) == dfk_err_ok)
+#define ASSERT_OK(expr) ASSERT((expr) == dfk_err_ok)
+

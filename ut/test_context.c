@@ -41,3 +41,4 @@ TEST(context, default)
   DFK_FREE(ctx, allocated);
   EXPECT(ctx->log != NULL);
 }
+
