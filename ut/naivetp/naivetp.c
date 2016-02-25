@@ -54,7 +54,7 @@ typedef struct client_t {
 } client_t;
 
 
-static void* conn_thread(void* arg)
+static void* naivetp_conn_thread(void* arg)
 {
   client_t* c = (client_t*) arg;
   DFK_INFO(c->ctx, "{%p} spawned", (void*) c);
@@ -75,7 +75,7 @@ static void* conn_thread(void* arg)
 }
 
 
-static void* main_thread(void* arg)
+static void* naivetp_main_thread(void* arg)
 {
   _naivetp_server_t* s = (_naivetp_server_t*) arg;
   struct sockaddr_in addr;
@@ -93,7 +93,8 @@ static void* main_thread(void* arg)
     newclient->next = s->clients;
     newclient->srv = s;
     s->clients = newclient;
-    if (pthread_create(&newclient->thread, NULL, conn_thread, newclient) != 0) {
+
+    if (pthread_create(&newclient->thread, NULL, &naivetp_conn_thread, newclient) != 0) {
       DFK_ERROR(s->ctx, "can not create thread");
       break;
     }
@@ -145,7 +146,7 @@ naivetp_server_t* naivetp_server_start(dfk_context_t* ctx, uint16_t port)
     goto cleanup;
   }
 
-  if (pthread_create(&s->thread, NULL, &main_thread, s) != 0) {
+  if (pthread_create(&s->thread, NULL, &naivetp_main_thread, s) != 0) {
     goto cleanup;
   }
 
