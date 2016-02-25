@@ -105,7 +105,7 @@ int main(int argc, char** argv)
     ut_last_error_reset(&last_error);
     ut->func();
     if (last_error.failed) {
-      printf("        %s.%s FAIL (%s:%d): assertion failed: \"%s\"\n",
+      printf("        %s.%s FAIL (%s:%d): unit test assertion failed: \"%s\"\n",
           ut->group, ut->name,
           last_error.file, last_error.line, last_error.expr);
       ret = 1;
