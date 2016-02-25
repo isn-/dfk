@@ -87,7 +87,7 @@ static void* naivetp_main_thread(void* arg)
   while ((csock = accept(s->sock, (struct sockaddr*) &addr, &addrlen)) > 0) {
     client_t* newclient = NULL;
     DFK_INFO(s->ctx, "{%p} new connection %s:%d", (void*) s, inet_ntoa(addr.sin_addr), addr.sin_port);
-    newclient = (client_t*) calloc(1, sizeof(client_t));
+    newclient = (client_t*) DFK_MALLOC(s->ctx, sizeof(client_t));
     newclient->sock = csock;
     newclient->ctx = s->ctx;
     newclient->next = s->clients;
@@ -114,7 +114,7 @@ naivetp_server_t* naivetp_server_start(dfk_context_t* ctx, uint16_t port)
     return NULL;
   }
 
-  s = (void*) ctx->malloc(NULL, sizeof(_naivetp_server_t));
+  s = (void*) DFK_MALLOC(ctx, sizeof(_naivetp_server_t));
   if (s == NULL) {
     return NULL;
   }
@@ -155,7 +155,7 @@ naivetp_server_t* naivetp_server_start(dfk_context_t* ctx, uint16_t port)
 cleanup:
   DFK_ERROR(ctx, "failed");
   if (s) {
-    ctx->free(NULL, s);
+    DFK_FREE(ctx, s);
     s = NULL;
   }
   return s;
@@ -194,8 +194,8 @@ void naivetp_server_stop(naivetp_server_t* srv)
     }
     pthread_join(client->thread, &retval);
     client = client->next;
-    srv->ctx->free(NULL, retval);
+    DFK_FREE(srv->ctx, retval);
   }
-  srv->ctx->free(NULL, srv);
+  DFK_FREE(srv->ctx, srv);
 }
 
