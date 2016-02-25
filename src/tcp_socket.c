@@ -60,11 +60,11 @@
 #define TCP_SOCKET_CLOSED ((int) 1 << 7)
 
 #define STATE(sock) ((sock)->_.flags & 0xFF)
-#define TO_STATE(sock, state) ((sock)->_.flags &= ((state) | 0xFFFFFF00))
+#define TO_STATE(sock, state) ((sock)->_.flags = ((sock)->_.flags & 0xFFFFFF00) | (state))
 
 /* Accepted socket has an accociated coroutine and hence
  * requires explicit coroutine join upon closing
- * */
+ */
 #define TCP_SOCKET_IS_ACCEPTED ((int) 1 << 8)
 #define TCP_SOCKET_CONNECT_PENDING ((int) 1 << 9)
 #define TCP_SOCKET_IS_LISTENING ((int) 1 << 10)
@@ -80,6 +80,7 @@ int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_event_loop_t* loop)
   }
   DFK_DEBUG(loop->_.ctx, "(%p)", (void*) sock);
   err = uv_tcp_init(&loop->_.loop, &sock->_.socket);
+  sock->_.socket.data = sock;
   if (err != 0) {
     DFK_ERROR(loop->_.ctx, "(%p) uv_tcp_init returned %d", (void*) sock, err);
     loop->_.ctx->sys_errno = err;
@@ -589,7 +590,7 @@ static void dfk_tcp_socket_on_close(uv_handle_t* p)
   assert(p);
   sock = (dfk_tcp_socket_t*) p->data;
   assert(sock);
-  assert(CTX(sock) && LOOP(sock));
+  assert(LOOP(sock) && CTX(sock));
   assert(STATE(sock) & TCP_SOCKET_CLOSING);
   callback = (dfk_coro_t*) sock->_.arg.obj;
   assert(callback);
