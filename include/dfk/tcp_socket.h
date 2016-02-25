@@ -57,6 +57,7 @@ typedef struct {
     } arg;
     int32_t flags;
   } _;
+  void* userdata;
 } dfk_tcp_socket_t;
 
 /**
@@ -94,7 +95,9 @@ int dfk_tcp_socket_start_connect(
     dfk_tcp_socket_t* obj,
     const char* endpoint,
     uint16_t port,
-    void (*callback)(dfk_tcp_socket_t*, int));
+    void (*callback)(dfk_tcp_socket_t*),
+    dfk_coro_t* coro,
+    size_t stack_size);
 
 /**
  * Connect to TCP endpoint

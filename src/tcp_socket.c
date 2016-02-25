@@ -112,7 +112,9 @@ int dfk_tcp_socket_free(dfk_tcp_socket_t* sock)
 
 typedef struct _start_connect_async_arg_t {
   uv_connect_t connect;
-  void (*callback)(dfk_tcp_socket_t*, int);
+  void (*callback)(dfk_tcp_socket_t*);
+  dfk_coro_t* coro;
+  size_t stack_size;
 } _start_connect_async_arg_t;
 
 
@@ -120,7 +122,8 @@ static void dfk_tcp_socket_on_connect_1(uv_connect_t* p, int status)
 {
   dfk_tcp_socket_t* sock = (dfk_tcp_socket_t*) p->data;
   _start_connect_async_arg_t* arg;
-  void (*callback)(dfk_tcp_socket_t*, int);
+  dfk_coro_t* coro;
+  int err;
 
   assert(p);
   assert(sock);
@@ -128,18 +131,29 @@ static void dfk_tcp_socket_on_connect_1(uv_connect_t* p, int status)
 
   arg = (_start_connect_async_arg_t*) sock->_.arg.obj;
   assert(arg);
-  callback = arg->callback;
-  DFK_FREE(CTX(sock), arg);
   assert(FLAG(sock, TCP_SOCKET_CONNECT_PENDING));
   sock->_.flags ^= TCP_SOCKET_CONNECT_PENDING;
+
+  err = dfk_coro_run(arg->coro, CTX(sock), (void (*)(void*)) arg->callback, sock, arg->stack_size);
+
+  coro = arg->coro;
+  DFK_FREE(CTX(sock), arg);
   sock->_.arg.obj = NULL;
+
+  if (err != dfk_err_ok) {
+    DFK_ERROR(CTX(sock), "dfk_coro_run returned %d", err);
+    return;
+  }
+
   if (status != 0) {
     CTX(sock)->sys_errno = status;
     TO_STATE(sock, TCP_SOCKET_SPARE);
-    callback(sock, dfk_err_sys);
   } else {
     TO_STATE(sock, TCP_SOCKET_CONNECTED);
-    callback(sock, dfk_err_ok);
+  }
+
+  if ((err = dfk_coro_yield_to(CTX(sock), coro)) != dfk_err_ok) {
+    DFK_ERROR(CTX(sock), "dfk_coro_yield_to returned %d", err);
   }
 }
 
@@ -148,7 +162,9 @@ int dfk_tcp_socket_start_connect(
     dfk_tcp_socket_t* sock,
     const char* endpoint,
     uint16_t port,
-    void (*callback)(dfk_tcp_socket_t*, int))
+    void (*callback)(dfk_tcp_socket_t*),
+    dfk_coro_t* coro,
+    size_t stack_size)
 {
   int err;
   struct sockaddr_in dest;
@@ -176,7 +192,10 @@ int dfk_tcp_socket_start_connect(
   if (arg == NULL) {
     return dfk_err_nomem;
   }
+  arg->connect.data = sock;
   arg->callback = callback;
+  arg->coro = coro;
+  arg->stack_size = stack_size;
   sock->_.arg.obj = arg;
   if ((err = uv_tcp_connect(
       &arg->connect,
