@@ -130,13 +130,13 @@ naivetp_server_t* naivetp_server_start(dfk_context_t* ctx, uint16_t port)
   addr.sin_family = AF_INET;
   addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
-  if (bind(s->sock, (struct sockaddr*) &addr, sizeof(addr)) < 0) {
-    DFK_ERROR(ctx, "can not bind socket: %s", strerror(errno));
+  if (setsockopt(s->sock, SOL_SOCKET, SO_REUSEADDR, (const char*) &reuse, sizeof(reuse)) < 0) {
+    DFK_ERROR(ctx, "enable SO_REUSEADDR failed: %s", strerror(errno));
     goto cleanup;
   }
 
-  if (setsockopt(s->sock, SOL_SOCKET, SO_REUSEADDR, (const char*) &reuse, sizeof(reuse)) < 0) {
-    DFK_ERROR(ctx, "enable SO_REUSEADDR failed: %s", strerror(errno));
+  if (bind(s->sock, (struct sockaddr*) &addr, sizeof(addr)) < 0) {
+    DFK_ERROR(ctx, "can not bind socket: %s", strerror(errno));
     goto cleanup;
   }
 
