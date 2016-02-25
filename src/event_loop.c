@@ -36,7 +36,7 @@ int dfk_event_loop_init(dfk_event_loop_t* loop, dfk_context_t* ctx)
   if (loop == NULL || ctx == NULL) {
     return dfk_err_badarg;
   }
-  DFK_DEBUG(CTX(loop), "(%p)", (void*) loop);
+  DFK_DEBUG(ctx, "(%p)", (void*) loop);
   uv_loop_init(&loop->_.loop);
   loop->_.ctx = ctx;
   loop->_.loop.data = loop;
