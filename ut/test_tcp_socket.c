@@ -92,10 +92,17 @@ TEST_F(echo_fixture, tcp_socket, connect_disconnect)
 static void single_write_read(dfk_tcp_socket_t* sock)
 {
   char buffer[64] = {0};
-  size_t nread;
+  size_t nread, i;
+  for (i = 0; i < sizeof(buffer) / sizeof(buffer[0]); ++i) {
+    buffer[i] = (char) (i + 24) % 256;
+  }
   ASSERT_OK(dfk_tcp_socket_write(sock, buffer, sizeof(buffer)));
+  memset(buffer, 0, sizeof(buffer));
   ASSERT_OK(dfk_tcp_socket_read(sock, buffer, sizeof(buffer), &nread));
   ASSERT(nread == sizeof(buffer));
+  for (i = 0; i < sizeof(buffer) / sizeof(buffer[0]); ++i) {
+    ASSERT(buffer[i] == (char) (i + 24) % 256);
+  }
   ASSERT_OK(dfk_tcp_socket_close(sock));
 }
 
@@ -103,6 +110,36 @@ static void single_write_read(dfk_tcp_socket_t* sock)
 TEST_F(echo_fixture, tcp_socket, single_write_read)
 {
   fixture->connect_callback = &single_write_read;
+  ASSERT_OK(dfk_event_loop_run(&fixture->loop));
+  ASSERT_OK(dfk_event_loop_join(&fixture->loop));
+}
+
+
+static void multi_write_read(dfk_tcp_socket_t* sock)
+{
+  char out[10240] = {0};
+  char in[10240] = {0};
+  size_t nread, i;
+  for (i = 0; i < sizeof(out) / sizeof(out[0]); ++i) {
+    out[i] = (char) (i + 24) % 256;
+  }
+  for (i = 0; i < 5; ++i) {
+    ASSERT_OK(dfk_tcp_socket_write(sock, out + i * 1024, 1024));
+  }
+  ASSERT_OK(dfk_tcp_socket_read(sock, in, 2048, &nread));
+  ASSERT(nread == 2048);
+  ASSERT_OK(dfk_tcp_socket_read(sock, in + 2048, 2048, &nread));
+  ASSERT(nread == 2048);
+  ASSERT_OK(dfk_tcp_socket_read(sock, in + 4096, 10240 - 4096, &nread));
+  ASSERT(nread == 10240 - 4096);
+  ASSERT(memcmp(in, out, sizeof(out)) == 0);
+  ASSERT_OK(dfk_tcp_socket_close(sock));
+}
+
+
+TEST_F(echo_fixture, tcp_socket, multi_write_read)
+{
+  fixture->connect_callback = multi_write_read;
   ASSERT_OK(dfk_event_loop_run(&fixture->loop));
   ASSERT_OK(dfk_event_loop_join(&fixture->loop));
 }
