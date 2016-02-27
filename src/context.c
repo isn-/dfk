@@ -95,3 +95,11 @@ int dfk_context_init(dfk_context_t* ctx)
   return dfk_err_ok;
 }
 
+int dfk_context_free(dfk_context_t* ctx)
+{
+  if (ctx == NULL) {
+    return dfk_err_badarg;
+  }
+  return dfk_err_ok;
+}
+

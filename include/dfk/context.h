@@ -49,4 +49,5 @@ typedef struct {
 
 dfk_context_t* dfk_default_context(void);
 int dfk_context_init(dfk_context_t* ctx);
+int dfk_context_free(dfk_context_t* ctx);
 
