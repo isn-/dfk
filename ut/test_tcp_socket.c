@@ -119,6 +119,7 @@ static void multi_write_read(dfk_tcp_socket_t* sock)
 {
   char out[10240] = {0};
   char in[10240] = {0};
+  ssize_t toread;
   size_t nread, i;
   for (i = 0; i < sizeof(out) / sizeof(out[0]); ++i) {
     out[i] = (char) (i + 24) % 256;
@@ -126,12 +127,27 @@ static void multi_write_read(dfk_tcp_socket_t* sock)
   for (i = 0; i < 5; ++i) {
     ASSERT_OK(dfk_tcp_socket_write(sock, out + i * 1024, 1024));
   }
-  ASSERT_OK(dfk_tcp_socket_read(sock, in, 2048, &nread));
-  ASSERT(nread == 2048);
-  ASSERT_OK(dfk_tcp_socket_read(sock, in + 2048, 2048, &nread));
-  ASSERT(nread == 2048);
-  ASSERT_OK(dfk_tcp_socket_read(sock, in + 4096, 10240 - 4096, &nread));
-  ASSERT(nread == 10240 - 4096);
+  toread = 2048;
+  while (toread > 0) {
+    ASSERT_OK(dfk_tcp_socket_read(sock, in + 2048 - toread, toread, &nread));
+    toread -= nread;
+  }
+  ASSERT(toread == 0);
+  toread = 2048;
+  while (toread > 0) {
+    ASSERT_OK(dfk_tcp_socket_read(sock, in + 4096 - toread, toread, &nread));
+    toread -= nread;
+  }
+  ASSERT(toread == 0);
+  for (i = 5; i < 10; ++i) {
+    ASSERT_OK(dfk_tcp_socket_write(sock, out + i * 1024, 1024));
+  }
+  toread = sizeof(in) - 4096;
+  while (toread > 0) {
+    ASSERT_OK(dfk_tcp_socket_read(sock, in + sizeof(in) - toread, toread, &nread));
+    toread -= nread;
+  }
+  ASSERT(toread == 0);
   ASSERT(memcmp(in, out, sizeof(out)) == 0);
   ASSERT_OK(dfk_tcp_socket_close(sock));
 }
