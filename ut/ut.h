@@ -33,18 +33,18 @@ void ut_register_test_case(const char* group, const char* name, void (*func)(voi
 void ut_error(const char* file, const int line, const char* message);
 
 #define TEST(group, name) void ut_##group##_##name(void)
-#define TEST_F(group, name) \
-void _ut_##group##_##name(fixture*); \
+#define TEST_F(fixture_name, group, name) \
+void _ut_##group##_##name(fixture_name*); \
 void ut_##group##_##name(void) \
 { \
-  fixture f; \
+  fixture_name f; \
   memset(&f, 0, sizeof(f)); \
-  fixture_setup(&f); \
+  fixture_name##_setup(&f); \
   _ut_##group##_##name(&f); \
-  fixture_teardown(&f); \
+  fixture_name##_teardown(&f); \
 } \
 \
-void _ut_##group##_##name(fixture* fixture)
+void _ut_##group##_##name(fixture_name* fixture)
 
 #define EXPECT(expr) \
 if (!(expr)) { \
