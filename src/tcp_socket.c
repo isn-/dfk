@@ -683,6 +683,7 @@ static void dfk_tcp_socket_on_read(uv_stream_t* p, ssize_t nread, const uv_buf_t
   assert(sock);
   arg = (_read_async_arg_t*) sock->_.arg.obj;
   assert(arg);
+  sock->_.arg.obj = NULL;
   if (nread < 0) {
     err = dfk_tcp_socket_close(sock);
     if (err != dfk_err_ok) {
@@ -808,6 +809,7 @@ static void dfk_tcp_socket_on_write(uv_write_t* request, int status)
   assert(sock);
   arg = (_write_async_arg_t*) sock->_.arg.obj;
   assert(arg);
+  sock->_.arg.obj = NULL;
 
   if (status < 0) {
     CTX(sock)->sys_errno = status;
