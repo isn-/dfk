@@ -32,31 +32,78 @@
 #include "naivetp/naivetp.h"
 
 
-static void on_connect(dfk_tcp_socket_t* sock)
+typedef struct
+{
+  naivetp_server_t* ntp_server;
+  dfk_context_t ctx;
+  dfk_event_loop_t loop;
+  dfk_tcp_socket_t sock;
+  dfk_coro_t coro;
+  void (*connect_callback)(dfk_tcp_socket_t*);
+} echo_fixture;
+
+
+static void echo_fixture_on_connect(dfk_tcp_socket_t* sock)
+{
+  echo_fixture* fixture = (echo_fixture*) ((char*) sock - offsetof(echo_fixture, sock));
+  fixture->connect_callback(sock);
+}
+
+
+static void echo_fixture_setup(echo_fixture* f)
+{
+  ASSERT_OK(dfk_context_init(&f->ctx));
+  f->ntp_server = naivetp_server_start(&f->ctx, 10020);
+  ASSERT_OK(dfk_event_loop_init(&f->loop, &f->ctx));
+  ASSERT_OK(dfk_tcp_socket_init(&f->sock, &f->loop));
+  ASSERT_OK(dfk_tcp_socket_start_connect(
+      &f->sock, "127.0.0.1", 10020, echo_fixture_on_connect, &f->coro, 0));
+}
+
+
+static void echo_fixture_teardown(echo_fixture* f)
+{
+  ASSERT_OK(dfk_tcp_socket_free(&f->sock));
+  ASSERT_OK(dfk_event_loop_free(&f->loop));
+  ASSERT_OK(dfk_context_free(&f->ctx));
+  naivetp_server_stop(f->ntp_server);
+}
+
+
+static void connect_disconnect(dfk_tcp_socket_t* sock)
 {
   *((int*) sock->userdata) = 1;
   dfk_tcp_socket_close(sock);
 }
 
-TEST(tcp_socket, connect_disconnect)
-{
-  dfk_context_t* ctx = dfk_default_context();
-  naivetp_server_t* ntp_server = naivetp_server_start(ctx, 10020);
-  int connected = 0;
-  dfk_tcp_socket_t sock;
-  dfk_coro_t coro;
-  dfk_event_loop_t loop;
 
-  ASSERT(ntp_server);
-  ASSERT_OK(dfk_event_loop_init(&loop, ctx));
-  ASSERT_OK(dfk_tcp_socket_init(&sock, &loop));
-  ASSERT_OK(dfk_tcp_socket_start_connect(&sock, "127.0.0.1", 10020, on_connect, &coro, 0));
-  sock.userdata = &connected;
-  ASSERT_OK(dfk_event_loop_run(&loop));
-  ASSERT_OK(dfk_event_loop_join(&loop));
+TEST_F(echo_fixture, tcp_socket, connect_disconnect)
+{
+  int connected = 0;
+
+  fixture->connect_callback = connect_disconnect;
+  fixture->sock.userdata = &connected;
+  ASSERT_OK(dfk_event_loop_run(&fixture->loop));
+  ASSERT_OK(dfk_event_loop_join(&fixture->loop));
   EXPECT(connected == 1);
-  ASSERT_OK(dfk_tcp_socket_free(&sock));
-  ASSERT_OK(dfk_event_loop_free(&loop));
-  naivetp_server_stop(ntp_server);
+}
+
+
+static void single_write_read(dfk_tcp_socket_t* sock)
+{
+  char buffer[64] = {0};
+  size_t nread;
+  ASSERT_OK(dfk_tcp_socket_write(sock, buffer, sizeof(buffer)));
+  ASSERT_OK(dfk_tcp_socket_read(sock, buffer, sizeof(buffer), &nread));
+  ASSERT(nread == sizeof(buffer));
+  ASSERT_OK(dfk_tcp_socket_close(sock));
+}
+
+
+TEST_F(echo_fixture, tcp_socket, single_write_read)
+{
+  fixture->connect_callback = &single_write_read;
+  ASSERT_OK(dfk_event_loop_run(&fixture->loop));
+  ASSERT_OK(dfk_event_loop_join(&fixture->loop));
 }
 
