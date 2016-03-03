@@ -160,3 +160,34 @@ TEST_F(echo_fixture, tcp_socket, multi_write_read)
   ASSERT_OK(dfk_event_loop_join(&fixture->loop));
 }
 
+
+static void read_all(dfk_tcp_socket_t* sock)
+{
+  char out[10240] = {0};
+  char in[10240] = {0};
+  size_t nread, i;
+  for (i = 0; i < sizeof(out) / sizeof(out[0]); ++i) {
+    out[i] = (char) (i + 24) % 256;
+  }
+  for (i = 0; i < 6; ++i) {
+    ASSERT_OK(dfk_tcp_socket_write(sock, out + i * 1024, 1024));
+  }
+  ASSERT_OK(dfk_tcp_socket_readall(sock, in, 6 * 1024, &nread));
+  ASSERT(nread == 6 * 1024);
+  for (i = 6; i < 10; ++i) {
+    ASSERT_OK(dfk_tcp_socket_write(sock, out + i * 1024, 1024));
+  }
+  ASSERT_OK(dfk_tcp_socket_readall(sock, in + 6 * 1024, 4 * 1024, &nread));
+  ASSERT(nread == 4 * 1024);
+  ASSERT(memcmp(in, out, sizeof(out)) == 0);
+  ASSERT_OK(dfk_tcp_socket_close(sock));
+}
+
+
+TEST_F(echo_fixture, tcp_socket, read_all)
+{
+  fixture->connect_callback = read_all;
+  ASSERT_OK(dfk_event_loop_run(&fixture->loop));
+  ASSERT_OK(dfk_event_loop_join(&fixture->loop));
+}
+

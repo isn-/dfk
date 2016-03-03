@@ -778,6 +778,35 @@ int dfk_tcp_socket_read(
   return dfk_err_ok;
 }
 
+int dfk_tcp_socket_readall(
+    dfk_tcp_socket_t* sock,
+    char* buf,
+    size_t nbytes,
+    size_t* nread)
+{
+  int err;
+  size_t toread = nbytes;
+
+  if (sock == NULL || buf == NULL || nread == NULL) {
+    return dfk_err_badarg;
+  }
+  DFK_DEBUG(CTX(sock), "(%p) read exactly %lu bytes to %p",
+      (void*) sock, (unsigned long) nbytes, (void*) buf);
+
+  while (toread > 0) {
+    if ((err = dfk_tcp_socket_read(sock, buf, toread, nread)) != dfk_err_ok) {
+      *nread = nbytes - toread;
+      return err;
+    }
+    assert(*nread <= toread);
+    buf += *nread;
+    toread -= *nread;
+  }
+  assert(toread == 0);
+  *nread = nbytes;
+  return dfk_err_ok;
+}
+
 int dfk_tcp_socket_readv(
     dfk_tcp_socket_t* sock,
     dfk_iovec_t* iov,

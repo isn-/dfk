@@ -70,12 +70,12 @@ typedef struct {
  *  dfk_err_badarg,
  *  dfk_err_sys
  */
-int dfk_tcp_socket_init(dfk_tcp_socket_t* obj, dfk_event_loop_t* loop);
+int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_event_loop_t* loop);
 
 /**
  * Cleaup resources allocated for tcp_socket object
  */
-int dfk_tcp_socket_free(dfk_tcp_socket_t* obj);
+int dfk_tcp_socket_free(dfk_tcp_socket_t* sock);
 
 /**
  * Enqueue TCP connect request
@@ -92,7 +92,7 @@ int dfk_tcp_socket_free(dfk_tcp_socket_t* obj);
  *  dfk_err_out_of_memory
  */
 int dfk_tcp_socket_start_connect(
-    dfk_tcp_socket_t* obj,
+    dfk_tcp_socket_t* sock,
     const char* endpoint,
     uint16_t port,
     void (*callback)(dfk_tcp_socket_t*),
@@ -105,7 +105,7 @@ int dfk_tcp_socket_start_connect(
  * This function should be called within a running coroutine.
  */
 int dfk_tcp_socket_connect(
-    dfk_tcp_socket_t* obj,
+    dfk_tcp_socket_t* sock,
     const char* endpoint,
     uint16_t port);
 
@@ -117,7 +117,7 @@ int dfk_tcp_socket_connect(
  * a call to this function will return dfk_err_coro.
  */
 int dfk_tcp_socket_start_listen(
-    dfk_tcp_socket_t* obj,
+    dfk_tcp_socket_t* sock,
     const char* endpoint,
     uint16_t port,
     void (*callback)(dfk_tcp_socket_t*, int),
@@ -130,7 +130,7 @@ int dfk_tcp_socket_start_listen(
  * Callback is executed for each incoming connection.
  */
 int dfk_tcp_socket_listen(
-    dfk_tcp_socket_t* obj,
+    dfk_tcp_socket_t* sock,
     const char* endpoint,
     uint16_t port,
     void (*callback)(dfk_tcp_socket_t*),
@@ -139,13 +139,22 @@ int dfk_tcp_socket_listen(
 /**
  * Close socket. Any operation currently running will be interrupted
  */
-int dfk_tcp_socket_close(dfk_tcp_socket_t* obj);
+int dfk_tcp_socket_close(dfk_tcp_socket_t* sock);
 
 /**
- * Read data from the socket
+ * Read at most nbytes from the socket
  */
 int dfk_tcp_socket_read(
-    dfk_tcp_socket_t* obj,
+    dfk_tcp_socket_t* sock,
+    char* buf,
+    size_t nbytes,
+    size_t* nread);
+
+/**
+ * Read exactly nbytes from socket.
+ */
+int dfk_tcp_socket_readall(
+    dfk_tcp_socket_t* sock,
     char* buf,
     size_t nbytes,
     size_t* nread);
@@ -154,7 +163,7 @@ int dfk_tcp_socket_read(
  * Read data from the socket into several buffers at once
  */
 int dfk_tcp_socket_readv(
-    dfk_tcp_socket_t* obj,
+    dfk_tcp_socket_t* sock,
     dfk_iovec_t* iov,
     size_t niov,
     size_t *nread);
@@ -163,7 +172,7 @@ int dfk_tcp_socket_readv(
  * Write data to socket
  */
 int dfk_tcp_socket_write(
-    dfk_tcp_socket_t* obj,
+    dfk_tcp_socket_t* sock,
     char* buf,
     size_t nbytes);
 
@@ -171,7 +180,7 @@ int dfk_tcp_socket_write(
  * Write data from several buffers to socket at once
  */
 int dfk_tcp_socket_writev(
-    dfk_tcp_socket_t* obj,
+    dfk_tcp_socket_t* sock,
     dfk_iovec_t* iov,
     size_t niov);
 
