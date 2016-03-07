@@ -69,6 +69,7 @@ add_subdirectory(thirdparty)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition")
 
 add_library(dfk
+  src/core.c
   src/context.c
   src/buf.c
   src/coro.c

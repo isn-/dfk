@@ -29,6 +29,7 @@
 
 #pragma once
 #include <stddef.h>
+#include <dfk/context.h>
 
 
 /**
@@ -80,6 +81,8 @@ typedef enum {
    */
   dfk_err_coro
 } dfk_error_e;
+
+int dfk_strerr(dfk_context_t* ctx, int err, char** msg);
 
 /**
  * Logging stream
