@@ -26,11 +26,21 @@
 
 
 #include <dfk.h>
+#include <stdio.h>
+
+static int myperror(const char* func, dfk_context_t* ctx, int err)
+{
+  char* errmsg;
+  if (dfk_strerr(ctx, err, &errmsg) != dfk_err_ok) {
+    printf("Call to \"%s\" failed: %s\n", func, errmsg);
+  }
+  return 1;
+}
 
 static void connection_handler(dfk_tcp_socket_t* socket)
 {
   char buf[512] = {0};
-  size_t nread, nwritten;
+  size_t nread;
   int err;
 
   for (;;) {
@@ -38,8 +48,8 @@ static void connection_handler(dfk_tcp_socket_t* socket)
     if (err != dfk_err_ok) {
       break;
     }
-    err = dfk_tcp_socket_write(socket, buf, nread, &nwritten);
-    if (err != dfk_err_ok || nwritten != nread) {
+    err = dfk_tcp_socket_write(socket, buf, nread);
+    if (err != dfk_err_ok) {
       break;
     }
   }
@@ -49,14 +59,29 @@ static void connection_handler(dfk_tcp_socket_t* socket)
 
 int main(void)
 {
+  int err;
   dfk_context_t* ctx = dfk_default_context();
   dfk_event_loop_t loop;
   dfk_tcp_socket_t socket;
-  dfk_event_loop_init(&loop, ctx);
-  dfk_tcp_socket_init(&socket, &loop);
-  dfk_tcp_socket_listen(&socket, "localhost", 10000, connection_handler, 0);
-  dfk_event_loop_run(&loop);
-  dfk_event_loop_join(&loop);
+  if ((err = dfk_event_loop_init(&loop, ctx)) != dfk_err_ok) {
+    return myperror("dfk_event_loop_init", ctx, err);
+  }
+  if ((err = dfk_tcp_socket_init(&socket, &loop)) != dfk_err_ok) {
+    return myperror("dfk_tcp_socket_init", ctx, err);
+  }
+  err = dfk_tcp_socket_start_listen(&socket, "127.0.0.1", 10000, connection_handler, 0);
+  if (err != dfk_err_ok) {
+    return myperror("dfk_tcp_socket_start_listen", ctx, err);
+  }
+  if ((err = dfk_event_loop_run(&loop)) != dfk_err_ok) {
+    return myperror("dfk_event_loop_run", ctx, err);
+  }
+  if ((err = dfk_event_loop_join(&loop)) != dfk_err_ok) {
+    return myperror("dfk_event_loop_join", ctx, err);
+  }
+  if ((err = dfk_tcp_socket_free(&socket)) != dfk_err_ok) {
+    return myperror("dfk_tcp_socket_free", ctx, err);
+  }
   return 0;
 }
 
