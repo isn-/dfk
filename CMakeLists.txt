@@ -50,6 +50,8 @@ list(APPEND CMAKE_REQUIRED_INCLUDES signal.h)
 check_function_exists(sigaltstack DFK_HAVE_SIGALTSTACK)
 
 find_program(VALGRIND valgrind)
+mark_as_advanced(VALGRIND)
+
 if(DFK_EVENT_LOOP_LIBUV)
   find_package(LibUV REQUIRED)
   include_directories(${LIBUV_INCLUDE_DIRS})
