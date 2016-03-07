@@ -86,7 +86,9 @@ int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_event_loop_t* loop)
     loop->_.ctx->sys_errno = err;
     return dfk_err_sys;
   }
+  sock->_.arg.func = NULL;
   sock->_.flags = TCP_SOCKET_SPARE;
+  sock->userdata = NULL;
   return dfk_err_ok;
 }
 
@@ -173,9 +175,6 @@ int dfk_tcp_socket_start_connect(
   }
   if (STATE(sock) != TCP_SOCKET_SPARE) {
     return dfk_err_inprog;
-  }
-  if (CTX(sock)->_.current_coro != NULL) {
-    return dfk_err_coro;
   }
 
   DFK_INFO(CTX(sock), "(%p) will connect to %s:%u",
@@ -314,8 +313,10 @@ static void dfk_tcp_socket_accepted_main_1(void* arg)
   sock = &((_accepted_socket_t*) arg)->socket;
   assert(sock);
   sock->_.flags |= TCP_SOCKET_IS_ACCEPTED;
+  TO_STATE(sock, TCP_SOCKET_CONNECTED);
   callback = (void(*)(dfk_tcp_socket_t*, int)) sock->_.arg.func;
   assert(callback);
+  sock->_.arg.func = NULL;
 
   callback(sock, dfk_err_ok);
 
@@ -463,6 +464,7 @@ static void dfk_tcp_socket_accepted_main_2(void* parg)
   sock = &arg->socket;
   assert(sock);
   sock->_.flags |= TCP_SOCKET_IS_ACCEPTED;
+  TO_STATE(sock, TCP_SOCKET_CONNECTED);
   callback = (void(*)(dfk_tcp_socket_t*)) sock->_.arg.func;
   assert(callback);
 
