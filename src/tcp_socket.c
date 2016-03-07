@@ -114,7 +114,6 @@ typedef struct _start_connect_async_arg_t {
   uv_connect_t connect;
   void (*callback)(dfk_tcp_socket_t*);
   dfk_coro_t* coro;
-  size_t stack_size;
 } _start_connect_async_arg_t;
 
 
@@ -134,7 +133,7 @@ static void dfk_tcp_socket_on_connect_1(uv_connect_t* p, int status)
   assert(FLAG(sock, TCP_SOCKET_CONNECT_PENDING));
   sock->_.flags ^= TCP_SOCKET_CONNECT_PENDING;
 
-  err = dfk_coro_run(arg->coro, CTX(sock), (void (*)(void*)) arg->callback, sock, arg->stack_size);
+  err = dfk_coro_run(arg->coro, (void (*)(void*)) arg->callback, sock);
 
   coro = arg->coro;
   DFK_FREE(CTX(sock), arg);
@@ -163,8 +162,7 @@ int dfk_tcp_socket_start_connect(
     const char* endpoint,
     uint16_t port,
     void (*callback)(dfk_tcp_socket_t*),
-    dfk_coro_t* coro,
-    size_t stack_size)
+    dfk_coro_t* coro)
 {
   int err;
   struct sockaddr_in dest;
@@ -195,7 +193,6 @@ int dfk_tcp_socket_start_connect(
   arg->connect.data = sock;
   arg->callback = callback;
   arg->coro = coro;
-  arg->stack_size = stack_size;
   sock->_.arg.obj = arg;
   if ((err = uv_tcp_connect(
       &arg->connect,
@@ -371,20 +368,23 @@ static void dfk_tcp_socket_on_new_connection_1(uv_stream_t* p, int status)
   }
 
   newsock->socket._.arg.func = (void(*)(void*)) callback;
-  err = dfk_coro_run(
-      &newsock->coro,
-      CTX(sock),
-      dfk_tcp_socket_accepted_main_1,
-      newsock,
-      0);
+  err = dfk_coro_init(&newsock->coro, CTX(sock), 0);
+  if (err != dfk_err_ok) {
+    DFK_FREE(CTX(sock), newsock);
+    CTX(sock)->sys_errno = err;
+    callback(sock);
+    return;
+  }
 
+  err = dfk_coro_run(&newsock->coro, dfk_tcp_socket_accepted_main_1, newsock);
   if (err != dfk_err_ok) {
     DFK_FREE(CTX(sock), newsock);
     callback(sock, err);
     return;
   }
 
-  if ((err = dfk_coro_yield_to(CTX(sock), &newsock->coro)) != dfk_err_ok) {
+  err = dfk_coro_yield_to(CTX(sock), &newsock->coro);
+  if (err != dfk_err_ok) {
     DFK_FREE(CTX(sock), newsock);
     callback(sock, err);
     return;
@@ -518,10 +518,8 @@ static void dfk_tcp_socket_on_new_connection_2(uv_stream_t* p, int status)
   newsock->socket._.arg.func = (void(*)(void*)) arg->callback;
   err = dfk_coro_run(
       &newsock->coro,
-      CTX(sock),
       dfk_tcp_socket_accepted_main_2,
-      newsock,
-      0);
+      newsock);
 
   if (err != dfk_err_ok) {
     DFK_FREE(CTX(sock), newsock);

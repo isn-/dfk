@@ -56,8 +56,9 @@ static void echo_fixture_setup(echo_fixture* f)
   f->ntp_server = naivetp_server_start(&f->ctx, 10020);
   ASSERT_OK(dfk_event_loop_init(&f->loop, &f->ctx));
   ASSERT_OK(dfk_tcp_socket_init(&f->sock, &f->loop));
+  ASSERT_OK(dfk_coro_init(&f->coro, &f->ctx, 0));
   ASSERT_OK(dfk_tcp_socket_start_connect(
-      &f->sock, "127.0.0.1", 10020, echo_fixture_on_connect, &f->coro, 0));
+      &f->sock, "127.0.0.1", 10020, echo_fixture_on_connect, &f->coro));
 }
 
 

@@ -83,12 +83,18 @@ int dfk_event_loop_run(dfk_event_loop_t* loop)
     return dfk_err_badarg;
   }
   DFK_INFO(CTX(loop), "(%p) spawning main routine", (void*) loop);
-  err = dfk_coro_run(
+  err = dfk_coro_init(
       &loop->_.coro,
       loop->_.ctx,
-      dfk_event_loop_main,
-      loop, 0);
-  DFK_DEBUG(CTX(loop), "(%p) dfk_coro_run returned %d", (void*) loop, err);
+      0);
+  if (err != dfk_err_ok) {
+    DFK_ERROR(CTX(loop), "(%p) dfk_coro_init returned %d", (void*) loop, err);
+    return err;
+  }
+  err = dfk_coro_run(&loop->_.coro, dfk_event_loop_main, loop);
+  if (err != dfk_err_ok) {
+    DFK_ERROR(CTX(loop), "(%p) dfk_coro_run returned %d", (void*) loop, err);
+  }
   return err;
 }
 

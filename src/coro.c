@@ -44,37 +44,45 @@ static void dfk_coro_main(void* arg)
   dfk_coro_yield_parent(coro);
 }
 
-int dfk_coro_run(
+int dfk_coro_init(
     dfk_coro_t* coro,
     dfk_context_t* context,
-    void (*func)(void*),
-    void* arg,
     size_t stack_size)
 {
   if (coro == NULL || context == NULL) {
     return dfk_err_badarg;
   }
 
+  DFK_INFO(context, "(%p) init new coroutine", (void*) coro);
+
   coro->_.context = context;
   if (!stack_size) {
     stack_size = context->default_coro_stack_size;
   }
-  coro->_.stack = DFK_MALLOC(context, stack_size);
-  if (coro->_.stack == NULL) {
-    DFK_ERROR(context, "unable to allocate stack of size %lu for a new coro",
-        (unsigned long) stack_size);
-    return dfk_err_nomem;
-  }
   coro->_.stack_size = stack_size;
-  coro->_.func = func;
-  coro->_.arg = arg;
   if (context->_.current_coro == NULL) {
     context->_.current_coro = &root;
   }
   coro->_.parent = context->_.current_coro;
   coro->_.terminated = 0;
-  DFK_INFO(context, "spawn new coroutine %p, stack size %lu bytes",
-      (void*) coro, (unsigned long) stack_size);
+  return dfk_err_ok;
+}
+
+int dfk_coro_run(dfk_coro_t* coro, void (*func)(void*), void* arg)
+{
+  if (coro == NULL) {
+    return dfk_err_badarg;
+  }
+  coro->_.stack = DFK_MALLOC(CTX(coro), coro->_.stack_size);
+  if (coro->_.stack == NULL) {
+    DFK_ERROR(CTX(coro), "unable to allocate stack of size %lu to run coroutine",
+        (unsigned long) coro->_.stack_size);
+    return dfk_err_nomem;
+  }
+  coro->_.func = func;
+  coro->_.arg = arg;
+  DFK_INFO(CTX(coro), "(%p) spawn, stack size %lu bytes",
+      (void*) coro, (unsigned long) coro->_.stack_size);
   coro_create(&coro->_.ctx, dfk_coro_main, coro, coro->_.stack, coro->_.stack_size);
   return dfk_err_ok;
 }

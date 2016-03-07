@@ -96,8 +96,7 @@ int dfk_tcp_socket_start_connect(
     const char* endpoint,
     uint16_t port,
     void (*callback)(dfk_tcp_socket_t*),
-    dfk_coro_t* coro,
-    size_t stack_size);
+    dfk_coro_t* coro);
 
 /**
  * Connect to TCP endpoint

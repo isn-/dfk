@@ -50,13 +50,8 @@ typedef struct dfk_coro_t {
 } dfk_coro_t;
 
 
-int dfk_coro_run(
-    dfk_coro_t* coro,
-    dfk_context_t* context,
-    void (*func)(void*),
-    void* arg,
-    size_t stack_size);
-
+int dfk_coro_init(dfk_coro_t* coro, dfk_context_t* context, size_t stack_size);
+int dfk_coro_run(dfk_coro_t* coro, void (*func)(void*), void* arg);
 int dfk_coro_yield(dfk_coro_t* from, dfk_coro_t* to);
 int dfk_coro_yield_to(dfk_context_t* ctx, dfk_coro_t* to);
 int dfk_coro_yield_parent(dfk_coro_t* from);

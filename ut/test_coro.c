@@ -42,7 +42,8 @@ TEST(coro, run_and_join)
   dfk_context_t* ctx = dfk_default_context();
   dfk_coro_t coro;
 
-  EXPECT(dfk_coro_run(&coro, ctx, inc_int, &called, 0) == dfk_err_ok);
+  EXPECT(dfk_coro_init(&coro, ctx, 0) == dfk_err_ok);
+  EXPECT(dfk_coro_run(&coro, inc_int, &called) == dfk_err_ok);
   EXPECT(dfk_coro_join(&coro) == dfk_err_ok);
   EXPECT(called == 1);
 }
@@ -57,7 +58,8 @@ TEST(coro, multi)
   size_t i;
 
   for (i = 0; i < ncoros; ++i) {
-    EXPECT(dfk_coro_run(workers +i, ctx, inc_int, &ncalls, 0) == dfk_err_ok);
+    EXPECT(dfk_coro_init(workers + i, ctx, 0) == dfk_err_ok);
+    EXPECT(dfk_coro_run(workers + i, inc_int, &ncalls) == dfk_err_ok);
   }
   for (i = 0; i < ncoros; ++i) {
     EXPECT(dfk_coro_join(workers + i) == dfk_err_ok);
@@ -108,7 +110,8 @@ static void yield_main(void* parg)
   }
 
   for (i = 0; i < ncoros; ++i) {
-    dfk_coro_run(workers + i, ctx, yield_worker, args + i, 0);
+    dfk_coro_init(workers + i, ctx, 0);
+    dfk_coro_run(workers + i, yield_worker, args + i);
   }
 
   for (i = 0; i < ncoros; ++i) {
@@ -141,7 +144,8 @@ TEST(coro, yield)
   int flag = 0;
   dfk_coro_t maincoro;
   dfk_context_t* ctx = dfk_default_context();
-  dfk_coro_run(&maincoro, ctx, yield_main, &flag, 0);
+  dfk_coro_init(&maincoro, ctx, 0);
+  dfk_coro_run(&maincoro, yield_main, &flag);
   dfk_coro_join(&maincoro);
   EXPECT(flag == 1);
 }
