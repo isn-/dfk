@@ -62,8 +62,8 @@ static void dfk_event_loop_main(void* arg)
   while (uv_loop_alive(&loop->_.loop)) {
     DFK_DEBUG(CTX(loop), "(%p) poll", (void*) loop);
     err = uv_run(&loop->_.loop, UV_RUN_ONCE);
-    DFK_DEBUG(CTX(loop), "(%p) uv_run returned %d", (void*) loop, err);
     if (err == 0) {
+      DFK_INFO(CTX(loop), "(%p) uv_run returned %d", (void*) loop, err);
       /* From libuv documentation:
        * UV_RUN_ONCE: Poll for i/o once. <...> Returns zero when done
        * (no active handles or requests left), or non-zero if more callbacks

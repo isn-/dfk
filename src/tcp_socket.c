@@ -439,7 +439,7 @@ int dfk_tcp_socket_start_listen(
   }
 
   TO_STATE(sock, TCP_SOCKET_LISTENING);
-  DFK_INFO(CTX(sock), "(%p) will listen on %s:%u, backlog %lu",
+  DFK_INFO(CTX(sock), "(%p) will listen %s:%u, backlog %lu",
     (void*) sock, endpoint, port, (unsigned long) backlog);
   return dfk_err_ok;
 }
@@ -683,6 +683,7 @@ static void dfk_tcp_socket_on_read(uv_stream_t* p, ssize_t nread, const uv_buf_t
   arg = (_read_async_arg_t*) sock->_.arg.obj;
   assert(arg);
   sock->_.arg.obj = NULL;
+  DFK_INFO(CTX(sock), "(%p) %ld bytes read", (void*) sock, (long) nread);
   if (nread < 0) {
     err = dfk_tcp_socket_close(sock);
     if (err != dfk_err_ok) {
@@ -767,6 +768,9 @@ int dfk_tcp_socket_read(
   assert(sock->_.arg.obj == NULL);
   assert(STATE(sock) & TCP_SOCKET_READING);
   sock->_.flags ^= TCP_SOCKET_READING;
+
+  DFK_INFO(CTX(sock), "(%p) read returned %d, bytes read %lu",
+      (void*) sock, arg.err, (unsigned long) arg.nbytes);
 
   if (arg.err != dfk_err_ok) {
     return arg.err;
