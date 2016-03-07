@@ -331,31 +331,30 @@ static void dfk_tcp_socket_on_new_connection_1(uv_stream_t* p, int status)
   int err;
   dfk_tcp_socket_t* sock;
   _accepted_socket_t* newsock;
-  void (*callback)(dfk_tcp_socket_t*, int);
+  void (*callback)(dfk_tcp_socket_t*);
 
   assert(p);
   sock = (dfk_tcp_socket_t*) p->data;
   assert(sock);
-  callback = (void(*)(dfk_tcp_socket_t*, int)) sock->_.arg.func;
+  callback = (void(*)(dfk_tcp_socket_t*)) sock->_.arg.func;
   assert(callback);
-  sock->_.arg.func = NULL;
   if (status != 0) {
     DFK_ERROR(CTX(sock), "new connection returned %d", status);
     CTX(sock)->sys_errno = status;
-    callback(sock, dfk_err_sys);
+    callback(sock);
     return;
   }
 
   newsock = DFK_MALLOC(CTX(sock), sizeof(_accepted_socket_t));
 
   if (newsock == NULL) {
-    callback(sock, dfk_err_nomem);
+    callback(sock);
     return;
   }
 
   if ((err = dfk_tcp_socket_init(&newsock->socket, LOOP(sock))) != dfk_err_ok) {
     DFK_FREE(CTX(sock), newsock);
-    callback(sock, err);
+    callback(sock);
     return;
   }
 
@@ -363,7 +362,7 @@ static void dfk_tcp_socket_on_new_connection_1(uv_stream_t* p, int status)
     DFK_ERROR(CTX(sock), "accept failed with code %d", err);
     DFK_FREE(CTX(sock), newsock);
     CTX(sock)->sys_errno = err;
-    callback(sock, dfk_err_sys);
+    callback(sock);
     return;
   }
 
@@ -379,14 +378,16 @@ static void dfk_tcp_socket_on_new_connection_1(uv_stream_t* p, int status)
   err = dfk_coro_run(&newsock->coro, dfk_tcp_socket_accepted_main_1, newsock);
   if (err != dfk_err_ok) {
     DFK_FREE(CTX(sock), newsock);
-    callback(sock, err);
+    CTX(sock)->sys_errno = err;
+    callback(sock);
     return;
   }
 
   err = dfk_coro_yield_to(CTX(sock), &newsock->coro);
   if (err != dfk_err_ok) {
     DFK_FREE(CTX(sock), newsock);
-    callback(sock, err);
+    CTX(sock)->sys_errno = err;
+    callback(sock);
     return;
   }
 }
@@ -396,7 +397,7 @@ int dfk_tcp_socket_start_listen(
     dfk_tcp_socket_t* sock,
     const char* endpoint,
     uint16_t port,
-    void (*callback)(dfk_tcp_socket_t*, int),
+    void (*callback)(dfk_tcp_socket_t*),
     size_t backlog)
 {
   struct sockaddr_in bind;
@@ -760,8 +761,7 @@ int dfk_tcp_socket_read(
   }
 
   if ((err = dfk_coro_yield_to(CTX(sock), &LOOP(sock)->_.coro)) != dfk_err_ok) {
-    CTX(sock)->sys_errno = err;
-    return dfk_err_sys;
+    return err;
   }
 
   assert(sock->_.arg.obj == NULL);
