@@ -25,6 +25,7 @@ set(DFK_DEFAULT_TCP_BACKLOG 128 CACHE STRING "")
 set(DFK_COROUTINE_ASM TRUE CACHE BOOL "")
 set(DFK_EVENT_LOOP_LIBUV TRUE CACHE BOOL "")
 set(DFK_ENABLE_DEBUG TRUE CACHE BOOL "")
+set(DFK_ENABLE_COVERAGE FALSE CACHE BOOL "")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -55,6 +56,14 @@ mark_as_advanced(VALGRIND)
 if(DFK_EVENT_LOOP_LIBUV)
   find_package(LibUV REQUIRED)
   include_directories(${LIBUV_INCLUDE_DIRS})
+endif()
+
+if(DFK_ENABLE_COVERAGE AND NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
+  message(FATAL_ERROR "Code coverage can be computed only for Debug builds\nDisable DFK_ENABLE_COVERAGE or change build type to Debug")
+endif()
+
+if(DFK_ENABLE_COVERAGE)
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage -O0")
 endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"
