@@ -32,6 +32,11 @@ digraph "DFK Library Roadmap" {
   beacon [label="#13\nBeaconing"];
     udp_socket -> beacon;
 
+  static [label="#14\nHTTP static server"];
+    threadpool -> static;
+
+  router [label="#15\nHTTP router"];
+
   dfk010 [label="dfk-0.1.0" shape=oval];
     tcp_socket -> dfk010
     http_server -> dfk010
@@ -50,4 +55,5 @@ digraph "DFK Library Roadmap" {
   future -> threadpool;
   future -> python;
   future -> lua;
+  future -> router;
 }
