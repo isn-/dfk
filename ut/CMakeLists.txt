@@ -56,6 +56,6 @@ endforeach()
 file(APPEND ${ut_init_c} "}\n\n")
 file(APPEND ${ut_init_h} "\n")
 
-if(VALGRIND)
+if(VALGRIND AND NOT DFK_ENABLE_COVERAGE)
   add_test(valgrind.all_tests ${VALGRIND} --leak-check=full "${CMAKE_CURRENT_BINARY_DIR}/ut-dfk")
 endif()
