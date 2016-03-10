@@ -8,13 +8,15 @@ compiler:
 env:
   - CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Release"
   - CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug"
+addons:
+  apt:
+    packages:
+      - lcov
 matrix:
   include:
     - os: linux
       compiler: gcc
-      env: CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DDFK_ENABLE_COVERAGE=ON" COVERALLS=YES
-before_install:
-  - if [[ "$COVERALLS" == "YES" ]]; then pip install --user cpp-coveralls; fi
+      env: CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DDFK_ENABLE_COVERAGE=ON" UPLOAD_COVERAGE=YES
 script:
   - ./scripts/bootstrap.sh
   - mkdir build
@@ -23,7 +25,8 @@ script:
   - VERBOSE=1 cmake --build . -- -j
   - cmake --build . --target test
 after_success:
-  - if [[ "$COVERALLS" == "YES" ]]; then coveralls --exclude thirdparty --exclude ut --gcov-options '\-lp'; fi
+  - cd ..
+  - if [[ "$UPLOAD_COVERAGE" == "YES" ]]; then ./scripts/coverage.sh; fi
 notifications:
   email:
   - isn@extrn.org

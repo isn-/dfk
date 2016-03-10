@@ -63,7 +63,7 @@ if(DFK_ENABLE_COVERAGE AND NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 endif()
 
 if(DFK_ENABLE_COVERAGE)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fprofile-arcs -ftest-coverage -O0")
+  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage -O0")
 endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"
