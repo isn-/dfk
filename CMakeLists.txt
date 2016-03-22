@@ -51,9 +51,12 @@ check_include_files(netinet/in.h DFK_HAVE_NETINET_IN_H)
 check_include_files(arpa/inet.h DFK_HAVE_ARPA_INET_H)
 check_include_files(ucontext.h DFK_HAVE_UCONTEXT_H)
 check_include_files(setjmp.h DFK_HAVE_SETJMP_H)
+check_include_files(time.h DFK_HAVE_TIME_H)
 
-list(APPEND CMAKE_REQUIRED_INCLUDES signal.h)
+set(CMAKE_REQUIRED_INCLUDES signal.h)
 check_function_exists(sigaltstack DFK_HAVE_SIGALTSTACK)
+set(CMAKE_REQUIRED_INCLUDES time.h)
+check_function_exists(nanosleep DFK_HAVE_NANOSLEEP)
 
 find_program(VALGRIND valgrind)
 mark_as_advanced(VALGRIND)
