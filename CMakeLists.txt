@@ -91,6 +91,7 @@ add_library(dfk
   src/buf.c
   src/coro.c
   src/event_loop.c
+  src/once.c
   src/tcp_socket.c)
 
 target_link_libraries(dfk
