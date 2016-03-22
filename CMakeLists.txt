@@ -15,6 +15,11 @@ include(CheckFunctionExists)
 fw_version_from_git(DFK_VERSION DFK_VERSION_MAJOR DFK_VERSION_MINOR DFK_VERSION_PATCH)
 fw_page_size(page_size)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Debug CACHE STRING
+    "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif()
+
 set(DFK_BUILD_UNIT_TESTS TRUE CACHE BOOL "")
 set(DFK_BUILD_AUTO_TESTS TRUE CACHE BOOL "")
 set(DFK_BUILD_SAMPLES TRUE CACHE BOOL "")
