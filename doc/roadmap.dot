@@ -37,6 +37,8 @@ digraph "DFK Library Roadmap" {
 
   router [label="#15\nHTTP router"];
 
+  mt [label="#16\nMultithreading"];
+
   dfk010 [label="dfk-0.1.0" shape=oval];
     tcp_socket -> dfk010
     http_server -> dfk010
@@ -47,8 +49,11 @@ digraph "DFK Library Roadmap" {
     curl -> dfk020;
     libpq -> dfk020;
 
+  dfk030 [label="dfk-0.3.0" shape=oval];
+    mt -> dfk030;
+
   future [label="Future" shape=oval];
-    dfk020 -> future [style=dotted];
+    dfk030 -> future [style=dotted];
 
   future -> udp_socket;
   future -> ws;
