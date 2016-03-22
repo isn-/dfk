@@ -80,6 +80,7 @@ int dfk_once_fire(dfk_once_t* once)
 static void dfk_once_on_close(uv_handle_t* handle)
 {
   assert(handle);
+  (void) handle;
 }
 
 int dfk_once_free(dfk_once_t* once)
