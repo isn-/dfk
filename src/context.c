@@ -43,6 +43,7 @@ static void default_log(void* ud, int channel, const char* msg)
   }
   /* At most 512 bytes will printed at once */
   printf("[%.5s] %.503s\n", strchannel, msg);
+  fflush(stdout);
 }
 
 static void* default_malloc(void* ud, size_t size)

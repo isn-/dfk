@@ -57,6 +57,8 @@ set(CMAKE_REQUIRED_INCLUDES signal.h)
 check_function_exists(sigaltstack DFK_HAVE_SIGALTSTACK)
 set(CMAKE_REQUIRED_INCLUDES time.h)
 check_function_exists(nanosleep DFK_HAVE_NANOSLEEP)
+set(CMAKE_REQUIRED_INCLUDES stdio.h)
+check_function_exists(fflush DFK_HAVE_FFLUSH)
 
 find_program(VALGRIND valgrind)
 mark_as_advanced(VALGRIND)
