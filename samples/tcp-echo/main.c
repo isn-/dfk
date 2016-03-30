@@ -37,24 +37,30 @@ static int myperror(const char* func, dfk_context_t* ctx, int err)
   return 1;
 }
 
-static void connection_handler(dfk_tcp_socket_t* socket)
+static void connection_handler(dfk_tcp_socket_t* lsock, dfk_tcp_socket_t* sock, int listen_err)
 {
   char buf[512] = {0};
   size_t nread;
   int err;
 
+  (void) lsock;
+
+  if (listen_err != dfk_err_ok) {
+    return;
+  }
+
   for (;;) {
-    err = dfk_tcp_socket_read(socket, buf, sizeof(buf), &nread);
+    err = dfk_tcp_socket_read(sock, buf, sizeof(buf), &nread);
     if (err != dfk_err_ok) {
       break;
     }
-    err = dfk_tcp_socket_write(socket, buf, nread);
+    err = dfk_tcp_socket_write(sock, buf, nread);
     if (err != dfk_err_ok) {
       break;
     }
   }
 
-  (void) dfk_tcp_socket_close(socket);
+  (void) dfk_tcp_socket_close(sock);
 }
 
 int main(void)
