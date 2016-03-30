@@ -25,6 +25,8 @@
  */
 
 #include <unistd.h>
+#include <time.h>
+#include <pthread.h>
 #include "ut.h"
 #include <dfk/context.h>
 #include <dfk/tcp_socket.h>
@@ -192,3 +194,64 @@ TEST_F(echo_fixture, tcp_socket, read_all)
   ASSERT_OK(dfk_event_loop_join(&fixture->loop));
 }
 
+typedef struct {
+  const char* endpoint;
+  uint16_t port;
+} connector_arg;
+
+static void* connector(void* arg)
+{
+  connector_arg* carg = (connector_arg*) arg;
+  int sockfd, i;
+  struct sockaddr_in addr;
+  struct timespec req, rem;
+
+  sockfd = socket(AF_INET, SOCK_STREAM, 0);
+  ASSERT_RET(sockfd != -1, NULL);
+  memset((char *) &addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(carg->port);
+  inet_aton(carg->endpoint, (struct in_addr*) &addr.sin_addr.s_addr);
+  for (i = 0; i < 32; ++i) {
+    if (connect(sockfd, (struct sockaddr*) &addr, sizeof(addr)) == 0) {
+      break;
+    }
+    /* wait for 1, 4, 9, 16, 25, ... , 1024 milliseconds */
+    req.tv_nsec = i * i * 1000000;
+    nanosleep(&req, &rem);
+  }
+  close(sockfd);
+  return NULL;
+}
+
+static void on_new_connection(dfk_tcp_socket_t* lsock, dfk_tcp_socket_t* sock, int err)
+{
+  ASSERT(lsock != NULL);
+  ASSERT(sock != NULL);
+  ASSERT(err == dfk_err_ok);
+  *((int*) (lsock->userdata)) += 1;
+  ASSERT_OK(dfk_tcp_socket_close(lsock));
+  ASSERT_OK(dfk_tcp_socket_close(sock));
+}
+
+TEST(tcp_socket, listen_start_stop)
+{
+  int nconnected = 0;
+  pthread_t cthread;
+  connector_arg carg;
+  dfk_context_t* ctx = dfk_default_context();
+  dfk_tcp_socket_t sock;
+  dfk_event_loop_t loop;
+  ASSERT_OK(dfk_event_loop_init(&loop, ctx));
+  ASSERT_OK(dfk_tcp_socket_init(&sock, &loop));
+  ASSERT_OK(dfk_tcp_socket_start_listen(
+    &sock, "127.0.0.1", 10000, on_new_connection, 0));
+  sock.userdata = &nconnected;
+  carg.port = 10000;
+  carg.endpoint = "127.0.0.1";
+  ASSERT(pthread_create(&cthread, NULL, &connector, &carg) == 0);
+  ASSERT_OK(dfk_event_loop_run(&loop));
+  ASSERT_OK(dfk_event_loop_join(&loop));
+  ASSERT(nconnected == 1);
+  ASSERT(pthread_join(cthread, NULL) == 0);
+}
