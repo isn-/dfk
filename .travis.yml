@@ -24,6 +24,7 @@ script:
   - cmake $CMAKE_ARGS ..
   - VERBOSE=1 cmake --build . -- -j
   - cmake --build . --target test
+  - cat Testing/Temporary/LastTest.log
 after_success:
   - cd ..
   - if [[ "$UPLOAD_COVERAGE" == "YES" ]]; then ./scripts/coverage.sh; fi
