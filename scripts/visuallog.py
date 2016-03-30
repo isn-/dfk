@@ -24,9 +24,9 @@ import fileinput
 
 def main():
     print("@startuml")
-    print("--> main")
+    print("--> init")
     create_note = True
-    current = "main"
+    current = "init"
     for line in fileinput.input():
         line = line.strip()
         if create_note:
