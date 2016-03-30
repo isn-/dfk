@@ -79,7 +79,15 @@ typedef enum {
    *
    * See function documentation for usage restrictions.
    */
-  dfk_err_coro
+  dfk_err_coro,
+
+  /**
+   * Unexpected behaviour, e.g. unreachable code executed
+   *
+   * Please submit a bug report if API returns this error code.
+   * https://github.com/isn-/dfk/issues/new
+   */
+  dfk_err_panic
 } dfk_error_e;
 
 int dfk_strerr(dfk_context_t* ctx, int err, char** msg);
