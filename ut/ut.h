@@ -51,6 +51,12 @@ if (!(expr)) { \
   ut_error(__FILE__, __LINE__, #expr); \
 }
 
+#define ASSERT_RET(expr, ret) \
+if (!(expr)) { \
+  ut_error(__FILE__, __LINE__, #expr); \
+  return (ret); \
+}
+
 #define ASSERT(expr) \
 if (!(expr)) { \
   ut_error(__FILE__, __LINE__, #expr); \
