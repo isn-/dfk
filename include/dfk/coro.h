@@ -47,6 +47,9 @@ typedef struct dfk_coro_t {
     size_t stack_size;
     int terminated : 1;
   } _;
+#ifdef DFK_ENABLE_NAMED_COROUTINES
+  char name[DFK_COROUTINE_NAME_LENGTH];
+#endif
 } dfk_coro_t;
 
 

@@ -31,7 +31,11 @@
 #define CTX(coro) ((coro)->_.context)
 
 
-static dfk_coro_t root;
+#ifdef DFK_ENABLE_NAMED_COROUTINES
+static dfk_coro_t init = {{0}, "init"};
+#else
+static dfk_coro_t init;
+#endif
 
 static void dfk_coro_main(void* arg)
 {
@@ -61,10 +65,13 @@ int dfk_coro_init(
   }
   coro->_.stack_size = stack_size;
   if (context->_.current_coro == NULL) {
-    context->_.current_coro = &root;
+    context->_.current_coro = &init;
   }
   coro->_.parent = context->_.current_coro;
   coro->_.terminated = 0;
+#ifdef DFK_ENABLE_NAMED_COROUTINES
+  snprintf(coro->name, sizeof(coro->name), "%p", (void*) coro);
+#endif
   return dfk_err_ok;
 }
 
@@ -94,15 +101,15 @@ int dfk_coro_yield(dfk_coro_t* from, dfk_coro_t* to)
     return dfk_err_badarg;
   }
   context = from->_.context ? from->_.context : to->_.context;
-  if (from->_.context != to->_.context && from != &root && to != &root) {
+  if (from->_.context != to->_.context && from != &init && to != &init) {
     DFK_ERROR(context,
         "unable to switch from %p to %p, "
         "corotines belong to different contexts",
         (void*) from, (void*) to);
     return dfk_err_context;
   }
-  DFK_DEBUG(context, "(%p) context switch -> (%p)",
-      (void*) from, (void*) to);
+  DFK_DEBUG(context, "(%s) context switch -> (%s)",
+      from->name, to->name);
   context->_.current_coro = to;
   coro_transfer(&from->_.ctx, &to->_.ctx);
   return dfk_err_ok;

@@ -91,6 +91,10 @@ int dfk_event_loop_run(dfk_event_loop_t* loop)
     DFK_ERROR(CTX(loop), "(%p) dfk_coro_init returned %d", (void*) loop, err);
     return err;
   }
+#ifdef DFK_ENABLE_NAMED_COROUTINES
+  snprintf(loop->_.coro.name, sizeof(loop->_.coro.name),
+      "loop.%p.main", (void*) loop);
+#endif
   err = dfk_coro_run(&loop->_.coro, dfk_event_loop_main, loop);
   if (err != dfk_err_ok) {
     DFK_ERROR(CTX(loop), "(%p) dfk_coro_run returned %d", (void*) loop, err);
