@@ -32,7 +32,19 @@
 
 
 #ifdef DFK_ENABLE_NAMED_COROUTINES
-static dfk_coro_t init = {{0}, "init"};
+static dfk_coro_t init = {
+  {
+    NULL,
+    {0},
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    0,
+    0
+  },
+  "init"
+};
 #else
 static dfk_coro_t init;
 #endif
@@ -108,8 +120,13 @@ int dfk_coro_yield(dfk_coro_t* from, dfk_coro_t* to)
         (void*) from, (void*) to);
     return dfk_err_context;
   }
+#ifdef DFK_ENABLE_NAMED_COROUTINES
   DFK_DEBUG(context, "(%s) context switch -> (%s)",
       from->name, to->name);
+#else
+  DFK_DEBUG(context, "(%p) context switch -> (%p)",
+      (void*) from, (void*) to);
+#endif
   context->_.current_coro = to;
   coro_transfer(&from->_.ctx, &to->_.ctx);
   return dfk_err_ok;

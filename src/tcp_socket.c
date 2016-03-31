@@ -101,7 +101,11 @@ int dfk_tcp_socket_free(dfk_tcp_socket_t* sock)
   if (sock == NULL) {
     return dfk_err_badarg;
   }
-  DFK_DEBUG(CTX(sock), "(%p)", (void*) sock);
+  /** @todo: Add context member to socket struct and
+   * uncomment debug message below
+   *
+   * DFK_DEBUG(CTX(sock), "(%p)", (void*) sock);
+   */
   if (STATE(sock) != TCP_SOCKET_SPARE) {
     if ((err = dfk_tcp_socket_close(sock)) != dfk_err_ok) {
       return err;
@@ -316,23 +320,26 @@ static void dfk_tcp_socket_accepted_main_1(void* varg)
   int err;
   void (*callback)(dfk_tcp_socket_t*, dfk_tcp_socket_t*, int);
   _accepted_main_1_arg* arg = (_accepted_main_1_arg*) varg;
+  dfk_context_t* ctx = NULL;
 
   assert(arg);
   assert(arg->sock);
+  ctx = CTX(arg->sock);
+  assert(ctx);
   arg->sock->_.flags |= TCP_SOCKET_IS_ACCEPTED;
   TO_STATE(arg->sock, TCP_SOCKET_CONNECTED);
   callback = (void(*)(dfk_tcp_socket_t*, dfk_tcp_socket_t*, int)) arg->sock->_.arg.func;
   assert(callback);
   arg->sock->_.arg.func = NULL;
 
-  DFK_DEBUG(CTX(arg->sock), "call listen callback with args (%p, %p, %d)",
+  DFK_DEBUG(ctx, "call listen callback with args (%p, %p, %d)",
       (void*) arg->lsock, (void*) arg->sock, 0);
   callback(arg->lsock, arg->sock, dfk_err_ok);
-  DFK_DEBUG(CTX(arg->sock), "listen callback exited");
+  DFK_DEBUG(ctx, "listen callback exited");
 
   /* coroutine will be joined in the dfk_tcp_socket_on_close */
   if ((err = dfk_tcp_socket_free(arg->sock)) != dfk_err_ok) {
-    DFK_ERROR(CTX(arg->sock), "(%p) dfk_socket_free returned %d", (void*) arg->sock, err);
+    DFK_ERROR(ctx, "(%p) dfk_socket_free returned %d", (void*) arg->sock, err);
   }
 }
 
