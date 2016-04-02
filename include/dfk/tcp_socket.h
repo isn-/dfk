@@ -28,6 +28,7 @@
 #include <stdint.h>
 #include <uv.h>
 #include <dfk/core.h>
+#include <dfk/context.h>
 #include <dfk/buf.h>
 #include <dfk/event_loop.h>
 #include <dfk/coro.h>
@@ -57,6 +58,7 @@ typedef struct {
     } arg;
     int32_t flags;
   } _;
+  dfk_context_t* context;
   void* userdata;
 } dfk_tcp_socket_t;
 

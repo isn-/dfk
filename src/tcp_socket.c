@@ -31,7 +31,7 @@
 #include "common.h"
 
 #define LOOP(sock) ((dfk_event_loop_t*) (sock)->_.socket.loop->data)
-#define CTX(sock) (LOOP((sock))->_.ctx)
+#define CTX(sock) ((sock)->context)
 
 /* TCP Socket states
  * (*)        -> spare
@@ -91,6 +91,7 @@ int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_event_loop_t* loop)
   sock->_.arg.func = NULL;
   sock->_.flags = TCP_SOCKET_SPARE;
   sock->userdata = NULL;
+  sock->context = loop->_.ctx;
   return dfk_err_ok;
 }
 
@@ -101,11 +102,7 @@ int dfk_tcp_socket_free(dfk_tcp_socket_t* sock)
   if (sock == NULL) {
     return dfk_err_badarg;
   }
-  /** @todo: Add context member to socket struct and
-   * uncomment debug message below
-   *
-   * DFK_DEBUG(CTX(sock), "(%p)", (void*) sock);
-   */
+  DFK_DEBUG(CTX(sock), "(%p)", (void*) sock);
   if (STATE(sock) != TCP_SOCKET_SPARE) {
     if ((err = dfk_tcp_socket_close(sock)) != dfk_err_ok) {
       return err;
@@ -319,27 +316,25 @@ static void dfk_tcp_socket_accepted_main_1(void* varg)
 {
   int err;
   void (*callback)(dfk_tcp_socket_t*, dfk_tcp_socket_t*, int);
-  _accepted_main_1_arg* arg = (_accepted_main_1_arg*) varg;
-  dfk_context_t* ctx = NULL;
+  _accepted_main_1_arg arg;
 
-  assert(arg);
-  assert(arg->sock);
-  ctx = CTX(arg->sock);
-  assert(ctx);
-  arg->sock->_.flags |= TCP_SOCKET_IS_ACCEPTED;
-  TO_STATE(arg->sock, TCP_SOCKET_CONNECTED);
-  callback = (void(*)(dfk_tcp_socket_t*, dfk_tcp_socket_t*, int)) arg->sock->_.arg.func;
+  assert(varg);
+  arg = *((_accepted_main_1_arg*) varg);
+  assert(arg.sock);
+  arg.sock->_.flags |= TCP_SOCKET_IS_ACCEPTED;
+  TO_STATE(arg.sock, TCP_SOCKET_CONNECTED);
+  callback = (void(*)(dfk_tcp_socket_t*, dfk_tcp_socket_t*, int)) arg.sock->_.arg.func;
   assert(callback);
-  arg->sock->_.arg.func = NULL;
+  arg.sock->_.arg.func = NULL;
 
-  DFK_DEBUG(ctx, "call listen callback with args (%p, %p, %d)",
-      (void*) arg->lsock, (void*) arg->sock, 0);
-  callback(arg->lsock, arg->sock, dfk_err_ok);
-  DFK_DEBUG(ctx, "listen callback exited");
+  DFK_DEBUG(CTX(arg.sock), "call listen callback with args (%p, %p, %d)",
+      (void*) arg.lsock, (void*) arg.sock, 0);
+  callback(arg.lsock, arg.sock, dfk_err_ok);
+  DFK_DEBUG(CTX(arg.sock), "listen callback exited");
 
   /* coroutine will be joined in the dfk_tcp_socket_on_close */
-  if ((err = dfk_tcp_socket_free(arg->sock)) != dfk_err_ok) {
-    DFK_ERROR(ctx, "(%p) dfk_socket_free returned %d", (void*) arg->sock, err);
+  if ((err = dfk_tcp_socket_free(arg.sock)) != dfk_err_ok) {
+    DFK_ERROR(CTX(arg.sock), "(%p) dfk_socket_free returned %d", (void*) arg.sock, err);
   }
 }
 
@@ -403,7 +398,7 @@ static void dfk_tcp_socket_on_new_connection_1(uv_stream_t* p, int status)
 
 #ifdef DFK_ENABLE_NAMED_COROUTINES
   snprintf(newsock->coro.name, sizeof(newsock->coro.name),
-      "socket.a.%p.main", (void*) newsock);
+      "socket.%p.main", (void*) newsock);
 #endif
 
   varg.lsock = sock;
@@ -562,7 +557,7 @@ static void dfk_tcp_socket_on_new_connection_2(uv_stream_t* p, int status)
 
 #ifdef DFK_ENABLE_NAMED_COROUTINES
   snprintf(newsock->coro.name, sizeof(newsock->coro.name),
-      "socket.a.%p.main", (void*) newsock);
+      "socket.%p.main", (void*) newsock);
 #endif
 
   err = dfk_coro_run(
@@ -947,6 +942,8 @@ static void dfk_tcp_socket_on_write(uv_write_t* request, int status)
   assert(arg);
   sock->_.arg.obj = NULL;
 
+  DFK_DEBUG(CTX(sock), "(%p) write returned %d", (void*) sock, status);
+
   if (status < 0) {
     CTX(sock)->sys_errno = status;
     arg->err = dfk_err_sys;
@@ -987,6 +984,9 @@ int dfk_tcp_socket_write(
   if (!(STATE(sock) & TCP_SOCKET_CONNECTED)) {
     return dfk_err_badarg;
   }
+
+  DFK_DEBUG(CTX(sock), "(%p) write %lu bytes",
+      (void*) sock, (unsigned long) nbytes);
 
   if (nbytes == 0) {
     return dfk_err_ok;
