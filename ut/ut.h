@@ -26,11 +26,13 @@
 
 #pragma once
 #include <string.h>
+#include <common.h>
 #include "ut_init.h"
 
 void ut_register_all_test_cases(void);
 void ut_register_test_case(const char* group, const char* name, void (*func)(void));
 void ut_error(const char* file, const int line, const char* message);
+void ut_disable(const char* group, const char* name);
 
 #define TEST(group, name) void ut_##group##_##name(void)
 #define TEST_F(fixture_name, group, name) \
@@ -45,6 +47,26 @@ void ut_##group##_##name(void) \
 } \
 \
 void _ut_##group##_##name(fixture_name* fixture)
+
+#define DISABLED_TEST(group, name) \
+void _ut_##group##_##name(void); \
+void ut_##group##_##name(void) \
+{ \
+  (void) _ut_##group##_##name; \
+  ut_disable(DFK_STRINGIFY(group), DFK_STRINGIFY(name)); \
+} \
+\
+void _ut_##group##_##name(void)
+
+#define DISABLED_TEST_F(fixture_name, group, name) \
+void _ut_##group##_##name(fixture_name*); \
+void ut_##group##_##name(void) \
+{ \
+  (void) _ut_##group##_##name; \
+  ut_disable(DFK_STRINGIFY(group), DFK_STRINGIFY(name)); \
+} \
+\
+void _ut_##group##_##name(fixture_name*)
 
 #define EXPECT(expr) \
 if (!(expr)) { \
@@ -65,4 +87,3 @@ if (!(expr)) { \
 
 #define EXPECT_OK(expr) EXPECT((expr) == dfk_err_ok)
 #define ASSERT_OK(expr) ASSERT((expr) == dfk_err_ok)
-

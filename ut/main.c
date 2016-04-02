@@ -80,6 +80,12 @@ void ut_error(const char* file, const int line, const char* message)
 }
 
 
+void ut_disable(const char* group, const char* name)
+{
+  printf("        Test %s.%s is disabled\n", group, name);
+}
+
+
 int main(int argc, char** argv)
 {
   ut_case_t* ut;

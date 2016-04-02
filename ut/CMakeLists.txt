@@ -43,7 +43,7 @@ void ut_register_all_test_cases(void)
 
 foreach(source ${ut_sources})
   file(READ "${source}" contents)
-  string(REGEX MATCHALL "TEST((_F))?\\(([A-Za-z_0-9 ,]+)\\)" found_tests ${contents})
+  string(REGEX MATCHALL "((DISABLED_))?TEST((_F))?\\(([A-Za-z_0-9 ,]+)\\)" found_tests ${contents})
   foreach(hit ${found_tests})
     string(REGEX REPLACE ".*\\(( *[A-Za-z_0-9]+ *,)? *([A-Za-z_0-9]+), *([A-Za-z_0-9]+) *\\).*" "\\2" test_group ${hit})
     string(REGEX REPLACE ".*\\(( *[A-Za-z_0-9]+ *,)? *([A-Za-z_0-9]+), *([A-Za-z_0-9]+) *\\).*" "\\3" test_name ${hit})
