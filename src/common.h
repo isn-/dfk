@@ -61,5 +61,12 @@ if ((ctx) && (ctx)->log) {\
 #define DFK_DEBUG(...)
 #endif
 
+#ifdef DFK_STRINGIFY
+#error "Macro DFK_STRINGIFY already defined"
+#else
+#define DFK_STRINGIFY(D) DKF_STR__(D)
+#define DKF_STR__(D) #D
+#endif
+
 #pragma GCC diagnostic pop
 
