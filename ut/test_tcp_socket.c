@@ -324,7 +324,7 @@ static void on_new_connection_echo(dfk_tcp_socket_t* lsock, dfk_tcp_socket_t* so
   (void) dfk_tcp_socket_close(lsock);
 }
 
-TEST(tcp_socket, listen_read_write)
+DISABLED_TEST(tcp_socket, listen_read_write)
 {
   int nconnected = 0;
   pthread_t cthread;
