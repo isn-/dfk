@@ -23,6 +23,7 @@ class CPU(EnumeratedInstance):
         self.state = State.IDLE
         self.due = 0
         self.coro = None
+        self._lastcoro = None
 
     def idle(self, at):
         """Returns True if CPU will not run any coroutine at the given point of time"""
@@ -36,10 +37,16 @@ class CPU(EnumeratedInstance):
         self.due = 0
         self.state = State.IDLE
         self.coro._cpu = None
+        self._lastcoro = self.coro
         self.coro = None
 
     def wakeup(self, coro, state, due):
+        """Returns:
+            bool: True if cache hit occured.
+        """
+        assert self.coro is None
         self.state = state
         self.due = due
         self.coro = coro
         coro._cpu = self
+        return self.coro == self._lastcoro

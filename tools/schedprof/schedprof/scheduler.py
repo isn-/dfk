@@ -12,6 +12,8 @@ class Scheduler(object, metaclass=ABCMeta):
         self.cpus = []
         self.coros = []
         self._idle_cputime = 0
+        self._context_switches = 0
+        self._cache_hits = 0
 
     def status_string(self):
         stats = [i.state.value + ("  " if i.coro is None else "{0:02}".format(i.coro.n)) for i in self.cpus]
@@ -39,6 +41,8 @@ class Scheduler(object, metaclass=ABCMeta):
         assert isinstance(program, Coroutine)
         self._now = 0
         self._idle_cputime = 0
+        self._context_switches = 0
+        self._cache_hits = 0
         self.coros = [program]
         self.cpus = [CPU() for _ in range(ncpu)]
         while True:
@@ -69,7 +73,10 @@ class Scheduler(object, metaclass=ABCMeta):
                     coro_to_kill = task[2]
                     self.coros.remove(coro_to_kill)
                 if task[0] in ['spawn', 'io', 'cpu', 'terminate']:
-                    cpu.wakeup(coro, State.RUNNING, self._now + task[1])
+                    self._context_switches += 1
+                    cachehit = cpu.wakeup(coro, State.RUNNING, self._now + task[1])
+                    if cachehit:
+                        self._cache_hits += 1
             if all([cpu.idle(self._now) for cpu in self.cpus]) and len(self.coros) == 0:
                 # All CPUs are idle and there are no pending coros -
                 # program reached it's end
@@ -78,12 +85,12 @@ class Scheduler(object, metaclass=ABCMeta):
             nextnow = min([cpu.due for cpu in self.cpus if cpu.due > self._now])
             # Compute CPU idle time
             nidlecpus = len([None for cpu in self.cpus if cpu.idle(self._now)])
-            self._idle_cputime = self._idle_cputime + nidlecpus * (nextnow - self._now)
+            self._idle_cputime += nidlecpus * (nextnow - self._now)
             # Jump to the next scheduling point
             self._now = nextnow
         total_cputime = len(self.cpus) * self._now
         burning_cputime = total_cputime - self._idle_cputime
-        return (self._now, total_cputime, burning_cputime)
+        return (self._now, total_cputime, burning_cputime, self._context_switches, self._cache_hits)
 
 
 class DumbScheduler(Scheduler):
@@ -97,4 +104,7 @@ class DumbScheduler(Scheduler):
 
 
 def print_stat(stat):
-    print("Elapsed time: {}\nTotal CPU time: {}\nBurning CPU time: {}".format(*stat))
+    print("Elapsed time: {}\nTotal CPU time: {}\nBurning CPU time: {}\nContext switches: {}\nCache hits: {}".format(*stat))
+    print("Cache hit rate: {:.2%}".format(stat[4] / stat[3]))
+    print("CPU utilization: {:.2%}".format(stat[2] / stat[1]))
+    print("Parallel speedup: {:.4}".format(stat[2] / stat[0]))
