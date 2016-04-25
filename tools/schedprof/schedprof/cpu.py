@@ -4,6 +4,7 @@
 from enum import unique, Enum
 from schedprof.enumerated_instance import EnumeratedInstance
 
+
 @unique
 class State(Enum):
     """CPU State"""

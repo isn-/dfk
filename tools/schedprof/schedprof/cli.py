@@ -10,9 +10,11 @@ from schedprof.scheduler import print_stat, DumbScheduler
 from schedprof.coroutine import Coroutine
 from schedprof.mutex import Mutex
 
+
 @click.group()
 def cli():
     pass
+
 
 @cli.command()
 @click.option("--ncpu", default=multiprocessing.cpu_count())
@@ -59,8 +61,10 @@ def demo(ncpu, scheduler, connections):
     stat = sched.run_program(MainCoroutine(connections), ncpu)
     print_stat(stat)
 
+
 def main():
     return cli()
+
 
 if __name__ == "__main__":
     sys.exit(main())
