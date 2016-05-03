@@ -1,3 +1,4 @@
+from __future__ import print_function
 import os
 
 def is_c_compiler_flag(line):
@@ -14,7 +15,7 @@ for (dirname, __, files) in os.walk(os.path.dirname(os.path.abspath(__file__))):
       f = [a.split()[2:] for a in lines]
       flags += [i for j in f for i in j]
 
-print flags
+print(flags)
 
 def FlagsForFile( filename, **kwargs ):
   return {
