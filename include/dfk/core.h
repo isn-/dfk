@@ -29,6 +29,8 @@
 
 #pragma once
 #include <stddef.h>
+#include <libcoro/coro.h>
+
 
 /**
  * Logging stream
@@ -160,10 +162,29 @@ typedef struct dfk_t {
 
 } dfk_t;
 
+
+/**
+ * Coroutine context
+ */
+typedef struct dfk_coro_t {
+  struct {
+    struct coro_context ctx;
+    dfk_t* dfk;
+    struct dfk_coro_t* next;
+    void (*ep)(dfk_t*, void*);
+    void* arg;
+#ifdef DFK_NAMED_COROUTINES
+    char name[DFK_COROUTINE_NAME_LENGTH];
+#endif
+  } _;
+} dfk_coro_t;
+
+
 /**
  * Initialize dfk context with default settings.
  */
 int dfk_init(dfk_t* dfk);
+
 
 /**
  * Cleanup resources allocated for dfk context
@@ -174,14 +195,21 @@ int dfk_free(dfk_t* dfk);
 
 
 /**
- * Queue routing to the dfk working cycle.
+ * Start a new coroutine
  *
- * Function @p with be called during the next dfk_work call.
+ * Resources allocated to coroutine will be automatically released upon completion.
  *
  * @pre dfk != NULL
  * @pre ep != NULL
  */
-int dfk_run(dfk_t* dfk, void (*ep)(dfk_t*, void*), void* arg);
+dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_t*, void*), void* arg);
+
+
+/**
+ * Switch execution context to another coroutine
+ */
+int dfk_yield(dfk_coro_t* from, dfk_coro_t* to);
+
 
 /**
  * Start dfk working cycle.
@@ -189,6 +217,7 @@ int dfk_run(dfk_t* dfk, void (*ep)(dfk_t*, void*), void* arg);
  * @pre dfk != NULL
  */
 int dfk_work(dfk_t* dfk);
+
 
 /**
  * Returns string representation of the error code @p err.

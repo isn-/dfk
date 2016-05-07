@@ -37,7 +37,6 @@ extern "C" {
 
 #include <dfk/config.h>
 #include <dfk/core.h>
-#include <dfk/coro.h>
 
 #ifdef __cplusplus
 }

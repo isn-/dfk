@@ -31,6 +31,9 @@
 #include <dfk/internal.h>
 
 
+struct coro_context init;
+
+
 static void dfk_default_log(void* ud, int channel, const char* msg)
 {
   char strchannel[5] = {0};
@@ -50,11 +53,11 @@ static void dfk_default_log(void* ud, int channel, const char* msg)
 
 static void* dfk_default_malloc(void* dfk, size_t size)
 {
-  void* ret;
-  ret = malloc(size);
+  void* err;
+  err = malloc(size);
   DFK_DEBUG((dfk_t*) dfk, "%llu bytes requested = %p",
-      (unsigned long long) size, ret);
-  return ret;
+      (unsigned long long) size, err);
+  return err;
 }
 
 
@@ -67,11 +70,11 @@ static void dfk_default_free(void* dfk, void* p)
 
 static void* dfk_default_realloc(void* dfk, void* p, size_t size)
 {
-  void* ret;
-  ret = realloc(p, size);
+  void* err;
+  err = realloc(p, size);
   DFK_DEBUG((dfk_t*) dfk, "resize %p to %llu bytes requested = %p",
-      p, (unsigned long long) size, ret);
-  return ret;
+      p, (unsigned long long) size, err);
+  return err;
 }
 
 
@@ -110,15 +113,58 @@ int dfk_free(dfk_t* dfk)
 }
 
 
-int dfk_run(dfk_t* dfk, void (*ep)(dfk_t*, void*), void* arg)
+typedef struct {
+  void (*ep)(dfk_t*, void*);
+  void* arg;
+} dfk_coro_main_arg_t;
+
+
+static void dfk_coro_main(void* arg)
 {
-  if (!dfk || !ep) {
+  dfk_coro_t* coro = (dfk_coro_t*) arg;
+  coro->_.ep(coro->_.dfk, coro->_.arg);
+  coro->_.next = coro->_.dfk->_.termhead;
+  coro->_.dfk->_.termhead = coro;
+  dfk_yield(coro, coro->_.dfk->_.scheduler);
+}
+
+
+dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_t*, void*), void* arg)
+{
+  if (!dfk) {
+    return NULL;
+  }
+  if (!ep) {
+    dfk->dfk_errno = dfk_err_badarg;
+    return NULL;
+  }
+  {
+    dfk_coro_t* coro = DFK_MALLOC(dfk, dfk->default_stack_size);
+    char* stack_base = (char*) coro + sizeof(dfk_coro_t);
+    size_t stack_size = dfk->default_stack_size - sizeof(dfk_coro_t);
+    if (!coro) {
+      dfk->dfk_errno = dfk_err_nomem;
+      return NULL;
+    }
+    coro->_.ep = ep;
+    coro->_.arg = arg;
+    coro->_.dfk = dfk;
+    coro->_.next = NULL;
+    coro_create(&coro->_.ctx, dfk_coro_main, coro, stack_base, stack_size);
+    DFK_INFO(dfk, "stack %p (%lu) = {%p}", (void*) stack_base, (unsigned long) stack_size, (void*) coro);
+    coro->_.next = dfk->_.exechead;
+    dfk->_.exechead = coro;
+    return coro;
+  }
+}
+
+
+static int dfk_coro_free(dfk_coro_t* coro)
+{
+  if (!coro) {
     return dfk_err_badarg;
   }
-  dfk_coro_t* coro = dfk_coro_run(dfk, ep, arg);
-  if (!coro) {
-    return dfk->dfk_errno;
-  }
+  DFK_FREE(coro->_.dfk, coro);
   return dfk_err_ok;
 }
 
@@ -143,28 +189,44 @@ static void dfk_scheduler(dfk_t* dfk, void* p)
       dfk_coro_t* coro = dfk->_.exechead;
       dfk->_.exechead = coro->_.next;
       DFK_DEBUG(dfk, "schedule to run coroutine {%p}", (void*) coro);
-      dfk_coro_yield(dfk->_.scheduler, coro);
+      dfk_yield(dfk->_.scheduler, coro);
     }
   }
-  dfk_coro_yield(dfk->_.scheduler, NULL);
+  dfk_yield(dfk->_.scheduler, NULL);
   DFK_INFO(dfk, "no pending coroutines left in execution queue, jobs done");
+}
+
+
+int dfk_yield(dfk_coro_t* from, dfk_coro_t* to)
+{
+  if (!from && !to) {
+    return dfk_err_badarg;
+  }
+  DFK_DEBUG((from ? from : to)->_.dfk, "context switch {%p} -> {%p}",
+      (void*) from, (void*) to);
+  coro_transfer(from ? &from->_.ctx : &init, to ? &to->_.ctx : &init);
+  return dfk_err_ok;
 }
 
 
 int dfk_work(dfk_t* dfk)
 {
-  int ret;
+  int err;
   if (!dfk) {
     return dfk_err_badarg;
   }
-  dfk->_.scheduler = dfk_coro_run(dfk, dfk_scheduler, NULL);
+  dfk->_.scheduler = dfk_run(dfk, dfk_scheduler, NULL);
   if (!dfk->_.scheduler) {
     return dfk->dfk_errno;
   }
-  if ((ret = dfk_coro_yield(NULL, dfk->_.scheduler)) != dfk_err_ok) {
-    return ret;
+  if ((err = dfk_yield(NULL, dfk->_.scheduler)) != dfk_err_ok) {
+    return err;
   }
-  return dfk_coro_free(dfk->_.scheduler);
+  if ((err = dfk_coro_free(dfk->_.scheduler)) != dfk_err_ok) {
+    return err;
+  }
+  dfk->_.scheduler = NULL;
+  return dfk_err_ok;
 }
 
 
