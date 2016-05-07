@@ -38,7 +38,7 @@
  * @file dfk/tcp_socket.h
  * TCP socket object and related functions
  *
- * @defgroup tcp_socket TCP Socket routines
+ * @defgroup tcp_socket tcp_socket
  * @{
  */
 

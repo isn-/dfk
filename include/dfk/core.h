@@ -31,6 +31,14 @@
 #include <stddef.h>
 #include <libcoro/coro.h>
 
+/**
+ * @file dfk/tcp_socket.h
+ * TCP socket object and related functions
+ *
+ * @defgroup core core
+ * @{
+ */
+
 
 /**
  * Logging stream
@@ -67,7 +75,7 @@ typedef enum dfk_log_e {
    * Debug messages
    *
    * A very verbose logging level. Disabled by default, can be enabled
-   * by setting DFK_ENABLE_DEBUG compile-time flag.
+   * by setting DFK_DEBUG compile-time flag.
    */
   dfk_log_debug = 3
 } dfk_log_e;
@@ -130,12 +138,6 @@ typedef struct dfk_iovec_t {
 
 /**
  * dfk library context
- *
- * @code
- * dfk_t dfk;
- * dfk_init(&dfk, foo, NULL);
- * dfk_run(&dfk);
- * dfk_free(&dfk);
  */
 typedef struct dfk_t {
   struct {
@@ -154,9 +156,6 @@ typedef struct dfk_t {
 
   size_t default_stack_size;
 
-  /**
-   * @section Read-only members
-   */
   int sys_errno;
   int dfk_errno;
 
@@ -225,4 +224,6 @@ int dfk_work(dfk_t* dfk);
  * If system error has occured (err = dfk_err_sys), strerror(dfk_t.sys_errno) is returned.
  */
 const char* dfk_strerr(dfk_t* dfk, int err);
+
+/** @} */
 

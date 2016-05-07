@@ -1,6 +1,6 @@
 /**
  * @file dfk/internal.h
- * Miscellaneous functions and macroses for internal use only.
+ * Miscellaneous functions and macros for internal use only.
  *
  * @copyright
  * Copyright (c) 2015, 2016, Stanislav Ivochkin. All Rights Reserved.
@@ -36,7 +36,7 @@
 #include <stdio.h>
 #include <dfk/config.h>
 
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
+#define DFK_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #define DFK_UNUSED(x) (void) (x)
 
@@ -48,7 +48,7 @@
 if ((dfk) && (dfk)->log) {\
   char msg[512] = {0};\
   int printed;\
-  printed = snprintf(msg, sizeof(msg), "%s (%s:%d) ", __func__, __FILENAME__, __LINE__);\
+  printed = snprintf(msg, sizeof(msg), "%s (%s:%d) ", __func__, DFK_FILENAME, __LINE__);\
   snprintf(msg + printed , sizeof(msg) - printed, __VA_ARGS__);\
   (dfk)->log((dfk)->userdata, channel, msg);\
 }
