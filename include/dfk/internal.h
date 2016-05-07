@@ -1,6 +1,6 @@
 /**
- * @file dfk/context.h
- * Context object and related functions
+ * @file dfk/internal.h
+ * Miscellaneous functions and macroses for internal use only.
  *
  * @copyright
  * Copyright (c) 2015, 2016, Stanislav Ivochkin. All Rights Reserved.
@@ -28,26 +28,45 @@
  */
 
 #pragma once
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wvariadic-macros"
+
 #include <stddef.h>
+#include <string.h>
+#include <stdio.h>
+#include <dfk/config.h>
 
-typedef struct {
-  struct {
-    struct dfk_coro_t* current_coro;
-  } _ ;
-  void* userdata;
+#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
-  void* (*malloc) (void*, size_t);
-  void (*free) (void*, void*);
-  void* (*realloc)(void*, void*, size_t);
-  void (*log)(void*, int, const char*);
+#define DFK_UNUSED(x) (void) (x)
 
-  size_t default_coro_stack_size;
-  int sys_errno;
+#define DFK_MALLOC(dfk, nbytes) (dfk)->malloc((dfk), nbytes)
+#define DFK_FREE(dfk, p) (dfk)->free((dfk), p)
+#define DFK_REALLOC(dfk, p, nbytes) (dfk)->realloc((dfk), p, nbytes)
 
-} dfk_context_t;
+#define DFK_LOG(dfk, channel, ...) \
+if ((dfk) && (dfk)->log) {\
+  char msg[512] = {0};\
+  int printed;\
+  printed = snprintf(msg, sizeof(msg), "%s (%s:%d) ", __func__, __FILENAME__, __LINE__);\
+  snprintf(msg + printed , sizeof(msg) - printed, __VA_ARGS__);\
+  (dfk)->log((dfk)->userdata, channel, msg);\
+}
 
+#define DFK_ERROR(dfk, ...) DFK_LOG(dfk, dfk_log_error, __VA_ARGS__)
+#define DFK_WARNING(dfk, ...) DFK_LOG(dfk, dfk_log_warning, __VA_ARGS__)
+#define DFK_INFO(dfk, ...) DFK_LOG(dfk, dfk_log_info, __VA_ARGS__)
 
-dfk_context_t* dfk_default_context(void);
-int dfk_context_init(dfk_context_t* ctx);
-int dfk_context_free(dfk_context_t* ctx);
+#ifdef DFK_DEBUG
+#undef DFK_DEBUG
+#define DFK_DEBUG_ENABLED
+#define DFK_DEBUG(dfk, ...) DFK_LOG(dfk, dfk_log_debug, __VA_ARGS__)
+#else
+#define DFK_DEBUG(dfk, ...) DFK_UNUSED(dfk)
+#endif
+
+#define DFK_STRINGIFY(D) DFK_STR__(D)
+#define DFK_STR__(D) #D
+
+#pragma GCC diagnostic pop
 

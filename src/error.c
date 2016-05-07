@@ -1,6 +1,6 @@
 /**
  * @copyright
- * Copyright (c) 2015, 2016, Stanislav Ivochkin. All Rights Reserved.
+ * Copyright (c) 2016, Stanislav Ivochkin. All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -24,49 +24,56 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#pragma once
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wvariadic-macros"
-
-#include <stddef.h>
+#include <dfk.h>
 #include <string.h>
-#include <stdio.h>
 
-typedef struct {
-  char* data;
-  size_t size;
-} buf_t;
 
-#define __FILENAME__ (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
-
-#define DFK_MALLOC(ctx, nbytes) (ctx)->malloc((ctx)->userdata, nbytes)
-#define DFK_FREE(ctx, p) (ctx)->free((ctx)->userdata, p)
-#define DFK_REALLOC(ctx, p, nbytes) (ctx)->realloc((ctx)->userdata, p, nbytes)
-
-#define DFK_LOG(ctx, channel, ...) \
-if ((ctx) && (ctx)->log) {\
-  char msg[512] = {0};\
-  int printed;\
-  printed = snprintf(msg, sizeof(msg), "%s (%s:%d) ", __func__, __FILENAME__, __LINE__);\
-  snprintf(msg + printed , sizeof(msg) - printed, __VA_ARGS__);\
-  (ctx)->log((ctx)->userdata, channel, msg);\
+int dfk_strerr(dfk_t* ctx, int err, char** msg)
+{
+  if (msg == NULL) {
+    return dfk_err_badarg;
+  }
+  switch(err) {
+    case dfk_err_ok: {
+      *msg = "No error";
+      return dfk_err_ok;
+    }
+    case dfk_err_nomem: {
+      *msg = "Memory allocation function returned NULL";
+      return dfk_err_ok;
+    }
+    case dfk_err_notfound: {
+      *msg = "Object not found";
+      return dfk_err_ok;
+    }
+    case dfk_err_badarg: {
+      *msg = "Bad argument";
+      return dfk_err_ok;
+    }
+    case dfk_err_context: {
+      *msg = "An operation on objects that belong to different contexts is requested";
+      return dfk_err_ok;
+    }
+    case dfk_err_sys: {
+      if (ctx == NULL) {
+        *msg = "System error, context object is NULL, can not access sys_errno";
+      } else {
+        *msg = strerror(ctx->sys_errno);
+      }
+      return dfk_err_ok;
+    }
+    case dfk_err_inprog: {
+      *msg = "The operation is already in progress";
+      return dfk_err_ok;
+    }
+    case dfk_err_coro: {
+      *msg = "Function can not be called outside/inside of a coroutine.";
+      return dfk_err_ok;
+    }
+    default: {
+      return dfk_err_notfound;
+    }
+  }
+  return dfk_err_notfound;
 }
-
-#define DFK_ERROR(ctx, ...) DFK_LOG(ctx, 0, __VA_ARGS__)
-#define DFK_INFO(ctx, ...) DFK_LOG(ctx, 1, __VA_ARGS__)
-
-#ifdef DFK_ENABLE_DEBUG
-#define DFK_DEBUG(ctx, ...) DFK_LOG(ctx, 2, __VA_ARGS__)
-#else
-#define DFK_DEBUG(...)
-#endif
-
-#ifdef DFK_STRINGIFY
-#error "Macro DFK_STRINGIFY already defined"
-#else
-#define DFK_STRINGIFY(D) DKF_STR__(D)
-#define DKF_STR__(D) #D
-#endif
-
-#pragma GCC diagnostic pop
 

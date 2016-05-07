@@ -1,6 +1,6 @@
 /**
  * @file dfk/core.h
- * Basic definitions
+ * Core definitions
  *
  * @copyright
  * Copyright (c) 2015, 2016, Stanislav Ivochkin. All Rights Reserved.
@@ -29,13 +29,52 @@
 
 #pragma once
 #include <stddef.h>
-#include <dfk/context.h>
+
+/**
+ * Logging stream
+ *
+ * Also could be considered as logging level.
+ */
+typedef enum dfk_log_e {
+  /**
+   * Error messages
+   *
+   * An inevitable error has occured. Manual intervention is needed
+   * to recover.
+   */
+  dfk_log_error = 0,
+  /**
+   * Warning message
+   *
+   * Normal execution path has been violated, although library knows
+   * how to recover from it. E.g. TCP connection was unexpectedly
+   * closed by remote peer.
+   *
+   * Presence of warning messages in the log may indicate that some
+   * extra configuration of external systems, or inside dfk library
+   * itself is required.
+   */
+  dfk_log_warning = 1,
+  /**
+   * Informational message
+   *
+   * An event that might be useful for system monitoring has been occured.
+   */
+  dfk_log_info = 2,
+  /**
+   * Debug messages
+   *
+   * A very verbose logging level. Disabled by default, can be enabled
+   * by setting DFK_ENABLE_DEBUG compile-time flag.
+   */
+  dfk_log_debug = 3
+} dfk_log_e;
 
 
 /**
  * Error codes returned by dfk functions
  */
-typedef enum {
+typedef enum dfk_error_e {
   /**
    * No error
    */
@@ -60,12 +99,7 @@ typedef enum {
   dfk_err_badarg,
 
   /**
-   * An operation on objects that belong to different contexts is requested
-   */
-  dfk_err_context,
-
-  /**
-   * System error, see dfk_context_t.sys_errno
+   * System error, see dfk_t.sys_errno
    */
   dfk_err_sys,
 
@@ -75,47 +109,91 @@ typedef enum {
   dfk_err_inprog,
 
   /**
-   * Function can not be called outside/inside of a coroutine.
-   *
-   * See function documentation for usage restrictions.
-   */
-  dfk_err_coro,
-
-  /**
    * Unexpected behaviour, e.g. unreachable code executed
    *
    * Please submit a bug report if API returns this error code.
    * https://github.com/isn-/dfk/issues/new
    */
-  dfk_err_panic
+  dfk_err_panic,
+
+  _dfk_err_total
 } dfk_error_e;
 
-int dfk_strerr(dfk_context_t* ctx, int err, char** msg);
 
-/**
- * Logging stream
- */
-typedef enum {
-  /**
-   * Error message
-   */
-  dfk_log_error = 0,
-  /**
-   * Informational message
-   */
-  dfk_log_info = 1,
-  /**
-   * Debug
-   *
-   * A very verbose logging level. Disabled by default, can be enabled
-   * by setting DFK_ENABLE_DEBUG compile-time flag.
-   */
-  dfk_log_debug = 2
-} dfk_log_e;
-
-
-typedef struct {
+typedef struct dfk_iovec_t {
   char* data;
   size_t size;
 } dfk_iovec_t;
+
+
+/**
+ * dfk library context
+ *
+ * @code
+ * dfk_t dfk;
+ * dfk_init(&dfk, foo, NULL);
+ * dfk_run(&dfk);
+ * dfk_free(&dfk);
+ */
+typedef struct dfk_t {
+  struct {
+    struct dfk_coro_t* exechead;
+    struct dfk_coro_t* termhead;
+    struct dfk_coro_t* scheduler;
+  } _;
+
+  void* userdata;
+
+  void* (*malloc) (void*, size_t);
+  void (*free) (void*, void*);
+  void* (*realloc)(void*, void*, size_t);
+
+  void (*log)(void*, int, const char*);
+
+  size_t default_stack_size;
+
+  /**
+   * @section Read-only members
+   */
+  int sys_errno;
+  int dfk_errno;
+
+} dfk_t;
+
+/**
+ * Initialize dfk context with default settings.
+ */
+int dfk_init(dfk_t* dfk);
+
+/**
+ * Cleanup resources allocated for dfk context
+ *
+ * @pre dfk != NULL
+ */
+int dfk_free(dfk_t* dfk);
+
+
+/**
+ * Queue routing to the dfk working cycle.
+ *
+ * Function @p with be called during the next dfk_work call.
+ *
+ * @pre dfk != NULL
+ * @pre ep != NULL
+ */
+int dfk_run(dfk_t* dfk, void (*ep)(dfk_t*, void*), void* arg);
+
+/**
+ * Start dfk working cycle.
+ *
+ * @pre dfk != NULL
+ */
+int dfk_work(dfk_t* dfk);
+
+/**
+ * Returns string representation of the error code @p err.
+ *
+ * If system error has occured (err = dfk_err_sys), strerror(dfk_t.sys_errno) is returned.
+ */
+const char* dfk_strerr(dfk_t* dfk, int err);
 

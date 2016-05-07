@@ -29,34 +29,22 @@
 
 #pragma once
 #include <libcoro/coro.h>
-#include <dfk/config.h>
-#include <dfk/context.h>
-#include <dfk/buf.h>
-
-
-struct dfk_coro_t;
+#include <dfk.h>
 
 typedef struct dfk_coro_t {
   struct {
-    dfk_context_t* context;
     struct coro_context ctx;
-    struct dfk_coro_t* parent;
-    void (*func)(void*);
+    dfk_t* dfk;
+    struct dfk_coro_t* next;
+    void (*ep)(dfk_t*, void*);
     void* arg;
-    char* stack;
-    size_t stack_size;
-    int terminated : 1;
-  } _;
-#ifdef DFK_ENABLE_NAMED_COROUTINES
-  char name[DFK_COROUTINE_NAME_LENGTH];
+#ifdef DFK_NAMED_COROUTINES
+    char name[DFK_COROUTINE_NAME_LENGTH];
 #endif
+  } _;
 } dfk_coro_t;
 
-
-int dfk_coro_init(dfk_coro_t* coro, dfk_context_t* context, size_t stack_size);
-int dfk_coro_run(dfk_coro_t* coro, void (*func)(void*), void* arg);
+dfk_coro_t* dfk_coro_run(dfk_t* dfk, void (*ep)(dfk_t*, void*), void* arg);
 int dfk_coro_yield(dfk_coro_t* from, dfk_coro_t* to);
-int dfk_coro_yield_to(dfk_context_t* ctx, dfk_coro_t* to);
-int dfk_coro_yield_parent(dfk_coro_t* from);
-int dfk_coro_join(dfk_coro_t* coro);
+int dfk_coro_free(dfk_coro_t* coro);
 
