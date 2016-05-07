@@ -55,8 +55,8 @@ static void* dfk_default_malloc(void* dfk, size_t size)
 {
   void* err;
   err = malloc(size);
-  DFK_DEBUG((dfk_t*) dfk, "%llu bytes requested = %p",
-      (unsigned long long) size, err);
+  DFK_DEBUG((dfk_t*) dfk, "%lu bytes requested = %p",
+      (unsigned long) size, err);
   return err;
 }
 
@@ -72,8 +72,8 @@ static void* dfk_default_realloc(void* dfk, void* p, size_t size)
 {
   void* err;
   err = realloc(p, size);
-  DFK_DEBUG((dfk_t*) dfk, "resize %p to %llu bytes requested = %p",
-      p, (unsigned long long) size, err);
+  DFK_DEBUG((dfk_t*) dfk, "resize %p to %lu bytes requested = %p",
+      p, (unsigned long) size, err);
   return err;
 }
 
