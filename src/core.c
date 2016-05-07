@@ -179,21 +179,23 @@ static void dfk_scheduler(dfk_t* dfk, void* p)
     {
       /* cleanup terminated coroutines */
       dfk_coro_t* i = dfk->_.termhead;
+      dfk_coro_t* n = i;
       while (i) {
+        n = i->_.next;
         dfk_coro_free(i);
-        i = i->_.next;
+        i = n;
       }
       dfk->_.termhead = NULL;
     }
     if (dfk->_.exechead) {
       dfk_coro_t* coro = dfk->_.exechead;
       dfk->_.exechead = coro->_.next;
-      DFK_DEBUG(dfk, "schedule to run coroutine {%p}", (void*) coro);
+      DFK_DEBUG(dfk, "next coroutine to run {%p}", (void*) coro);
       dfk_yield(dfk->_.scheduler, coro);
     }
   }
-  dfk_yield(dfk->_.scheduler, NULL);
   DFK_INFO(dfk, "no pending coroutines left in execution queue, jobs done");
+  dfk_yield(dfk->_.scheduler, NULL);
 }
 
 
@@ -215,6 +217,7 @@ int dfk_work(dfk_t* dfk)
   if (!dfk) {
     return dfk_err_badarg;
   }
+  DFK_INFO(dfk, "start work cycle {%p}", (void*) dfk);
   dfk->_.scheduler = dfk_run(dfk, dfk_scheduler, NULL);
   if (!dfk->_.scheduler) {
     return dfk->dfk_errno;
@@ -226,6 +229,7 @@ int dfk_work(dfk_t* dfk)
     return err;
   }
   dfk->_.scheduler = NULL;
+  DFK_INFO(dfk, "work cycle {%p} done", (void*) dfk);
   return dfk_err_ok;
 }
 
