@@ -30,16 +30,19 @@ def main():
     for line in fileinput.input():
         line = line.strip()
         if create_note:
-            color = "#{}".format(hashlib.sha1(current).hexdigest()[:6])
+            color = "#{}".format(hashlib.sha1(current.encode()).hexdigest()[:6])
             print("rnote over {} {}".format(current, color))
             create_note = False
         if line.count("context switch"):
-            m = re.search('\(([^\(\)]*)\) context switch -> \((.*)\)', line)
+            m = re.search('context switch \{([^\}]*)\} -> \{([^\}]*)\}', line)
             if not create_note:
                 print("endrnote")
-            print("{} -> {}".format(m.group(1), m.group(2)))
+            from_, to = m.group(1), m.group(2)
+            from_ = "init" if from_ == "(nil)" else from_
+            to = "init" if to == "(nil)" else to
+            print("{} -> {}".format(from_, to))
             create_note = True
-            current = m.group(2)
+            current = to
         else:
             print(line)
     if not create_note:
