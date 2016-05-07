@@ -25,7 +25,9 @@
  */
 
 #include <dfk.h>
+#include <dfk/internal.h>
 #include "ut.h"
+
 
 TEST(core, strerror_no_empty_strings)
 {
@@ -37,6 +39,7 @@ TEST(core, strerror_no_empty_strings)
   }
 }
 
+
 TEST(core, strerror_sys_errno)
 {
   dfk_t dfk;
@@ -46,3 +49,68 @@ TEST(core, strerror_sys_errno)
   EXPECT(dfk_strerr(&dfk, dfk_err_sys));
   EXPECT(strnlen(dfk_strerr(&dfk, dfk_err_sys), 1));
 }
+
+
+TEST(core, free_run)
+{
+  dfk_t dfk;
+  ASSERT_OK(dfk_init(&dfk));
+  ASSERT_OK(dfk_work(&dfk));
+  ASSERT_OK(dfk_free(&dfk));
+}
+
+
+static void do_inc_arg(dfk_t* dfk, void* arg)
+{
+  int* i = (int*) arg;
+  DFK_UNUSED(dfk);
+  *i += 1;
+}
+
+
+TEST(core, no_subroutines)
+{
+  dfk_t dfk;
+  int invoked = 0;
+  ASSERT_OK(dfk_init(&dfk));
+  ASSERT(dfk_run(&dfk, do_inc_arg, &invoked));
+  ASSERT_OK(dfk_work(&dfk));
+  EXPECT(invoked);
+  ASSERT_OK(dfk_free(&dfk));
+}
+
+
+TEST(core, two_coros_in_clip)
+{
+  dfk_t dfk;
+  int invoked = 0;
+  ASSERT_OK(dfk_init(&dfk));
+  ASSERT(dfk_run(&dfk, do_inc_arg, &invoked));
+  ASSERT(dfk_run(&dfk, do_inc_arg, &invoked));
+  ASSERT_OK(dfk_work(&dfk));
+  EXPECT(invoked == 2);
+  ASSERT_OK(dfk_free(&dfk));
+}
+
+
+static void do_spawn_and_die(dfk_t* dfk, void* arg)
+{
+  int* count = (int*) arg;
+  *count -= 1;
+  if (*count) {
+    dfk_run(dfk, do_spawn_and_die, arg);
+  }
+}
+
+
+TEST(core, spawn_and_die)
+{
+  dfk_t dfk;
+  int count = 1024;
+  ASSERT_OK(dfk_init(&dfk));
+  ASSERT(dfk_run(&dfk, do_spawn_and_die, &count));
+  ASSERT_OK(dfk_work(&dfk));
+  EXPECT(count == 0);
+  ASSERT_OK(dfk_free(&dfk));
+}
+
