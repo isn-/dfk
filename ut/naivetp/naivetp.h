@@ -25,7 +25,7 @@
  */
 
 #include <stdint.h>
-#include <dfk/context.h>
+#include <dfk.h>
 
 typedef struct _naivetp_server_t naivetp_server_t;
 
@@ -34,6 +34,6 @@ typedef struct _naivetp_server_t naivetp_server_t;
  *
  * A text-based protocol designed for TCP socket testing.
  */
-naivetp_server_t* naivetp_server_start(dfk_context_t* ctx, uint16_t port);
+naivetp_server_t* naivetp_server_start(dfk_t* dfk, uint16_t port);
 void naivetp_server_stop(naivetp_server_t*);
 

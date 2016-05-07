@@ -26,7 +26,6 @@
 
 #pragma once
 #include <string.h>
-#include <common.h>
 #include "ut_init.h"
 
 void ut_register_all_test_cases(void);

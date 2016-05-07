@@ -2,9 +2,9 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(ut_sources
-  test_context.c
-  test_coro.c
-  test_tcp_socket.c)
+  test_core.c)
+  #  test_coro.c
+  #  test_tcp_socket.c)
 
 set(ut_init_c "${CMAKE_CURRENT_BINARY_DIR}/ut_init.c")
 set(ut_init_h "${CMAKE_CURRENT_BINARY_DIR}/ut_init.h")
@@ -47,7 +47,7 @@ foreach(source ${ut_sources})
   foreach(hit ${found_tests})
     string(REGEX REPLACE ".*\\(( *[A-Za-z_0-9]+ *,)? *([A-Za-z_0-9]+), *([A-Za-z_0-9]+) *\\).*" "\\2" test_group ${hit})
     string(REGEX REPLACE ".*\\(( *[A-Za-z_0-9]+ *,)? *([A-Za-z_0-9]+), *([A-Za-z_0-9]+) *\\).*" "\\3" test_name ${hit})
-    add_test(${test_group}.${test_name} "${CMAKE_CURRENT_BINARY_DIR}/ut-dfk" ${test_group} ${test_name})
+    add_test(${test_group}.${test_name} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ut-dfk" ${test_group} ${test_name})
     file(APPEND ${ut_init_h} "extern void ut_${test_group}_${test_name}(void);\n")
     file(APPEND ${ut_init_c} "  ut_register_test_case(\"${test_group}\", \"${test_name}\", ut_${test_group}_${test_name});\n")
   endforeach()

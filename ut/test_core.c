@@ -24,21 +24,25 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <dfk/context.h>
-#include "common.h"
+#include <dfk.h>
 #include "ut.h"
 
-TEST(context, default)
+TEST(core, strerror_no_empty_strings)
 {
-  dfk_context_t* ctx = dfk_default_context();
-  char* allocated = NULL;
-
-  ASSERT(ctx != NULL);
-  allocated = DFK_MALLOC(ctx, 100);
-  EXPECT(allocated != NULL);
-  allocated = DFK_REALLOC(ctx, allocated, 1000);
-  EXPECT(allocated != NULL);
-  DFK_FREE(ctx, allocated);
-  EXPECT(ctx->log != NULL);
+  int i = 0;
+  EXPECT(dfk_err_ok == 0);
+  for (i = 0; i  < _dfk_err_total; ++i) {
+    EXPECT(dfk_strerr(NULL, i));
+    EXPECT(strnlen(dfk_strerr(NULL, i), 1))
+  }
 }
 
+TEST(core, strerror_sys_errno)
+{
+  dfk_t dfk;
+  EXPECT(dfk_strerr(NULL, dfk_err_sys));
+  EXPECT(strnlen(dfk_strerr(NULL, dfk_err_sys), 1));
+  dfk.sys_errno = 10;
+  EXPECT(dfk_strerr(&dfk, dfk_err_sys));
+  EXPECT(strnlen(dfk_strerr(&dfk, dfk_err_sys), 1));
+}
