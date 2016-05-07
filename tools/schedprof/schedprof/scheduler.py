@@ -41,7 +41,7 @@ class Scheduler(object):
 
     def run_program(self, program, ncpu, cpu_monitor=None):
         assert isinstance(program, Coroutine)
-        cpu_monitor= cpu_monitor or (lambda: None)
+        cpu_monitor= cpu_monitor or (lambda *args: None)
         self._now = 0
         self._idle_cputime = 0
         self._context_switches = 0
