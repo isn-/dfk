@@ -119,3 +119,5 @@ endif()
 if(DFK_BUILD_SAMPLES)
   add_subdirectory(samples)
 endif()
+
+add_subdirectory(sandbox)

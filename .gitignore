@@ -41,3 +41,4 @@ cpm_packages/*
 
 # Misc
 *.log
+sandbox/*
