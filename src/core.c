@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdarg.h>
 #include <dfk.h>
 #include <dfk/internal.h>
 
@@ -146,15 +147,38 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_t*, void*), void* arg)
       dfk->dfk_errno = dfk_err_nomem;
       return NULL;
     }
-    coro->_.ep = ep;
-    coro->_.arg = arg;
+    coro_create(&coro->_.ctx, dfk_coro_main, coro, stack_base, stack_size);
     coro->_.dfk = dfk;
     coro->_.next = NULL;
-    coro_create(&coro->_.ctx, dfk_coro_main, coro, stack_base, stack_size);
+    coro->_.ep = ep;
+    coro->_.arg = arg;
+#ifdef DFK_NAMED_COROUTINES
+    snprintf(coro->_.name, sizeof(coro->_.name), "%p", (void*) coro);
+#endif
     DFK_INFO(dfk, "stack %p (%lu) = {%p}", (void*) stack_base, (unsigned long) stack_size, (void*) coro);
     coro->_.next = dfk->_.exechead;
     dfk->_.exechead = coro;
     return coro;
+  }
+}
+
+
+int dfk_coro_name(dfk_coro_t* coro, const char* fmt, ...)
+{
+  if (!coro || !fmt) {
+    return dfk_err_badarg;
+  }
+  {
+#ifdef DFK_NAMED_COROUTINES
+    va_list args;
+    va_start(args, fmt);
+    snprintf(coro->_.name, sizeof(coro->_.name), fmt, args);
+    va_end(args);
+#else
+    DFK_UNUSED(coro);
+    DFK_UNUSED(fmt);
+#endif
+    return dfk_err_ok;
   }
 }
 
@@ -204,8 +228,13 @@ int dfk_yield(dfk_coro_t* from, dfk_coro_t* to)
   if (!from && !to) {
     return dfk_err_badarg;
   }
+#ifdef DFK_NAMED_COROUTINES
+  DFK_DEBUG((from ? from : to)->_.dfk, "context switch {%s} -> {%s}",
+      from ? from->_.name : "(nil)", to ? to->_.name : "(nil)");
+#else
   DFK_DEBUG((from ? from : to)->_.dfk, "context switch {%p} -> {%p}",
       (void*) from, (void*) to);
+#endif
   coro_transfer(from ? &from->_.ctx : &init, to ? &to->_.ctx : &init);
   return dfk_err_ok;
 }
@@ -219,6 +248,9 @@ int dfk_work(dfk_t* dfk)
   }
   DFK_INFO(dfk, "start work cycle {%p}", (void*) dfk);
   dfk->_.scheduler = dfk_run(dfk, dfk_scheduler, NULL);
+  if ((err = dfk_coro_name(dfk->_.scheduler, "scheduler")) != dfk_err_ok) {
+    return err;
+  }
   if (!dfk->_.scheduler) {
     return dfk->dfk_errno;
   }

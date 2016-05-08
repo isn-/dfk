@@ -205,6 +205,14 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_t*, void*), void* arg);
 
 
 /**
+ * Set name of the coroutine.
+ *
+ * if DFK_NAMED_COROUTINES is disabled, function returns dfk_err_ok and has no effect
+ */
+int dfk_coro_name(dfk_coro_t* coro, const char* fmt, ...);
+
+
+/**
  * Switch execution context to another coroutine
  */
 int dfk_yield(dfk_coro_t* from, dfk_coro_t* to);
