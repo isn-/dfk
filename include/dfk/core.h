@@ -176,6 +176,7 @@ typedef struct dfk_coro_t {
     char name[DFK_COROUTINE_NAME_LENGTH];
 #endif
   } _;
+  void* userdata;
 } dfk_coro_t;
 
 
