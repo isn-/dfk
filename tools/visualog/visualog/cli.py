@@ -30,7 +30,8 @@ def main():
     for line in fileinput.input():
         line = line.strip()
         if create_note:
-            color = "#{}".format(hashlib.sha1(current.encode()).hexdigest()[:6])
+            rgb = [min(255, i + 100) for i in hashlib.sha1(current.encode()).digest()[:3]]
+            color = '#{:02x}{:02x}{:02x}'.format(*rgb)
             print("rnote over {} {}".format(current, color))
             create_note = False
         if line.count("context switch"):
