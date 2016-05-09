@@ -68,5 +68,13 @@ if ((dfk) && (dfk)->log) {\
 #define DFK_STRINGIFY(D) DFK_STR__(D)
 #define DFK_STR__(D) #D
 
+#define DFK_CALL(c) \
+{ \
+  int err; \
+  if ((err = (c)) != dfk_err_ok) { \
+    return err; \
+  } \
+}
+
 #pragma GCC diagnostic pop
 
