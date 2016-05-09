@@ -29,6 +29,7 @@
 
 #pragma once
 #include <stddef.h>
+#include <uv.h>
 #include <libcoro/coro.h>
 
 /**
@@ -144,6 +145,8 @@ typedef struct dfk_t {
     struct dfk_coro_t* exechead;
     struct dfk_coro_t* termhead;
     struct dfk_coro_t* scheduler;
+    struct dfk_coro_t* eventloop;
+    uv_loop_t* uvloop;
   } _;
 
   void* userdata;
@@ -168,14 +171,14 @@ typedef struct dfk_t {
 typedef struct dfk_coro_t {
   struct {
     struct coro_context ctx;
-    dfk_t* dfk;
     struct dfk_coro_t* next;
-    void (*ep)(dfk_t*, void*);
+    void (*ep)(struct dfk_coro_t*, void*);
     void* arg;
 #ifdef DFK_NAMED_COROUTINES
     char name[DFK_COROUTINE_NAME_LENGTH];
 #endif
   } _;
+  dfk_t* dfk;
   void* userdata;
 } dfk_coro_t;
 
@@ -202,7 +205,7 @@ int dfk_free(dfk_t* dfk);
  * @pre dfk != NULL
  * @pre ep != NULL
  */
-dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_t*, void*), void* arg);
+dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg);
 
 
 /**

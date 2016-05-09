@@ -28,6 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <assert.h>
 #include <dfk.h>
 #include <dfk/internal.h>
 
@@ -87,6 +88,7 @@ int dfk_init(dfk_t* dfk)
   dfk->_.exechead = NULL;
   dfk->_.termhead = NULL;
   dfk->_.scheduler = NULL;
+  dfk->_.eventloop = NULL;
   dfk->malloc = dfk_default_malloc;
   dfk->free = dfk_default_free;
   dfk->realloc = dfk_default_realloc;
@@ -123,14 +125,14 @@ typedef struct {
 static void dfk_coro_main(void* arg)
 {
   dfk_coro_t* coro = (dfk_coro_t*) arg;
-  coro->_.ep(coro->_.dfk, coro->_.arg);
-  coro->_.next = coro->_.dfk->_.termhead;
-  coro->_.dfk->_.termhead = coro;
-  dfk_yield(coro, coro->_.dfk->_.scheduler);
+  coro->_.ep(coro, coro->_.arg);
+  coro->_.next = coro->dfk->_.termhead;
+  coro->dfk->_.termhead = coro;
+  dfk_yield(coro, coro->dfk->_.scheduler);
 }
 
 
-dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_t*, void*), void* arg)
+dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg)
 {
   if (!dfk) {
     return NULL;
@@ -148,7 +150,7 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_t*, void*), void* arg)
       return NULL;
     }
     coro_create(&coro->_.ctx, dfk_coro_main, coro, stack_base, stack_size);
-    coro->_.dfk = dfk;
+    coro->dfk = dfk;
     coro->_.next = NULL;
     coro->_.ep = ep;
     coro->_.arg = arg;
@@ -188,14 +190,20 @@ static int dfk_coro_free(dfk_coro_t* coro)
   if (!coro) {
     return dfk_err_badarg;
   }
-  DFK_FREE(coro->_.dfk, coro);
+  DFK_FREE(coro->dfk, coro);
   return dfk_err_ok;
 }
 
 
-static void dfk_scheduler(dfk_t* dfk, void* p)
+static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
 {
+  dfk_t* dfk;
   DFK_UNUSED(p);
+  assert(scheduler);
+  dfk = scheduler->dfk;
+  assert(dfk);
+  /* Initialize event loop */
+  dfk_yield(scheduler, dfk->_.eventloop);
   while (1) {
     if (!dfk->_.termhead && !dfk->_.exechead) {
       break;
@@ -215,11 +223,31 @@ static void dfk_scheduler(dfk_t* dfk, void* p)
       dfk_coro_t* coro = dfk->_.exechead;
       dfk->_.exechead = coro->_.next;
       DFK_DEBUG(dfk, "next coroutine to run {%p}", (void*) coro);
-      dfk_yield(dfk->_.scheduler, coro);
+      dfk_yield(scheduler, coro);
     }
   }
+  /* cleanup event loop*/
+  dfk_yield(scheduler, dfk->_.eventloop);
   DFK_INFO(dfk, "no pending coroutines left in execution queue, jobs done");
-  dfk_yield(dfk->_.scheduler, NULL);
+  dfk_yield(scheduler, NULL);
+}
+
+
+static void dfk_event_loop(dfk_coro_t* coro, void* p)
+{
+  uv_loop_t loop;
+  dfk_t* dfk;
+  DFK_UNUSED(p);
+  assert(coro);
+  dfk = coro->dfk;
+  assert(dfk);
+  uv_loop_init(&loop);
+  dfk->_.uvloop = &loop;
+  DFK_DEBUG(dfk, "initialized");
+  dfk_yield(coro, dfk->_.scheduler);
+  /* work here */
+  uv_loop_close(&loop);
+  DFK_DEBUG(dfk, "terminated");
 }
 
 
@@ -229,10 +257,10 @@ int dfk_yield(dfk_coro_t* from, dfk_coro_t* to)
     return dfk_err_badarg;
   }
 #ifdef DFK_NAMED_COROUTINES
-  DFK_DEBUG((from ? from : to)->_.dfk, "context switch {%s} -> {%s}",
+  DFK_DEBUG((from ? from : to)->dfk, "context switch {%s} -> {%s}",
       from ? from->_.name : "(nil)", to ? to->_.name : "(nil)");
 #else
-  DFK_DEBUG((from ? from : to)->_.dfk, "context switch {%p} -> {%p}",
+  DFK_DEBUG((from ? from : to)->dfk, "context switch {%p} -> {%p}",
       (void*) from, (void*) to);
 #endif
   coro_transfer(from ? &from->_.ctx : &init, to ? &to->_.ctx : &init);
@@ -242,25 +270,33 @@ int dfk_yield(dfk_coro_t* from, dfk_coro_t* to)
 
 int dfk_work(dfk_t* dfk)
 {
-  int err;
   if (!dfk) {
     return dfk_err_badarg;
   }
   DFK_INFO(dfk, "start work cycle {%p}", (void*) dfk);
+
   dfk->_.scheduler = dfk_run(dfk, dfk_scheduler, NULL);
-  if ((err = dfk_coro_name(dfk->_.scheduler, "scheduler")) != dfk_err_ok) {
-    return err;
-  }
   if (!dfk->_.scheduler) {
     return dfk->dfk_errno;
   }
-  if ((err = dfk_yield(NULL, dfk->_.scheduler)) != dfk_err_ok) {
-    return err;
+  DFK_CALL(dfk_coro_name(dfk->_.scheduler, "scheduler"));
+  /* exclude scheduler from run queue*/
+  assert(dfk->_.exechead == dfk->_.scheduler);
+  dfk->_.exechead = dfk->_.scheduler->_.next;
+
+  dfk->_.eventloop = dfk_run(dfk, dfk_event_loop, NULL);
+  if (!dfk->_.eventloop) {
+    return dfk->dfk_errno;
   }
-  if ((err = dfk_coro_free(dfk->_.scheduler)) != dfk_err_ok) {
-    return err;
-  }
+  DFK_CALL(dfk_coro_name(dfk->_.eventloop, "event_loop"));
+  /* exclude event_loop from run queue*/
+  assert(dfk->_.exechead == dfk->_.eventloop);
+  dfk->_.exechead = dfk->_.eventloop->_.next;
+
+  DFK_CALL(dfk_yield(NULL, dfk->_.scheduler));
+  DFK_CALL(dfk_coro_free(dfk->_.eventloop));
   dfk->_.scheduler = NULL;
+  dfk->_.eventloop = NULL;
   DFK_INFO(dfk, "work cycle {%p} done", (void*) dfk);
   return dfk_err_ok;
 }

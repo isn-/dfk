@@ -60,10 +60,10 @@ TEST(core, free_run)
 }
 
 
-static void do_inc_arg(dfk_t* dfk, void* arg)
+static void do_inc_arg(dfk_coro_t* coro, void* arg)
 {
   int* i = (int*) arg;
-  DFK_UNUSED(dfk);
+  DFK_UNUSED(coro);
   *i += 1;
 }
 
@@ -93,12 +93,12 @@ TEST(core, two_coros_in_clip)
 }
 
 
-static void do_spawn_and_die(dfk_t* dfk, void* arg)
+static void do_spawn_and_die(dfk_coro_t* coro, void* arg)
 {
   int* count = (int*) arg;
   *count -= 1;
   if (*count) {
-    dfk_run(dfk, do_spawn_and_die, arg);
+    dfk_run(coro->dfk, do_spawn_and_die, arg);
   }
 }
 
