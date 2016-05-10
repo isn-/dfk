@@ -149,7 +149,6 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg)
       dfk->dfk_errno = dfk_err_nomem;
       return NULL;
     }
-    coro_create(&coro->_.ctx, dfk_coro_main, coro, stack_base, stack_size);
     coro->dfk = dfk;
     coro->_.next = NULL;
     coro->_.ep = ep;
@@ -160,6 +159,7 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg)
     DFK_INFO(dfk, "stack %p (%lu) = {%p}", (void*) stack_base, (unsigned long) stack_size, (void*) coro);
     coro->_.next = dfk->_.exechead;
     dfk->_.exechead = coro;
+    coro_create(&coro->_.ctx, dfk_coro_main, coro, stack_base, stack_size);
     return coro;
   }
 }
