@@ -294,6 +294,7 @@ int dfk_work(dfk_t* dfk)
   dfk->_.exechead = dfk->_.eventloop->_.next;
 
   DFK_CALL(dfk_yield(NULL, dfk->_.scheduler));
+  DFK_CALL(dfk_coro_free(dfk->_.scheduler));
   DFK_CALL(dfk_coro_free(dfk->_.eventloop));
   dfk->_.scheduler = NULL;
   dfk->_.eventloop = NULL;
