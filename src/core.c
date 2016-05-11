@@ -32,6 +32,9 @@
 #include <dfk.h>
 #include <dfk/internal.h>
 
+#ifdef DFK_VALGRIND
+#include <valgrind/valgrind.h>
+#endif
 
 struct coro_context init;
 
@@ -145,6 +148,9 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg)
     dfk_coro_t* coro = DFK_MALLOC(dfk, dfk->default_stack_size);
     char* stack_base = (char*) coro + sizeof(dfk_coro_t);
     size_t stack_size = dfk->default_stack_size - sizeof(dfk_coro_t);
+#ifdef DFK_VALGRIND
+    coro->_.stack_id = VALGRIND_STACK_REGISTER(stack_base, stack_base + stack_size);
+#endif
     if (!coro) {
       dfk->dfk_errno = dfk_err_nomem;
       return NULL;
@@ -190,6 +196,9 @@ static int dfk_coro_free(dfk_coro_t* coro)
   if (!coro) {
     return dfk_err_badarg;
   }
+#ifdef DFK_VALGRIND
+  VALGRIND_STACK_DEREGISTER(coro->_.stack_id);
+#endif
   DFK_FREE(coro->dfk, coro);
   return dfk_err_ok;
 }

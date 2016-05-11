@@ -31,6 +31,7 @@
 #include <stddef.h>
 #include <uv.h>
 #include <libcoro/coro.h>
+#include <dfk/config.h>
 
 /**
  * @file dfk/tcp_socket.h
@@ -176,6 +177,9 @@ typedef struct dfk_coro_t {
     void* arg;
 #ifdef DFK_NAMED_COROUTINES
     char name[DFK_COROUTINE_NAME_LENGTH];
+#endif
+#ifdef DFK_VALGRIND
+    int stack_id;
 #endif
   } _;
   dfk_t* dfk;

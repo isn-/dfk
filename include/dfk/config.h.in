@@ -62,4 +62,5 @@
 #define DFK_EVENT_LOOP "@DFK_EVENT_LOOP@"
 #cmakedefine DFK_DEBUG
 #cmakedefine DFK_COVERAGE
+#cmakedefine DFK_VALGRIND
 
