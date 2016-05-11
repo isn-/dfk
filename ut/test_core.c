@@ -114,7 +114,7 @@ static void do_spawn_and_die(dfk_coro_t* coro, void* arg)
 TEST(core, spawn_and_die)
 {
   dfk_t dfk;
-  int count = 1024;
+  int count = 8;
   ASSERT_OK(dfk_init(&dfk));
   ASSERT(dfk_run(&dfk, do_spawn_and_die, &count));
   ASSERT_OK(dfk_work(&dfk));
