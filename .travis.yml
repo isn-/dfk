@@ -12,11 +12,15 @@ addons:
   apt:
     packages:
       - lcov
+      - valgrind
 matrix:
   include:
     - os: linux
       compiler: gcc
       env: CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DDFK_COVERAGE=ON" UPLOAD_COVERAGE=YES
+    - os: linux
+      compiler: gcc
+      env: CMAKE_ARGS="-DDFK_BUILD_TYPE=Debug -DDFK_DEBUG=ON -DDFK_VALGRIND=ON"
     - os: linux
       compiler: gcc
       env: CMAKE_ARGS="-DDFK_NAMED_COROUTINES=OFF"
