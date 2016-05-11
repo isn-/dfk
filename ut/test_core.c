@@ -51,6 +51,14 @@ TEST(core, strerror_sys_errno)
 }
 
 
+TEST(core, no_run)
+{
+  dfk_t dfk;
+  ASSERT_OK(dfk_init(&dfk));
+  ASSERT_OK(dfk_free(&dfk));
+}
+
+
 TEST(core, free_run)
 {
   dfk_t dfk;
