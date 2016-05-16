@@ -152,6 +152,7 @@ typedef struct dfk_t {
     struct dfk_coro_t* termhead;
     struct dfk_coro_t* scheduler;
     struct dfk_coro_t* eventloop;
+    struct dfk_coro_t* current;
     uv_loop_t* uvloop;
   } _;
 

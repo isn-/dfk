@@ -76,5 +76,22 @@ if ((dfk) && (dfk)->log) {\
   } \
 }
 
+#define DFK_SYSCALL(dfk, c) \
+{ \
+  int err; \
+  if ((err = (c)) != 0) {\
+    (dfk)->sys_errno = err; \
+    return dfk_err_sys; \
+  } \
+}
+
+#define DFK_THIS_CORO(dfk) (dfk)->_.current
+
+#define DFK_YIELD_EVENTLOOP(dfk) \
+do {\
+  (dfk)->_.current = (dfk)->_.eventloop; \
+  DFK_CALL(dfk_yield(DFK_THIS_CORO((dfk)), (dfk)->_.eventloop)); \
+} while(0)
+
 #pragma GCC diagnostic pop
 

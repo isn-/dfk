@@ -42,7 +42,7 @@ struct coro_context init;
 static void dfk_default_log(void* ud, int channel, const char* msg)
 {
   char strchannel[5] = {0};
-  (void) ud;
+  DFK_UNUSED(ud);
   switch(channel) {
     case dfk_log_error: memcpy(strchannel, "error", 5); break;
     case dfk_log_warning: memcpy(strchannel, "warn_", 5); break;
@@ -92,6 +92,7 @@ int dfk_init(dfk_t* dfk)
   dfk->_.termhead = NULL;
   dfk->_.scheduler = NULL;
   dfk->_.eventloop = NULL;
+  dfk->_.current = NULL;
   dfk->malloc = dfk_default_malloc;
   dfk->free = dfk_default_free;
   dfk->realloc = dfk_default_realloc;
@@ -229,10 +230,11 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
       dfk->_.termhead = NULL;
     }
     if (dfk->_.exechead) {
-      dfk_coro_t* coro = dfk->_.exechead;
-      dfk->_.exechead = coro->_.next;
-      DFK_DEBUG(dfk, "next coroutine to run {%p}", (void*) coro);
-      dfk_yield(scheduler, coro);
+      dfk->_.current = dfk->_.exechead;
+      dfk->_.exechead = dfk->_.current->_.next;
+      DFK_DEBUG(dfk, "next coroutine to run {%p}", (void*) dfk->_.current);
+      dfk_yield(scheduler, dfk->_.current);
+      dfk->_.current = NULL;
     }
   }
   /* cleanup event loop*/
