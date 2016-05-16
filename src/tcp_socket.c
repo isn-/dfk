@@ -25,13 +25,8 @@
  */
 
 #include <assert.h>
-#include <dfk/config.h>
-#include <dfk/tcp_socket.h>
-#include <dfk/once.h>
-#include "common.h"
-
-#define LOOP(sock) ((dfk_event_loop_t*) (sock)->_.socket.loop->data)
-#define CTX(sock) ((sock)->context)
+#include <dfk.h>
+#include <dfk/internal.h>
 
 /* TCP Socket states
  * (*)        -> spare
@@ -67,177 +62,85 @@
  * requires explicit coroutine join upon closing
  */
 #define TCP_SOCKET_IS_ACCEPTED ((int) 1 << 8)
-#define TCP_SOCKET_CONNECT_PENDING ((int) 1 << 9)
-#define TCP_SOCKET_IS_LISTENING ((int) 1 << 10)
-#define TCP_SOCKET_DETACHED ((int) 1 << 11)
+#define TCP_SOCKET_IS_LISTENING ((int) 1 << 9)
+#define TCP_SOCKET_DETACHED ((int) 1 << 10)
 
 #define FLAG(sock, flag) (((sock)->_.flags & 0xFFFFFF00) & (flag))
 
 
-int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_event_loop_t* loop)
+int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk)
 {
-  int err;
-  if (sock == NULL || loop == NULL) {
+  if (!sock || !dfk) {
     return dfk_err_badarg;
   }
-  DFK_DEBUG(loop->_.ctx, "(%p)", (void*) sock);
-  err = uv_tcp_init(&loop->_.loop, &sock->_.socket);
-  sock->_.socket.data = sock;
-  if (err != 0) {
-    DFK_ERROR(loop->_.ctx, "(%p) uv_tcp_init returned %d", (void*) sock, err);
-    loop->_.ctx->sys_errno = err;
-    return dfk_err_sys;
+  DFK_DEBUG(dfk, "{%p}", (void*) sock);
+  {
+    int err = uv_tcp_init(dfk->_.uvloop, &sock->_.socket);
+    sock->_.socket.data = sock;
+    if (err != 0) {
+      DFK_ERROR(dfk, "{%p} uv_tcp_init returned %d", (void*) sock, err);
+      dfk->sys_errno = err;
+      return dfk_err_sys;
+    }
   }
   sock->_.arg.func = NULL;
   sock->_.flags = TCP_SOCKET_SPARE;
   sock->userdata = NULL;
-  sock->context = loop->_.ctx;
+  sock->dfk = dfk;
   return dfk_err_ok;
 }
 
 
 int dfk_tcp_socket_free(dfk_tcp_socket_t* sock)
 {
-  int err;
-  if (sock == NULL) {
+  if (!sock) {
     return dfk_err_badarg;
   }
-  DFK_DEBUG(CTX(sock), "(%p)", (void*) sock);
+  DFK_DEBUG(sock->dfk, "{%p}", (void*) sock);
   if (STATE(sock) != TCP_SOCKET_SPARE) {
+    int err;
     if ((err = dfk_tcp_socket_close(sock)) != dfk_err_ok) {
       return err;
     }
   }
-  if (sock->_.flags & TCP_SOCKET_CONNECT_PENDING) {
-    DFK_FREE(CTX(sock), sock->_.arg.obj);
-  }
   return dfk_err_ok;
 }
 
 
-typedef struct _start_connect_async_arg_t {
-  uv_connect_t connect;
-  void (*callback)(dfk_tcp_socket_t*);
-  dfk_coro_t* coro;
-} _start_connect_async_arg_t;
-
-
-static void dfk_tcp_socket_on_connect_1(uv_connect_t* p, int status)
-{
-  dfk_tcp_socket_t* sock = (dfk_tcp_socket_t*) p->data;
-  _start_connect_async_arg_t* arg;
-  dfk_coro_t* coro;
-  int err;
-
-  assert(p);
-  assert(sock);
-  assert(STATE(sock) == TCP_SOCKET_CONNECTING);
-
-  arg = (_start_connect_async_arg_t*) sock->_.arg.obj;
-  assert(arg);
-  assert(FLAG(sock, TCP_SOCKET_CONNECT_PENDING));
-  sock->_.flags ^= TCP_SOCKET_CONNECT_PENDING;
-
-  err = dfk_coro_run(arg->coro, (void (*)(void*)) arg->callback, sock);
-
-  coro = arg->coro;
-  DFK_FREE(CTX(sock), arg);
-  sock->_.arg.obj = NULL;
-
-  if (err != dfk_err_ok) {
-    DFK_ERROR(CTX(sock), "dfk_coro_run returned %d", err);
-    return;
-  }
-
-  if (status != 0) {
-    CTX(sock)->sys_errno = status;
-    TO_STATE(sock, TCP_SOCKET_SPARE);
-  } else {
-    TO_STATE(sock, TCP_SOCKET_CONNECTED);
-  }
-
-  if ((err = dfk_coro_yield_to(CTX(sock), coro)) != dfk_err_ok) {
-    DFK_ERROR(CTX(sock), "dfk_coro_yield_to returned %d", err);
-  }
-}
-
-
-int dfk_tcp_socket_start_connect(
-    dfk_tcp_socket_t* sock,
-    const char* endpoint,
-    uint16_t port,
-    void (*callback)(dfk_tcp_socket_t*),
-    dfk_coro_t* coro)
-{
-  int err;
-  struct sockaddr_in dest;
-  _start_connect_async_arg_t* arg = NULL;
-
-  if (sock == NULL || endpoint == NULL || callback == NULL) {
-    return dfk_err_badarg;
-  }
-  if (STATE(sock) != TCP_SOCKET_SPARE) {
-    return dfk_err_inprog;
-  }
-
-  DFK_INFO(CTX(sock), "(%p) will connect to %s:%u",
-      (void*) sock,
-      endpoint,
-      port);
-  if ((err = uv_ip4_addr(endpoint, port, &dest)) != 0) {
-    CTX(sock)->sys_errno = err;
-    return dfk_err_sys;
-  }
-  arg = DFK_MALLOC(CTX(sock), sizeof(_start_connect_async_arg_t));
-  if (arg == NULL) {
-    return dfk_err_nomem;
-  }
-  arg->connect.data = sock;
-  arg->callback = callback;
-  arg->coro = coro;
-  sock->_.arg.obj = arg;
-  if ((err = uv_tcp_connect(
-      &arg->connect,
-      &sock->_.socket,
-      (const struct sockaddr*) &dest,
-      dfk_tcp_socket_on_connect_1)) != 0) {
-    CTX(sock)->sys_errno = err;
-    return dfk_err_sys;
-  }
-  TO_STATE(sock, TCP_SOCKET_CONNECTING);
-  sock->_.flags |= TCP_SOCKET_CONNECT_PENDING;
-  return dfk_err_ok;
-}
-
-
-typedef struct _connect_async_arg_t {
+typedef struct dfk_tcp_socket_connect_async_arg_t {
   int err;
   dfk_coro_t* yieldback;
-} _connect_async_arg_t;
+} dfk_tcp_socket_connect_async_arg_t;
 
 
-static void dfk_tcp_socket_on_connect_2(uv_connect_t* p, int status)
+/**
+ * Sets connect result and yields back to dfk_tcp_socket_connect caller
+ */
+static void dfk_tcp_socket_on_connect(uv_connect_t* p, int status)
 {
-  int err;
   dfk_tcp_socket_t* sock = (dfk_tcp_socket_t*) p->data;
-  _connect_async_arg_t* arg;
+  dfk_tcp_socket_connect_async_arg_t* arg;
 
   assert(p);
   assert(sock);
   assert(STATE(sock) == TCP_SOCKET_CONNECTING);
 
-  arg = (_connect_async_arg_t*) sock->_.arg.obj;
+  DFK_DEBUG(sock->dfk, "{%p} connected with status %d (%s)",
+      (void*) sock, status, status ? "error" : "no error");
+
+  arg = (dfk_tcp_socket_connect_async_arg_t*) sock->_.arg.obj;
   assert(arg);
-  sock->_.arg.obj = NULL;
   if (status != 0) {
-    CTX(sock)->sys_errno = status;
+    sock->dfk->sys_errno = status;
     arg->err = dfk_err_sys;
   } else {
     arg->err = dfk_err_ok;
   }
-  err = dfk_coro_yield_to(CTX(sock), arg->yieldback);
-  if (err != dfk_err_ok) {
-    DFK_ERROR(CTX(sock), "(%p) dfk_coro_yield_to returned %d", (void*) sock, err);
+  {
+    int err = dfk_yield(sock->dfk->_.eventloop, arg->yieldback);
+    if (err != dfk_err_ok) {
+      DFK_ERROR(sock->dfk, "{%p} dfk_yield returned %d", (void*) sock, err);
+    }
   }
 }
 
@@ -247,12 +150,7 @@ int dfk_tcp_socket_connect(
     const char* endpoint,
     uint16_t port)
 {
-  int err = 0;
-  struct sockaddr_in dest;
-  uv_connect_t connect;
-  _connect_async_arg_t arg;
-
-  if (sock == NULL || endpoint == NULL) {
+  if (!sock || !endpoint) {
     return dfk_err_badarg;
   }
   if (STATE(sock) == TCP_SOCKET_CONNECTING) {
@@ -262,44 +160,42 @@ int dfk_tcp_socket_connect(
     return dfk_err_badarg;
   }
 
-  assert(CTX(sock) && LOOP(sock));
+  DFK_DEBUG(sock->dfk, "{%p} connect to %s:%d", (void*) sock, endpoint, port);
 
-  if (CTX(sock)->_.current_coro == NULL) {
-    return dfk_err_coro;
-  }
+  {
+    struct sockaddr_in dest;
+    uv_connect_t connect;
+    dfk_tcp_socket_connect_async_arg_t arg;
 
-  if ((err = uv_ip4_addr(endpoint, port, &dest)) != 0) {
-    CTX(sock)->sys_errno = err;
-    return dfk_err_sys;
-  }
+    DFK_SYSCALL(sock->dfk, uv_ip4_addr(endpoint, port, &dest));
 
-  arg.err = dfk_err_ok;
-  arg.yieldback = CTX(sock)->_.current_coro;
-  assert(sock->_.arg.obj == NULL);
-  sock->_.arg.obj = &arg;
+    arg.err = dfk_err_ok;
+    arg.yieldback = DFK_THIS_CORO(sock->dfk);
+    assert(sock->_.arg.obj == NULL);
+    sock->_.arg.obj = &arg;
+    connect.data = sock;
 
-  if ((err = uv_tcp_connect(
-      &connect,
-      &sock->_.socket,
-      (const struct sockaddr*) &dest,
-      dfk_tcp_socket_on_connect_2)) != 0) {
-    CTX(sock)->sys_errno = err;
-    return dfk_err_sys;
+    DFK_SYSCALL(sock->dfk, uv_tcp_connect(
+        &connect,
+        &sock->_.socket,
+        (const struct sockaddr*) &dest,
+        dfk_tcp_socket_on_connect));
+
+    TO_STATE(sock, TCP_SOCKET_CONNECTING);
+    DFK_YIELD_EVENTLOOP(sock->dfk);
+
+    sock->_.arg.obj = NULL;
+    if (arg.err == dfk_err_ok) {
+      TO_STATE(sock, TCP_SOCKET_CONNECTED);
+    } else {
+      TO_STATE(sock, TCP_SOCKET_SPARE);
+    }
+    return arg.err;
   }
-  TO_STATE(sock, TCP_SOCKET_CONNECTING);
-  if ((err = dfk_coro_yield_to(CTX(sock), &LOOP(sock)->_.coro)) != dfk_err_ok) {
-    return err;
-  }
-  assert(sock->_.arg.obj == NULL);
-  if (arg.err == dfk_err_ok) {
-    TO_STATE(sock, TCP_SOCKET_CONNECTED);
-  } else {
-    TO_STATE(sock, TCP_SOCKET_SPARE);
-  }
-  return arg.err;
 }
 
 
+/*
 typedef struct _accepted_socket_t {
   dfk_tcp_socket_t socket;
   dfk_coro_t coro;
@@ -332,154 +228,18 @@ static void dfk_tcp_socket_accepted_main_1(void* varg)
   callback(arg.lsock, arg.sock, dfk_err_ok);
   DFK_DEBUG(CTX(arg.sock), "listen callback exited");
 
-  /* coroutine will be joined in the dfk_tcp_socket_on_close */
   if ((err = dfk_tcp_socket_free(arg.sock)) != dfk_err_ok) {
     DFK_ERROR(CTX(arg.sock), "(%p) dfk_socket_free returned %d", (void*) arg.sock, err);
   }
 }
 
 
-static void dfk_tcp_socket_on_new_connection_1(uv_stream_t* p, int status)
-{
-  int err;
-  dfk_tcp_socket_t* sock;
-  _accepted_socket_t* newsock;
-  void (*callback)(dfk_tcp_socket_t*, int);
-  _accepted_main_1_arg varg;
-
-  assert(p);
-  sock = (dfk_tcp_socket_t*) p->data;
-  assert(sock);
-  DFK_DEBUG(CTX(sock), "new connection, status %d", status);
-  if (FLAG(sock, TCP_SOCKET_CLOSING)) {
-    DFK_DEBUG(CTX(sock), "socket is closing, reject connection");
-    return;
-  }
-  callback = (void(*)(dfk_tcp_socket_t*, int)) sock->_.arg.func;
-  assert(callback);
-  if (status != 0) {
-    DFK_ERROR(CTX(sock), "new connection returned %d", status);
-    CTX(sock)->sys_errno = status;
-    callback(sock, dfk_err_sys);
-    return;
-  }
-
-  newsock = DFK_MALLOC(CTX(sock), sizeof(_accepted_socket_t));
-
-  if (newsock == NULL) {
-    DFK_ERROR(CTX(sock), "unable to allocate buffer for accepted socket");
-    callback(sock, dfk_err_nomem);
-    return;
-  }
-
-  if ((err = dfk_tcp_socket_init(&newsock->socket, LOOP(sock))) != dfk_err_ok) {
-    DFK_FREE(CTX(sock), newsock);
-    callback(sock, err);
-    return;
-  }
-
-  DFK_DEBUG(CTX(sock), "accept incoming connection");
-  if ((err = uv_accept(p, (uv_stream_t*) &newsock->socket._.socket)) != 0) {
-    DFK_ERROR(CTX(sock), "accept failed with code %d", err);
-    DFK_FREE(CTX(sock), newsock);
-    CTX(sock)->sys_errno = err;
-    callback(sock, dfk_err_sys);
-    return;
-  }
-
-  newsock->socket._.arg.func = (void(*)(void*)) callback;
-  err = dfk_coro_init(&newsock->coro, CTX(sock), 0);
-  if (err != dfk_err_ok) {
-    DFK_FREE(CTX(sock), newsock);
-    CTX(sock)->sys_errno = err;
-    callback(sock, dfk_err_sys);
-    return;
-  }
-
-#ifdef DFK_ENABLE_NAMED_COROUTINES
-  snprintf(newsock->coro.name, sizeof(newsock->coro.name),
-      "socket.%p.main", (void*) newsock);
-#endif
-
-  varg.lsock = sock;
-  varg.sock = &newsock->socket;
-  err = dfk_coro_run(&newsock->coro, dfk_tcp_socket_accepted_main_1, &varg);
-  if (err != dfk_err_ok) {
-    DFK_FREE(CTX(sock), newsock);
-    CTX(sock)->sys_errno = err;
-    callback(sock, dfk_err_sys);
-    return;
-  }
-
-  err = dfk_coro_yield_to(CTX(sock), &newsock->coro);
-  if (err != dfk_err_ok) {
-    DFK_FREE(CTX(sock), newsock);
-    CTX(sock)->sys_errno = err;
-    callback(sock, dfk_err_sys);
-    return;
-  }
-}
-
-
-int dfk_tcp_socket_start_listen(
-    dfk_tcp_socket_t* sock,
-    const char* endpoint,
-    uint16_t port,
-    void (*callback)(dfk_tcp_socket_t*, dfk_tcp_socket_t*, int),
-    size_t backlog)
-{
-  struct sockaddr_in bind;
-  int err;
-
-  if (sock == NULL || endpoint == NULL || callback == NULL) {
-    return dfk_err_badarg;
-  }
-
-  if (STATE(sock) != TCP_SOCKET_SPARE) {
-    return dfk_err_badarg;
-  }
-
-  if ((err = uv_ip4_addr(endpoint, port, &bind)) != 0) {
-    CTX(sock)->sys_errno = err;
-    return dfk_err_sys;
-  }
-
-  if ((err = uv_tcp_bind(&sock->_.socket, (struct sockaddr*) &bind, 0))) {
-    CTX(sock)->sys_errno = err;
-    return dfk_err_sys;
-  }
-
-  if (backlog == 0) {
-    backlog = DFK_DEFAULT_TCP_BACKLOG;
-  }
-
-  assert(sock->_.arg.func == NULL);
-  sock->_.arg.func = (void (*)(void*)) callback;
-
-  err = uv_listen(
-    (uv_stream_t*) &sock->_.socket,
-    backlog,
-    dfk_tcp_socket_on_new_connection_1);
-
-  if (err != 0) {
-    CTX(sock)->sys_errno = err;
-    return dfk_err_sys;
-  }
-
-  TO_STATE(sock, TCP_SOCKET_LISTENING);
-  sock->_.flags |= TCP_SOCKET_DETACHED;
-  DFK_INFO(CTX(sock), "(%p) will listen %s:%u, backlog %lu",
-    (void*) sock, endpoint, port, (unsigned long) backlog);
-  return dfk_err_ok;
-}
-
-
-typedef struct _listen_async_arg_t {
+typedef struct dfk_tcp_socket_listen_arg_t {
   dfk_coro_t* yieldback;
   dfk_coro_t* close_yieldback;
   void (*callback)(dfk_tcp_socket_t*, dfk_tcp_socket_t*, int);
   int err;
-} _listen_async_arg_t;
+} dfk_tcp_socket_listen_arg_t;
 
 
 static void dfk_tcp_socket_accepted_main_2(void* parg)
@@ -499,7 +259,6 @@ static void dfk_tcp_socket_accepted_main_2(void* parg)
 
   callback(sock);
 
-  /* coroutine will be joined in the dfk_tcp_socket_on_close */
   if ((err = dfk_tcp_socket_free(sock)) != dfk_err_ok) {
     DFK_ERROR(CTX(sock), "(%p) dfk_socket_free returned %d", (void*) sock, err);
   }
@@ -511,12 +270,12 @@ static void dfk_tcp_socket_on_new_connection_2(uv_stream_t* p, int status)
   int err;
   dfk_tcp_socket_t* sock;
   _accepted_socket_t* newsock;
-  _listen_async_arg_t* arg;
+  dfk_tcp_socket_listen_arg_t* arg;
 
   assert(p);
   sock = (dfk_tcp_socket_t*) p->data;
   assert(sock);
-  arg = (_listen_async_arg_t*) sock->_.arg.obj;
+  arg = (dfk_tcp_socket_listen_arg_t*) sock->_.arg.obj;
   assert(arg);
   sock->_.arg.obj = NULL;
   if (status != 0) {
@@ -586,7 +345,7 @@ int dfk_tcp_socket_listen(
 {
   int err;
   struct sockaddr_in bind;
-  _listen_async_arg_t arg;
+  dfk_tcp_socket_listen_arg_t arg;
 
   if (sock == NULL || endpoint == NULL || callback == NULL) {
     return dfk_err_badarg;
@@ -640,7 +399,6 @@ int dfk_tcp_socket_listen(
   return arg.err;
 }
 
-
 static void dfk_tcp_socket_on_close_regular(dfk_tcp_socket_t* sock, void* varg)
 {
   int err;
@@ -679,7 +437,7 @@ static void poke(void* varg)
 static void dfk_tcp_socket_on_close_listening(dfk_tcp_socket_t* sock, void* varg)
 {
   int err;
-  _listen_async_arg_t* arg = (_listen_async_arg_t*) varg;
+  dfk_tcp_socket_listen_arg_t* arg = (dfk_tcp_socket_listen_arg_t*) varg;
   dfk_once_t once;
   _poke_arg_t pokearg;
   pokearg.ctx = CTX(sock);
@@ -693,39 +451,33 @@ static void dfk_tcp_socket_on_close_listening(dfk_tcp_socket_t* sock, void* varg
   dfk_once_free(&once);
   dfk_tcp_socket_on_close_regular(sock, arg->yieldback);
 }
+*/
 
 
 static void dfk_tcp_socket_on_close(uv_handle_t* p)
 {
   dfk_tcp_socket_t* sock;
-  void* arg;
 
   assert(p);
   sock = (dfk_tcp_socket_t*) p->data;
   assert(sock);
-  assert(LOOP(sock) && CTX(sock));
+  assert(sock->dfk);
   assert(STATE(sock) & TCP_SOCKET_CLOSING);
-  arg = (dfk_coro_t*) sock->_.arg.obj;
-  assert(arg);
-  sock->_.arg.obj = NULL;
-  DFK_INFO(CTX(sock), "(%p) is now closed", (void*) sock);
-  if (FLAG(sock, TCP_SOCKET_IS_ACCEPTED)) {
-    dfk_tcp_socket_on_close_accepted(sock, arg);
-  } else if (STATE(sock) == TCP_SOCKET_LISTENING) {
-    if (FLAG(sock, TCP_SOCKET_DETACHED)) {
-      dfk_tcp_socket_on_close_regular(sock, arg);
-    } else {
-      dfk_tcp_socket_on_close_listening(sock, arg);
+  DFK_INFO(sock->dfk, "{%p} is now closed", (void*) sock);
+
+  {
+    dfk_coro_t* arg = (dfk_coro_t*) sock->_.arg.obj;
+    int err = dfk_yield(sock->dfk->_.eventloop, arg);
+    if (err != dfk_err_ok) {
+      DFK_ERROR(sock->dfk, "(%p) dfk_yield returned %d", (void*) sock, err);
     }
-  } else {
-    dfk_tcp_socket_on_close_regular(sock, arg);
   }
 }
 
+
 int dfk_tcp_socket_close(dfk_tcp_socket_t* sock)
 {
-  int err;
-  if (sock == NULL) {
+  if (!sock) {
     return dfk_err_badarg;
   }
   if (STATE(sock) & TCP_SOCKET_CLOSING) {
@@ -734,90 +486,77 @@ int dfk_tcp_socket_close(dfk_tcp_socket_t* sock)
   if (STATE(sock) == TCP_SOCKET_CLOSED) {
     return dfk_err_ok;
   }
-  assert(CTX(sock) && LOOP(sock));
-  if (STATE(sock) != TCP_SOCKET_LISTENING) {
-    assert(sock->_.arg.obj == NULL);
-    sock->_.arg.obj = (void*) CTX(sock)->_.current_coro;
-  } else {
-    if (FLAG(sock, TCP_SOCKET_DETACHED)) {
-      assert(sock->_.arg.obj != NULL);
-      sock->_.arg.obj = (void*) CTX(sock)->_.current_coro;
-    } else {
-      _listen_async_arg_t* arg = (_listen_async_arg_t*) sock->_.arg.obj;
-      assert(arg != NULL);
-      arg->close_yieldback = CTX(sock)->_.current_coro;
-    }
-  }
-  sock->_.flags |= TCP_SOCKET_CLOSING;
-  DFK_INFO(CTX(sock), "(%p) start close", (void*) sock);
-  uv_close((uv_handle_t*) &sock->_.socket, dfk_tcp_socket_on_close);
-  if ((err = dfk_coro_yield_to(CTX(sock), &LOOP(sock)->_.coro)) != dfk_err_ok) {
-    DFK_ERROR(CTX(sock), "(%p) dfk_coro_yield_to returned %d", (void*) sock, err);
-    return err;
-  }
+
+  assert(sock->dfk);
   assert(sock->_.arg.obj == NULL);
+  sock->_.arg.obj = DFK_THIS_CORO(sock->dfk);
+  sock->_.flags |= TCP_SOCKET_CLOSING;
+  DFK_INFO(sock->dfk, "{%p} start close", (void*) sock);
+  uv_close((uv_handle_t*) &sock->_.socket, dfk_tcp_socket_on_close);
+  DFK_YIELD_EVENTLOOP(sock->dfk);
+  sock->_.arg.obj = NULL;
   assert(STATE(sock) & TCP_SOCKET_CLOSING);
   TO_STATE(sock, TCP_SOCKET_CLOSED);
   return dfk_err_ok;
 }
 
 
-typedef struct _read_async_arg_t {
+typedef struct dfk_tcp_socket_read_async_arg_t {
   dfk_coro_t* yieldback;
   size_t nbytes;
   char* buf;
   int err;
-} _read_async_arg_t;
+} dfk_tcp_socket_read_async_arg_t;
 
 
 static void dfk_tcp_socket_on_read(uv_stream_t* p, ssize_t nread, const uv_buf_t* buf)
 {
-  int err;
-  _read_async_arg_t* arg;
+  dfk_tcp_socket_read_async_arg_t* arg;
   dfk_tcp_socket_t* sock;
 
-  (void) buf;
+  DFK_UNUSED(buf);
   assert(p);
   sock = (dfk_tcp_socket_t*) p->data;
   assert(sock);
-  arg = (_read_async_arg_t*) sock->_.arg.obj;
+  arg = (dfk_tcp_socket_read_async_arg_t*) sock->_.arg.obj;
   assert(arg);
-  sock->_.arg.obj = NULL;
-  DFK_INFO(CTX(sock), "(%p) %ld bytes read", (void*) sock, (long) nread);
+  DFK_INFO(sock->dfk, "(%p) %ld bytes read", (void*) sock, (long) nread);
   if (nread < 0) {
-    err = dfk_tcp_socket_close(sock);
-    if (err != dfk_err_ok) {
-      DFK_ERROR(CTX(sock), "(%p) dfk_tcp_socket_close returned %d", (void*) sock, err);
-    }
     arg->err = dfk_err_sys;
   } else {
     arg->nbytes = nread;
     arg->err = dfk_err_ok;
-    if ((err = uv_read_stop(p)) != 0) {
+  }
+
+  {
+    int err = uv_read_stop(p);
+    if (err != 0) {
       arg->err = dfk_err_sys;
-      CTX(sock)->sys_errno = err;
+      sock->dfk->sys_errno = err;
     }
   }
 
-  err = dfk_coro_yield_to(CTX(sock), arg->yieldback);
-  if (err != dfk_err_ok) {
-    DFK_ERROR(CTX(sock), "(%p) dfk_coro_yield_to returned %d", (void*) sock, err);
+  {
+    int err = dfk_yield(sock->dfk->_.eventloop, arg->yieldback);
+    if (err != dfk_err_ok) {
+      DFK_ERROR(sock->dfk, "(%p) dfk_yield returned %d", (void*) sock, err);
+    }
   }
 }
 
 static void dfk_tcp_socket_on_alloc(uv_handle_t* p, size_t hint, uv_buf_t* buf)
 {
-  _read_async_arg_t* arg;
+  dfk_tcp_socket_read_async_arg_t* arg;
   dfk_tcp_socket_t* sock;
 
   (void) hint;
   assert(p);
   sock = (dfk_tcp_socket_t*) p->data;
   assert(sock);
-  arg = (_read_async_arg_t*) sock->_.arg.obj;
+  arg = (dfk_tcp_socket_read_async_arg_t*) sock->_.arg.obj;
   assert(arg);
 
-  DFK_DEBUG(CTX(sock), "(%p) %lu bytes requested", (void*) sock, (unsigned long) hint);
+  DFK_DEBUG(sock->dfk, "(%p) %lu bytes requested", (void*) sock, (unsigned long) hint);
 
   if (arg->nbytes) {
     *buf = uv_buf_init(arg->buf, arg->nbytes);
@@ -825,214 +564,194 @@ static void dfk_tcp_socket_on_alloc(uv_handle_t* p, size_t hint, uv_buf_t* buf)
 }
 
 
-int dfk_tcp_socket_read(
+ssize_t dfk_tcp_socket_read(
     dfk_tcp_socket_t* sock,
     char* buf,
-    size_t nbytes,
-    size_t* nread)
+    size_t nbytes)
 {
-  int err;
-  _read_async_arg_t arg;
-
-  if (sock == NULL || buf == NULL || nread == NULL) {
+  if (!sock || !buf) {
     return dfk_err_badarg;
   }
-  DFK_DEBUG(CTX(sock), "(%p) read upto %lu bytes to %p",
-      (void*) sock, (unsigned long) nbytes, (void*) buf);
-  if (STATE(sock) & TCP_SOCKET_READING) {
-    return dfk_err_inprog;
-  }
-  sock->_.flags |= TCP_SOCKET_READING;
 
-  assert(sock->_.arg.obj == NULL);
-  arg.yieldback = LOOP(sock)->_.ctx->_.current_coro;
-  arg.nbytes = nbytes;
-  arg.buf = buf;
-  arg.err = dfk_err_ok;
-  sock->_.arg.obj = &arg;
-
-  err = uv_read_start(
-      (uv_stream_t*) &sock->_.socket,
-      dfk_tcp_socket_on_alloc,
-      dfk_tcp_socket_on_read);
-
-  if (err != 0) {
-    CTX(sock)->sys_errno = err;
-    return dfk_err_sys;
+  if (nbytes == 0) {
+    return 0;
   }
 
-  if ((err = dfk_coro_yield_to(CTX(sock), &LOOP(sock)->_.coro)) != dfk_err_ok) {
-    return err;
-  }
+  {
+    dfk_tcp_socket_read_async_arg_t arg;
 
-  assert(sock->_.arg.obj == NULL);
-  assert(STATE(sock) & TCP_SOCKET_READING);
-  sock->_.flags ^= TCP_SOCKET_READING;
-
-  DFK_INFO(CTX(sock), "(%p) read returned %d, bytes read %lu",
-      (void*) sock, arg.err, (unsigned long) arg.nbytes);
-
-  if (arg.err != dfk_err_ok) {
-    return arg.err;
-  }
-
-  *nread = arg.nbytes;
-  return dfk_err_ok;
-}
-
-int dfk_tcp_socket_readall(
-    dfk_tcp_socket_t* sock,
-    char* buf,
-    size_t nbytes,
-    size_t* nread)
-{
-  int err;
-  size_t toread = nbytes;
-
-  if (sock == NULL || buf == NULL || nread == NULL) {
-    return dfk_err_badarg;
-  }
-  DFK_DEBUG(CTX(sock), "(%p) read exactly %lu bytes to %p",
-      (void*) sock, (unsigned long) nbytes, (void*) buf);
-
-  while (toread > 0) {
-    if ((err = dfk_tcp_socket_read(sock, buf, toread, nread)) != dfk_err_ok) {
-      *nread = nbytes - toread;
-      return err;
+    DFK_DEBUG(sock->dfk, "{%p} read upto %lu bytes to %p",
+        (void*) sock, (unsigned long) nbytes, (void*) buf);
+    if (STATE(sock) & TCP_SOCKET_READING) {
+      return dfk_err_inprog;
     }
-    assert(*nread <= toread);
-    buf += *nread;
-    toread -= *nread;
+    sock->_.flags |= TCP_SOCKET_READING;
+
+    assert(sock->_.arg.obj == NULL);
+    arg.yieldback = DFK_THIS_CORO(sock->dfk);
+    arg.nbytes = nbytes;
+    arg.buf = buf;
+    arg.err = dfk_err_ok;
+    sock->_.arg.obj = &arg;
+
+    DFK_SYSCALL(sock->dfk, uv_read_start(
+        (uv_stream_t*) &sock->_.socket,
+        dfk_tcp_socket_on_alloc,
+        dfk_tcp_socket_on_read));
+
+    DFK_YIELD_EVENTLOOP(sock->dfk);
+
+    sock->_.arg.obj = NULL;
+    assert(STATE(sock) & TCP_SOCKET_READING);
+    sock->_.flags ^= TCP_SOCKET_READING;
+
+    DFK_INFO(sock->dfk, "(%p) read returned %d, bytes read %lu",
+        (void*) sock, arg.err, (unsigned long) arg.nbytes);
+
+    if (arg.err != dfk_err_ok) {
+      sock->dfk->dfk_errno = arg.err;
+      return -1;
+    }
+
+    return arg.nbytes;
   }
-  assert(toread == 0);
-  *nread = nbytes;
-  return dfk_err_ok;
 }
 
-int dfk_tcp_socket_readv(
+
+ssize_t dfk_tcp_socket_readv(
     dfk_tcp_socket_t* sock,
     dfk_iovec_t* iov,
-    size_t niov,
-    size_t *nread)
+    size_t niov)
 {
-  (void) sock;
-  (void) iov;
-  (void) niov;
-  (void) nread;
-  return dfk_err_ok;
+  if (!sock) {
+    return -1;
+  }
+  assert(sock->dfk);
+  if (!iov) {
+    sock->dfk->dfk_errno = dfk_err_badarg;
+    return -1;
+  }
+  DFK_UNUSED(niov);
+  sock->dfk->dfk_errno = dfk_err_not_implemented;
+  return -1;
 }
 
 
-typedef struct _write_async_arg_t {
+typedef struct dfk_tcp_socket_write_async_arg_t {
   dfk_coro_t* yieldback;
   int err;
-} _write_async_arg_t;
+} dfk_tcp_socket_write_async_arg_t;
 
 
 static void dfk_tcp_socket_on_write(uv_write_t* request, int status)
 {
-  int err;
-  _write_async_arg_t* arg;
+  dfk_tcp_socket_write_async_arg_t* arg;
   dfk_tcp_socket_t* sock;
 
   assert(request);
   sock = (dfk_tcp_socket_t*) request->data;
   assert(sock);
-  arg = (_write_async_arg_t*) sock->_.arg.obj;
+  arg = (dfk_tcp_socket_write_async_arg_t*) sock->_.arg.obj;
   assert(arg);
   sock->_.arg.obj = NULL;
 
-  DFK_DEBUG(CTX(sock), "(%p) write returned %d", (void*) sock, status);
+  DFK_DEBUG(sock->dfk, "(%p) write returned %d", (void*) sock, status);
 
   if (status < 0) {
-    CTX(sock)->sys_errno = status;
+    sock->dfk->sys_errno = status;
     arg->err = dfk_err_sys;
-    err = dfk_tcp_socket_close(sock);
-    if (err != dfk_err_ok) {
-      DFK_ERROR(CTX(sock), "(%p) dfk_tcp_socket_close returned %d", (void*) sock, err);
-    }
   } else {
     arg->err = dfk_err_ok;
   }
 
-  err = dfk_coro_yield_to(CTX(sock), arg->yieldback);
-  if (err != dfk_err_ok) {
-    DFK_ERROR(CTX(sock), "(%p) dfk_coro_yield_to returned %d", (void*) sock, err);
+  {
+    int err = dfk_yield(sock->dfk->_.eventloop, arg->yieldback);
+    if (err != dfk_err_ok) {
+      DFK_ERROR(sock->dfk, "(%p) dfk_yield returned %d", (void*) sock, err);
+    }
   }
 }
 
-int dfk_tcp_socket_write(
+
+ssize_t dfk_tcp_socket_write(
     dfk_tcp_socket_t* sock,
     char* buf,
     size_t nbytes)
 {
-  int err;
-  uv_write_t request;
-  _write_async_arg_t arg;
-  uv_buf_t uvbuf = uv_buf_init(buf, nbytes);
-
-  if (sock == NULL || (buf == NULL && nbytes != 0)) {
-    return dfk_err_badarg;
+  if (!sock) {
+    return -1;
+  }
+  if (!buf && nbytes != 0) {
+    sock->dfk->dfk_errno = dfk_err_badarg;
+    return -1;
   }
 
-  assert(CTX(sock) && LOOP(sock));
+  {
+    uv_write_t request;
+    dfk_tcp_socket_write_async_arg_t arg;
+    uv_buf_t uvbuf = uv_buf_init(buf, nbytes);
 
-  if (STATE(sock) & TCP_SOCKET_WRITING) {
-    return dfk_err_inprog;
+    assert(sock->dfk);
+
+    if (STATE(sock) & TCP_SOCKET_WRITING) {
+      sock->dfk->dfk_errno = dfk_err_inprog;
+      return -1;
+    }
+
+    if (!(STATE(sock) & TCP_SOCKET_CONNECTED)) {
+      sock->dfk->dfk_errno = dfk_err_badarg;
+      return -1;
+    }
+
+    DFK_DEBUG(sock->dfk, "(%p) write %lu bytes",
+        (void*) sock, (unsigned long) nbytes);
+
+    if (nbytes == 0) {
+      return dfk_err_ok;
+    }
+
+    assert(sock->_.arg.obj == NULL);
+    arg.yieldback = DFK_THIS_CORO(sock->dfk);
+    arg.err = dfk_err_ok;
+    sock->_.arg.obj = &arg;
+    request.data = sock;
+
+    DFK_SYSCALL(sock->dfk, uv_write(
+        &request,
+        (uv_stream_t*) &sock->_.socket,
+        &uvbuf,
+        1,
+        dfk_tcp_socket_on_write));
+
+    sock->_.flags |= TCP_SOCKET_WRITING;
+
+    DFK_YIELD_EVENTLOOP(sock->dfk);
+
+    sock->_.arg.obj = NULL;
+    assert(STATE(sock) & TCP_SOCKET_WRITING);
+    sock->_.flags ^= TCP_SOCKET_WRITING;
+
+    sock->dfk->dfk_errno = arg.err;
+    return arg.err == dfk_err_ok ? (ssize_t) nbytes : -1;
   }
-
-  if (!(STATE(sock) & TCP_SOCKET_CONNECTED)) {
-    return dfk_err_badarg;
-  }
-
-  DFK_DEBUG(CTX(sock), "(%p) write %lu bytes",
-      (void*) sock, (unsigned long) nbytes);
-
-  if (nbytes == 0) {
-    return dfk_err_ok;
-  }
-
-  assert(sock->_.arg.obj == NULL);
-  arg.yieldback = CTX(sock)->_.current_coro;
-  arg.err = dfk_err_ok;
-  sock->_.arg.obj = &arg;
-  request.data = sock;
-
-  err = uv_write(
-      &request,
-      (uv_stream_t*) &sock->_.socket,
-      &uvbuf,
-      1,
-      dfk_tcp_socket_on_write);
-  if (err != 0) {
-    CTX(sock)->sys_errno = err;
-    return dfk_err_sys;
-  }
-
-  sock->_.flags |= TCP_SOCKET_WRITING;
-  if ((err = dfk_coro_yield_to(CTX(sock), &LOOP(sock)->_.coro)) != dfk_err_ok) {
-    return err;
-  }
-
-  assert(sock->_.arg.obj == NULL);
-  assert(STATE(sock) & TCP_SOCKET_WRITING);
-  sock->_.flags ^= TCP_SOCKET_WRITING;
-
-  if (arg.err != dfk_err_ok) {
-    return arg.err;
-  }
-
-  return dfk_err_ok;
 }
 
-int dfk_tcp_socket_writev(
+
+ssize_t dfk_tcp_socket_writev(
     dfk_tcp_socket_t* sock,
     dfk_iovec_t* iov,
     size_t niov)
 {
-  (void) sock;
-  (void) iov;
-  (void) niov;
-  return dfk_err_ok;
+  if (!sock) {
+    return -1;
+  }
+  assert(sock->dfk);
+  if (!iov) {
+    sock->dfk->dfk_errno = dfk_err_badarg;
+    return -1;
+  }
+  DFK_UNUSED(niov);
+  sock->dfk->dfk_errno = dfk_err_not_implemented;
+  return -1;
 }
 

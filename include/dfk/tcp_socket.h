@@ -44,7 +44,6 @@
 typedef struct dfk_tcp_socket_t {
   struct {
     uv_tcp_t socket;
-    dfk_t* dfk;
     /*
      * Compilers complain on casting function pointer to void*, so we
      * use a separate union member when function pointer is required.
@@ -56,6 +55,7 @@ typedef struct dfk_tcp_socket_t {
     int32_t flags;
   } _;
   void* userdata;
+  dfk_t* dfk;
 } dfk_tcp_socket_t;
 
 

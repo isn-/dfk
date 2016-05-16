@@ -88,10 +88,7 @@ if ((dfk) && (dfk)->log) {\
 #define DFK_THIS_CORO(dfk) (dfk)->_.current
 
 #define DFK_YIELD_EVENTLOOP(dfk) \
-do {\
-  (dfk)->_.current = (dfk)->_.eventloop; \
-  DFK_CALL(dfk_yield(DFK_THIS_CORO((dfk)), (dfk)->_.eventloop)); \
-} while(0)
+  DFK_CALL(dfk_yield(DFK_THIS_CORO((dfk)), (dfk)->_.eventloop));
 
 #pragma GCC diagnostic pop
 

@@ -27,140 +27,139 @@
 #include <unistd.h>
 #include <time.h>
 #include <pthread.h>
+#include <dfk.h>
+#include <dfk/internal.h>
 #include "ut.h"
-#include <dfk/context.h>
-#include <dfk/tcp_socket.h>
-#include <dfk/event_loop.h>
 #include "naivetp/naivetp.h"
 
 
 typedef struct
 {
+  dfk_t dfk;
   naivetp_server_t* ntp_server;
-  dfk_context_t ctx;
-  dfk_event_loop_t loop;
-  dfk_tcp_socket_t sock;
-  dfk_coro_t coro;
-  void (*connect_callback)(dfk_tcp_socket_t*);
-} echo_fixture;
+} echo_fixture_t;
 
 
-static void echo_fixture_on_connect(dfk_tcp_socket_t* sock)
+static void echo_fixture_setup(echo_fixture_t* f)
 {
-  echo_fixture* fixture = (echo_fixture*) ((char*) sock - offsetof(echo_fixture, sock));
-  fixture->connect_callback(sock);
+  ASSERT_OK(dfk_init(&f->dfk));
+  f->ntp_server = naivetp_server_start(&f->dfk, 10020);
+  ASSERT(f->ntp_server);
 }
 
 
-static void echo_fixture_setup(echo_fixture* f)
+static void echo_fixture_teardown(echo_fixture_t* f)
 {
-  ASSERT_OK(dfk_context_init(&f->ctx));
-  f->ntp_server = naivetp_server_start(&f->ctx, 10020);
-  ASSERT_OK(dfk_event_loop_init(&f->loop, &f->ctx));
-  ASSERT_OK(dfk_tcp_socket_init(&f->sock, &f->loop));
-  ASSERT_OK(dfk_coro_init(&f->coro, &f->ctx, 0));
-  ASSERT_OK(dfk_tcp_socket_start_connect(
-      &f->sock, "127.0.0.1", 10020, echo_fixture_on_connect, &f->coro));
-}
-
-
-static void echo_fixture_teardown(echo_fixture* f)
-{
-  ASSERT_OK(dfk_tcp_socket_free(&f->sock));
-  ASSERT_OK(dfk_event_loop_free(&f->loop));
-  ASSERT_OK(dfk_context_free(&f->ctx));
   naivetp_server_stop(f->ntp_server);
+  ASSERT_OK(dfk_free(&f->dfk));
 }
 
 
-static void connect_disconnect(dfk_tcp_socket_t* sock)
+static void connect_disconnect(dfk_coro_t* coro, void* p)
 {
-  *((int*) sock->userdata) = 1;
-  dfk_tcp_socket_close(sock);
+  dfk_t* dfk = coro->dfk;
+  int* connected = (int*) p;
+  dfk_tcp_socket_t sock;
+  ASSERT_OK(dfk_tcp_socket_init(&sock, dfk));
+  ASSERT_OK(dfk_tcp_socket_connect(&sock, "127.0.0.1", 10020));
+  *connected = 1;
+  ASSERT_OK(dfk_tcp_socket_close(&sock));
 }
 
 
 TEST_F(echo_fixture, tcp_socket, connect_disconnect)
 {
   int connected = 0;
-
-  fixture->connect_callback = connect_disconnect;
-  fixture->sock.userdata = &connected;
-  ASSERT_OK(dfk_event_loop_run(&fixture->loop));
-  ASSERT_OK(dfk_event_loop_join(&fixture->loop));
+  ASSERT(dfk_run(&fixture->dfk, connect_disconnect, &connected));
+  ASSERT_OK(dfk_work(&fixture->dfk));
   EXPECT(connected == 1);
 }
 
 
-static void single_write_read(dfk_tcp_socket_t* sock)
+static void single_write_read(dfk_coro_t* coro, void* p)
 {
-  char buffer[64] = {0};
-  size_t nread, i;
-  for (i = 0; i < sizeof(buffer) / sizeof(buffer[0]); ++i) {
-    buffer[i] = (char) (i + 24) % 256;
+  dfk_t* dfk = coro->dfk;
+  dfk_tcp_socket_t sock;
+  DFK_UNUSED(p);
+  ASSERT_OK(dfk_tcp_socket_init(&sock, dfk));
+  ASSERT_OK(dfk_tcp_socket_connect(&sock, "127.0.0.1", 10020));
+  {
+    char buffer[64] = {0};
+    size_t i;
+    for (i = 0; i < sizeof(buffer) / sizeof(buffer[0]); ++i) {
+      buffer[i] = (char) (i + 24) % 256;
+    }
+    ASSERT(dfk_tcp_socket_write(&sock, buffer, sizeof(buffer)) == sizeof(buffer));
+    memset(buffer, 0, sizeof(buffer));
+    ASSERT(dfk_tcp_socket_read(&sock, buffer, sizeof(buffer)) == sizeof(buffer));
+    for (i = 0; i < sizeof(buffer) / sizeof(buffer[0]); ++i) {
+      ASSERT(buffer[i] == (char) (i + 24) % 256);
+    }
   }
-  ASSERT_OK(dfk_tcp_socket_write(sock, buffer, sizeof(buffer)));
-  memset(buffer, 0, sizeof(buffer));
-  ASSERT_OK(dfk_tcp_socket_read(sock, buffer, sizeof(buffer), &nread));
-  ASSERT(nread == sizeof(buffer));
-  for (i = 0; i < sizeof(buffer) / sizeof(buffer[0]); ++i) {
-    ASSERT(buffer[i] == (char) (i + 24) % 256);
-  }
-  ASSERT_OK(dfk_tcp_socket_close(sock));
+  ASSERT_OK(dfk_tcp_socket_close(&sock));
 }
 
 
 TEST_F(echo_fixture, tcp_socket, single_write_read)
 {
-  fixture->connect_callback = &single_write_read;
-  ASSERT_OK(dfk_event_loop_run(&fixture->loop));
-  ASSERT_OK(dfk_event_loop_join(&fixture->loop));
+  ASSERT(dfk_run(&fixture->dfk, single_write_read, NULL));
+  ASSERT_OK(dfk_work(&fixture->dfk));
 }
 
 
-static void multi_write_read(dfk_tcp_socket_t* sock)
+/*
+static void multi_write_read(dfk_coro_t* coro, void* p)
 {
-  char out[10240] = {0};
-  char in[10240] = {0};
-  ssize_t toread;
-  size_t nread, i;
-  for (i = 0; i < sizeof(out) / sizeof(out[0]); ++i) {
-    out[i] = (char) (i + 24) % 256;
+  dfk_t* dfk = coro->dfk;
+  dfk_tcp_socket_t sock;
+  DFK_UNUSED(p);
+  ASSERT_OK(dfk_tcp_socket_init(&sock, dfk));
+  ASSERT_OK(dfk_tcp_socket_connect(&sock, "127.0.0.1", 10020));
+  {
+    char out[10240] = {0};
+    char in[10240] = {0};
+    ssize_t toread;
+    size_t nread, i;
+    for (i = 0; i < sizeof(out) / sizeof(out[0]); ++i) {
+      out[i] = (char) (i + 24) % 256;
+    }
+    for (i = 0; i < 5; ++i) {
+      ASSERT(dfk_tcp_socket_write(&sock, out + i * 1024, 1024) == 1024);
+    }
+    toread = 2048;
+    while (toread > 0) {
+      nread = dfk_tcp_socket_read(&sock, in + 2048 - toread, toread);
+      ASSERT(nread > 0);
+      toread -= nread;
+    }
+    ASSERT(toread == 0);
+    toread = 2048;
+    while (toread > 0) {
+      nread = dfk_tcp_socket_read(&sock, in + 4096 - toread, toread);
+      ASSERT(nread > 0);
+      toread -= nread;
+    }
+    ASSERT(toread == 0);
+    for (i = 5; i < 10; ++i) {
+      ASSERT(dfk_tcp_socket_write(&sock, out + i * 1024, 1024) == 1024);
+    }
+    toread = sizeof(in) - 4096;
+    while (toread > 0) {
+      nread = dfk_tcp_socket_read(&sock, in + sizeof(in) - toread, toread);
+      ASSERT(nread > 0);
+      toread -= nread;
+    }
+    ASSERT(toread == 0);
+    ASSERT(memcmp(in, out, sizeof(out)) == 0);
   }
-  for (i = 0; i < 5; ++i) {
-    ASSERT_OK(dfk_tcp_socket_write(sock, out + i * 1024, 1024));
-  }
-  toread = 2048;
-  while (toread > 0) {
-    ASSERT_OK(dfk_tcp_socket_read(sock, in + 2048 - toread, toread, &nread));
-    toread -= nread;
-  }
-  ASSERT(toread == 0);
-  toread = 2048;
-  while (toread > 0) {
-    ASSERT_OK(dfk_tcp_socket_read(sock, in + 4096 - toread, toread, &nread));
-    toread -= nread;
-  }
-  ASSERT(toread == 0);
-  for (i = 5; i < 10; ++i) {
-    ASSERT_OK(dfk_tcp_socket_write(sock, out + i * 1024, 1024));
-  }
-  toread = sizeof(in) - 4096;
-  while (toread > 0) {
-    ASSERT_OK(dfk_tcp_socket_read(sock, in + sizeof(in) - toread, toread, &nread));
-    toread -= nread;
-  }
-  ASSERT(toread == 0);
-  ASSERT(memcmp(in, out, sizeof(out)) == 0);
-  ASSERT_OK(dfk_tcp_socket_close(sock));
+  ASSERT_OK(dfk_tcp_socket_close(&sock));
 }
 
 
-TEST_F(echo_fixture, tcp_socket, multi_write_read)
+(echo_fixture, tcp_socket, multi_write_read)
 {
-  fixture->connect_callback = multi_write_read;
-  ASSERT_OK(dfk_event_loop_run(&fixture->loop));
-  ASSERT_OK(dfk_event_loop_join(&fixture->loop));
+  ASSERT(dfk_run(&fixture->dfk, multi_write_read, NULL));
+  ASSERT_OK(dfk_work(&fixture->dfk));
 }
 
 
@@ -187,7 +186,7 @@ static void read_all(dfk_tcp_socket_t* sock)
 }
 
 
-TEST_F(echo_fixture, tcp_socket, read_all)
+(echo_fixture_t, tcp_socket, read_all)
 {
   fixture->connect_callback = read_all;
   ASSERT_OK(dfk_event_loop_run(&fixture->loop));
@@ -216,13 +215,14 @@ static void* connector_start_stop(void* arg)
     if (connect(sockfd, (struct sockaddr*) &addr, sizeof(addr)) == 0) {
       break;
     }
-    /* wait for 1, 4, 9, 16, 25, ... , 1024 milliseconds */
+    // wait for 1, 4, 9, 16, 25, ... , 1024 milliseconds //
     req.tv_nsec = i * i * 1000000;
     nanosleep(&req, &rem);
   }
   close(sockfd);
   return NULL;
 }
+
 
 static void on_new_connection_close(dfk_tcp_socket_t* lsock, dfk_tcp_socket_t* sock, int err)
 {
@@ -234,7 +234,7 @@ static void on_new_connection_close(dfk_tcp_socket_t* lsock, dfk_tcp_socket_t* s
   ASSERT_OK(dfk_tcp_socket_close(sock));
 }
 
-TEST(tcp_socket, listen_start_stop)
+(tcp_socket, listen_start_stop)
 {
   int nconnected = 0;
   pthread_t cthread;
@@ -277,7 +277,7 @@ static void* connector_read_write(void* arg)
     if (connect(sockfd, (struct sockaddr*) &addr, sizeof(addr)) == 0) {
       break;
     }
-    /* wait for 1, 4, 9, 16, 25, ... , 1024 milliseconds */
+    // wait for 1, 4, 9, 16, 25, ... , 1024 milliseconds //
     req.tv_nsec = i * i * 1000000;
     nanosleep(&req, &rem);
   }
@@ -324,7 +324,7 @@ static void on_new_connection_echo(dfk_tcp_socket_t* lsock, dfk_tcp_socket_t* so
   (void) dfk_tcp_socket_close(lsock);
 }
 
-DISABLED_TEST(tcp_socket, listen_read_write)
+(tcp_socket, listen_read_write)
 {
   int nconnected = 0;
   pthread_t cthread;
@@ -346,3 +346,4 @@ DISABLED_TEST(tcp_socket, listen_read_write)
   ASSERT(pthread_join(cthread, NULL) == 0);
 }
 
+*/

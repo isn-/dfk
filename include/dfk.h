@@ -37,6 +37,7 @@ extern "C" {
 
 #include <dfk/config.h>
 #include <dfk/core.h>
+#include <dfk/tcp_socket.h>
 
 #ifdef __cplusplus
 }

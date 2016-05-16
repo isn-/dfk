@@ -256,7 +256,13 @@ static void dfk_event_loop(dfk_coro_t* coro, void* p)
   dfk->_.uvloop = &loop;
   DFK_DEBUG(dfk, "initialized");
   dfk_yield(coro, dfk->_.scheduler);
-  /* work here */
+  while (uv_loop_alive(&loop)) {
+    DFK_DEBUG(dfk, "{%p} poll", (void*) &loop);
+    if (uv_run(&loop, UV_RUN_DEFAULT) == 0) {
+      DFK_DEBUG(dfk, "{%p} no more active handlers, yield to scheduler", (void*) &loop);
+      dfk_yield(coro, dfk->_.scheduler);
+    }
+  }
   uv_loop_close(&loop);
   DFK_DEBUG(dfk, "terminated");
 }
