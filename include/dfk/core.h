@@ -128,6 +128,11 @@ typedef enum dfk_error_e {
    */
   dfk_err_panic,
 
+  /**
+   * Functionality is not implemented yet
+   */
+  dfk_err_not_implemented,
+
   _dfk_err_total
 } dfk_error_e;
 

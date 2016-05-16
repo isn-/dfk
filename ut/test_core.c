@@ -35,7 +35,8 @@ TEST(core, strerror_no_empty_strings)
   EXPECT(dfk_err_ok == 0);
   for (i = 0; i  < _dfk_err_total; ++i) {
     EXPECT(dfk_strerr(NULL, i));
-    EXPECT(strnlen(dfk_strerr(NULL, i), 1))
+    EXPECT(strnlen(dfk_strerr(NULL, i), 1));
+    EXPECT(strcmp(dfk_strerr(NULL, i), "Unknown error"));
   }
 }
 

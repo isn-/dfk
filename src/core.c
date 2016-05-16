@@ -334,6 +334,12 @@ const char* dfk_strerr(dfk_t* dfk, int err)
     case dfk_err_inprog: {
       return "The operation is already in progress";
     }
+    case dfk_err_panic: {
+      return "Unexpected behaviour";
+    }
+    case dfk_err_not_implemented: {
+      return "Functionality is not implemented yet";
+    }
     default: {
       return "Unknown error";
     }
