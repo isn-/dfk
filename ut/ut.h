@@ -35,17 +35,17 @@ void ut_disable(const char* group, const char* name);
 
 #define TEST(group, name) void ut_##group##_##name(void)
 #define TEST_F(fixture_name, group, name) \
-void _ut_##group##_##name(fixture_name*); \
+void _ut_##group##_##name(fixture_name##_t*); \
 void ut_##group##_##name(void) \
 { \
-  fixture_name f; \
+  fixture_name##_t f; \
   memset(&f, 0, sizeof(f)); \
   fixture_name##_setup(&f); \
   _ut_##group##_##name(&f); \
   fixture_name##_teardown(&f); \
 } \
 \
-void _ut_##group##_##name(fixture_name* fixture)
+void _ut_##group##_##name(fixture_name##_t* fixture)
 
 #define DISABLED_TEST(group, name) \
 void _ut_##group##_##name(void); \
