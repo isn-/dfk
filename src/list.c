@@ -93,13 +93,17 @@ static void dfk_list_check_invariants(dfk_list_t* list)
       it = it->next;
     }
   }
-#endif // DFK_DEBUG
+#endif
 }
 
 #ifndef NDEBUG
 #define DFK_LIST_CHECK_INVARIANTS(list) dfk_list_check_invariants((list))
 #else
-#define DFK_LIST_CHECK_INVARIANTS(list) DFK_UNUSED(list)
+#define DFK_LIST_CHECK_INVARIANTS(list) \
+do { \
+DFK_UNUSED(list); \
+DFK_UNUSED(dfk_list_check_invariants); \
+} while (0)
 #endif
 
 
