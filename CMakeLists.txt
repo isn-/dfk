@@ -101,8 +101,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wextra -pedantic -Wmissing-pr
 
 add_library(dfk
   src/core.c
-  src/tcp_socket.c
-)
+  src/list.c
+  src/tcp_socket.c)
 
 target_link_libraries(dfk
   coro
