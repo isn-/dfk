@@ -68,6 +68,8 @@ if ((dfk) && (dfk)->log) {\
 #define DFK_STRINGIFY(D) DFK_STR__(D)
 #define DFK_STR__(D) #D
 
+#define DFK_SIZE(c) (sizeof((c)) / sizeof((c)[0]))
+
 #define DFK_CALL(c) \
 { \
   int err; \
