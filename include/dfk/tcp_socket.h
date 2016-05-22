@@ -26,6 +26,7 @@
 
 #pragma once
 #include <stdint.h>
+#include <sys/types.h>
 #include <uv.h>
 #include <dfk/core.h>
 

@@ -43,6 +43,7 @@
 #cmakedefine DFK_HAVE_UNISTD_H
 #cmakedefine DFK_HAVE_PTHREAD_H
 #cmakedefine DFK_HAVE_SYS_SOCKET_H
+#cmakedefine DFK_HAVE_SYS_TYPES_H
 #cmakedefine DFK_HAVE_NETINET_IN_H
 #cmakedefine DFK_HAVE_ARPA_INET_H
 #cmakedefine DFK_HAVE_UCONTEXT_H
