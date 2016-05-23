@@ -32,6 +32,7 @@
 #include <uv.h>
 #include <libcoro/coro.h>
 #include <dfk/config.h>
+#include <dfk/internal/list.h>
 
 /**
  * @file dfk/tcp_socket.h
@@ -148,11 +149,12 @@ typedef struct dfk_iovec_t {
  */
 typedef struct dfk_t {
   struct {
-    struct dfk_coro_t* exechead;
-    struct dfk_coro_t* termhead;
+    dfk_list_t pending_coros;
+    dfk_list_t terminated_coros;
+    struct dfk_coro_t* current;
+
     struct dfk_coro_t* scheduler;
     struct dfk_coro_t* eventloop;
-    struct dfk_coro_t* current;
     uv_loop_t* uvloop;
   } _;
 
@@ -177,8 +179,8 @@ typedef struct dfk_t {
  */
 typedef struct dfk_coro_t {
   struct {
+    dfk_list_hook_t hook;
     struct coro_context ctx;
-    struct dfk_coro_t* next;
     void (*ep)(struct dfk_coro_t*, void*);
     void* arg;
 #ifdef DFK_NAMED_COROUTINES

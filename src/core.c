@@ -88,11 +88,11 @@ int dfk_init(dfk_t* dfk)
   if (!dfk) {
     return dfk_err_badarg;
   }
-  dfk->_.exechead = NULL;
-  dfk->_.termhead = NULL;
+  dfk_list_init(&dfk->_.pending_coros);
+  dfk_list_init(&dfk->_.terminated_coros);
+  dfk->_.current = NULL;
   dfk->_.scheduler = NULL;
   dfk->_.eventloop = NULL;
-  dfk->_.current = NULL;
   dfk->malloc = dfk_default_malloc;
   dfk->free = dfk_default_free;
   dfk->realloc = dfk_default_realloc;
@@ -116,6 +116,8 @@ int dfk_free(dfk_t* dfk)
   if (!dfk) {
     return dfk_err_badarg;
   }
+  dfk_list_free(&dfk->_.terminated_coros);
+  dfk_list_free(&dfk->_.pending_coros);
   return dfk_err_ok;
 }
 
@@ -130,8 +132,7 @@ static void dfk_coro_main(void* arg)
 {
   dfk_coro_t* coro = (dfk_coro_t*) arg;
   coro->_.ep(coro, coro->_.arg);
-  coro->_.next = coro->dfk->_.termhead;
-  coro->dfk->_.termhead = coro;
+  dfk_list_append(&coro->dfk->_.terminated_coros, &coro->_.hook);
   dfk_yield(coro, coro->dfk->_.scheduler);
 }
 
@@ -157,15 +158,15 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg)
       return NULL;
     }
     coro->dfk = dfk;
-    coro->_.next = NULL;
+    dfk_list_hook_init(&coro->_.hook);
     coro->_.ep = ep;
     coro->_.arg = arg;
 #ifdef DFK_NAMED_COROUTINES
     snprintf(coro->_.name, sizeof(coro->_.name), "%p", (void*) coro);
 #endif
-    DFK_INFO(dfk, "stack %p (%lu) = {%p}", (void*) stack_base, (unsigned long) stack_size, (void*) coro);
-    coro->_.next = dfk->_.exechead;
-    dfk->_.exechead = coro;
+    DFK_INFO(dfk, "stack %p (%lu bytes) = {%p}",
+        (void*) stack_base, (unsigned long) stack_size, (void*) coro);
+    dfk_list_append(&dfk->_.pending_coros, &coro->_.hook);
     coro_create(&coro->_.ctx, dfk_coro_main, coro, stack_base, stack_size);
     return coro;
   }
@@ -213,33 +214,42 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
   dfk = scheduler->dfk;
   assert(dfk);
   /* Initialize event loop */
+  dfk->_.current = dfk->_.eventloop;
   dfk_yield(scheduler, dfk->_.eventloop);
+  dfk->_.current = scheduler;
   while (1) {
-    if (!dfk->_.termhead && !dfk->_.exechead) {
+    if (!dfk_list_size(&dfk->_.terminated_coros)
+        && !dfk_list_size(&dfk->_.pending_coros)) {
+      /* Cleanup event loop*/
+      dfk->_.current = dfk->_.eventloop;
+      dfk_yield(scheduler, dfk->_.eventloop);
+      dfk->_.current = scheduler;
       break;
     }
+    DFK_DEBUG(dfk, "coroutines pending: %lu, terminated: %lu",
+        (unsigned long) dfk_list_size(&dfk->_.pending_coros),
+        (unsigned long) dfk_list_size(&dfk->_.terminated_coros));
     {
-      /* cleanup terminated coroutines */
-      dfk_coro_t* i = dfk->_.termhead;
-      dfk_coro_t* n = i;
+      /* Cleanup terminated coroutines */
+      dfk_coro_t* i = (dfk_coro_t*) dfk->_.terminated_coros.head;
+      dfk_list_clear(&dfk->_.terminated_coros);
       while (i) {
-        n = i->_.next;
+        DFK_DEBUG(dfk, "corotine {%p} is terminated, cleanup", (void*) i);
+        dfk_coro_t* n = (dfk_coro_t*) i->_.hook.next;
         dfk_coro_free(i);
         i = n;
       }
-      dfk->_.termhead = NULL;
     }
-    if (dfk->_.exechead) {
-      dfk->_.current = dfk->_.exechead;
-      dfk->_.exechead = dfk->_.current->_.next;
+    if (dfk_list_size(&dfk->_.pending_coros)) {
+      dfk->_.current = (dfk_coro_t*) dfk->_.pending_coros.head;
+      dfk_list_pop_front(&dfk->_.pending_coros);
       DFK_DEBUG(dfk, "next coroutine to run {%p}", (void*) dfk->_.current);
       dfk_yield(scheduler, dfk->_.current);
-      dfk->_.current = NULL;
+      dfk->_.current = scheduler;
     }
   }
-  /* cleanup event loop*/
-  dfk_yield(scheduler, dfk->_.eventloop);
   DFK_INFO(dfk, "no pending coroutines left in execution queue, jobs done");
+  dfk->_.current = NULL;
   dfk_yield(scheduler, NULL);
 }
 
@@ -297,20 +307,25 @@ int dfk_work(dfk_t* dfk)
     return dfk->dfk_errno;
   }
   DFK_CALL(dfk_coro_name(dfk->_.scheduler, "scheduler"));
-  /* exclude scheduler from run queue*/
-  assert(dfk->_.exechead == dfk->_.scheduler);
-  dfk->_.exechead = dfk->_.scheduler->_.next;
+  /* Exclude scheduler from run queue */
+  assert((dfk_coro_t*) dfk->_.pending_coros.tail == dfk->_.scheduler);
+  dfk_list_pop_back(&dfk->_.pending_coros);
 
   dfk->_.eventloop = dfk_run(dfk, dfk_event_loop, NULL);
   if (!dfk->_.eventloop) {
     return dfk->dfk_errno;
   }
   DFK_CALL(dfk_coro_name(dfk->_.eventloop, "event_loop"));
-  /* exclude event_loop from run queue*/
-  assert(dfk->_.exechead == dfk->_.eventloop);
-  dfk->_.exechead = dfk->_.eventloop->_.next;
+  /* Exclude event_loop from run queue */
+  assert((dfk_coro_t*) dfk->_.pending_coros.tail == dfk->_.eventloop);
+  dfk_list_pop_back(&dfk->_.pending_coros);
 
   DFK_CALL(dfk_yield(NULL, dfk->_.scheduler));
+
+  /* Scheduler and eventloop are still in "terminated" state
+   * Cleanup them manually
+   */
+  dfk_list_clear(&dfk->_.terminated_coros);
   DFK_CALL(dfk_coro_free(dfk->_.scheduler));
   DFK_CALL(dfk_coro_free(dfk->_.eventloop));
   dfk->_.scheduler = NULL;
