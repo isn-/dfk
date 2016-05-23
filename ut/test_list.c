@@ -191,3 +191,61 @@ TEST_F(myint_fixture, list, erase_from_mid)
   EXPECT(((myint_t*) fixture->l.tail)->value == 12);
 }
 
+
+TEST_F(myint_fixture, list, clear_non_empty)
+{
+  size_t i;
+  for (i = 0; i < DFK_SIZE(fixture->values); ++i) {
+    dfk_list_append(&fixture->l, &fixture->values[i].hook);
+  }
+  dfk_list_clear(&fixture->l);
+  EXPECT(dfk_list_size(&fixture->l) == 0);
+}
+
+
+TEST_F(myint_fixture, list, clear_empty)
+{
+  dfk_list_clear(&fixture->l);
+  EXPECT(dfk_list_size(&fixture->l) == 0);
+}
+
+
+TEST_F(myint_fixture, list, move_and_clear)
+{
+  size_t i;
+  dfk_list_t lcopy;
+  for (i = 0; i < DFK_SIZE(fixture->values); ++i) {
+    dfk_list_append(&fixture->l, &fixture->values[i].hook);
+  }
+  lcopy = fixture->l;
+  dfk_list_clear(&fixture->l);
+  EXPECT(lcopy.size == 3);
+  EXPECT(((myint_t*) lcopy.head)->value == 10);
+  EXPECT(((myint_t*) lcopy.head->next)->value == 11);
+  EXPECT(((myint_t*) lcopy.tail)->value == 12);
+}
+
+
+TEST_F(myint_fixture, list, pop_back)
+{
+  size_t i;
+  for (i = 0; i < DFK_SIZE(fixture->values); ++i) {
+    dfk_list_append(&fixture->l, &fixture->values[i].hook);
+  }
+  dfk_list_pop_back(&fixture->l);
+  EXPECT(((myint_t*) fixture->l.tail)->value == 11);
+  EXPECT(dfk_list_size(&fixture->l) == 2);
+}
+
+
+TEST_F(myint_fixture, list, pop_front)
+{
+  size_t i;
+  for (i = 0; i < DFK_SIZE(fixture->values); ++i) {
+    dfk_list_append(&fixture->l, &fixture->values[i].hook);
+  }
+  dfk_list_pop_front(&fixture->l);
+  EXPECT(((myint_t*) fixture->l.head)->value == 11);
+  EXPECT(dfk_list_size(&fixture->l) == 2);
+}
+

@@ -213,6 +213,25 @@ void dfk_list_prepend(dfk_list_t* list, dfk_list_hook_t* hook)
 }
 
 
+void dfk_list_clear(dfk_list_t* list)
+{
+  assert(list);
+#ifdef DFK_DEBUG
+  {
+    dfk_list_hook_t* i = list->head;
+    while (i) {
+      i->list = NULL;
+      i = i->next;
+    }
+  }
+#endif
+  list->head = NULL;
+  list->tail = NULL;
+  list->size = 0;
+  DFK_LIST_CHECK_INVARIANTS(list);
+}
+
+
 void dfk_list_erase(dfk_list_t* list, dfk_list_hook_t* hook)
 {
   assert(list);
@@ -263,6 +282,24 @@ void dfk_list_erase(dfk_list_t* list, dfk_list_hook_t* hook)
   hook->list = NULL;
 #endif
 
+  DFK_LIST_CHECK_INVARIANTS(list);
+}
+
+
+void dfk_list_pop_front(dfk_list_t* list)
+{
+  assert(list);
+  assert(list->head);
+  dfk_list_erase(list, list->head);
+  DFK_LIST_CHECK_INVARIANTS(list);
+}
+
+
+void dfk_list_pop_back(dfk_list_t* list)
+{
+  assert(list);
+  assert(list->tail);
+  dfk_list_erase(list, list->tail);
   DFK_LIST_CHECK_INVARIANTS(list);
 }
 

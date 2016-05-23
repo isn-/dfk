@@ -52,6 +52,9 @@ void dfk_list_hook_free(dfk_list_hook_t* hood);
 
 void dfk_list_append(dfk_list_t* list, dfk_list_hook_t* hook);
 void dfk_list_prepend(dfk_list_t* list, dfk_list_hook_t* hook);
+void dfk_list_clear(dfk_list_t* list);
 void dfk_list_erase(dfk_list_t* list, dfk_list_hook_t* hook);
+void dfk_list_pop_front(dfk_list_t* list);
+void dfk_list_pop_back(dfk_list_t* list);
 size_t dfk_list_size(dfk_list_t* list);
 
