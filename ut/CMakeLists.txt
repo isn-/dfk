@@ -57,5 +57,6 @@ file(APPEND ${ut_init_c} "}\n\n")
 file(APPEND ${ut_init_h} "\n")
 
 if(VALGRIND AND NOT DFK_ENABLE_COVERAGE)
-  add_test(valgrind.all_tests ${VALGRIND} --error-exitcode=1 --leak-check=full "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ut-dfk")
+  set(suppressions "${CMAKE_SOURCE_DIR}/scripts/pthread_create.supp")
+  add_test(valgrind.all_tests ${VALGRIND} --error-exitcode=1 --leak-check=full --suppressions=${suppressions} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ut-dfk")
 endif()

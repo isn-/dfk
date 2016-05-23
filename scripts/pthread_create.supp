@@ -1,0 +1,7 @@
+{
+   <pthread_create.glibc.valgrind.suppression>
+   Memcheck:Leak
+   fun:*alloc
+   ...
+   fun:pthread_create@@GLIBC_2.2.5
+}
