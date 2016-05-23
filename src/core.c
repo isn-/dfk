@@ -269,11 +269,13 @@ static void dfk_event_loop(dfk_coro_t* coro, void* p)
   while (uv_loop_alive(&loop)) {
     DFK_DEBUG(dfk, "{%p} poll", (void*) &loop);
     if (uv_run(&loop, UV_RUN_DEFAULT) == 0) {
-      DFK_DEBUG(dfk, "{%p} no more active handlers, yield to scheduler", (void*) &loop);
-      dfk_yield(coro, dfk->_.scheduler);
+      DFK_DEBUG(dfk, "{%p} no more active handlers", (void*) &loop);
     }
   }
-  uv_loop_close(&loop);
+  {
+    int err = uv_loop_close(&loop);
+    DFK_DEBUG(dfk, "{%p} uv_loop_close() returned %d", (void*) &loop, err);
+  }
   DFK_DEBUG(dfk, "terminated");
 }
 
