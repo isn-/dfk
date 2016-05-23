@@ -26,7 +26,6 @@
 
 #include <string.h>
 #include <assert.h>
-#include <dfk.h>
 #include <dfk/internal.h>
 #include <dfk/internal/list.h>
 
@@ -81,7 +80,7 @@ static void dfk_list_check_invariants(dfk_list_t* list)
     assert(nhops + 1 == list->size);
   }
 
-#ifdef DFK_DEBUG
+#ifdef DFK_DEBUG_ENABLED
   {
     /* assert that all elements have correct .list property
      * we have check head -> tail traversal before, so `while' loop
@@ -119,8 +118,9 @@ void dfk_list_init(dfk_list_t* list)
 
 void dfk_list_free(dfk_list_t* list)
 {
+  DFK_UNUSED(list);
   assert(list);
-#ifdef DFK_DEBUG
+#ifdef DFK_DEBUG_ENABLED
   {
     dfk_list_hook_t* it = list->head;
     while (it) {
@@ -143,7 +143,7 @@ void dfk_list_hook_init(dfk_list_hook_t* hook)
   assert(hook);
   hook->next = NULL;
   hook->prev = NULL;
-#ifdef DFK_DEBUG
+#ifdef DFK_DEBUG_ENABLED
   hook->list = NULL;
 #endif
 }
@@ -151,8 +151,9 @@ void dfk_list_hook_init(dfk_list_hook_t* hook)
 
 void dfk_list_hook_free(dfk_list_hook_t* hook)
 {
+  DFK_UNUSED(hook);
   assert(hook);
-#ifdef DFK_DEBUG
+#ifdef DFK_DEBUG_ENABLED
   hook->prev = NULL;
   hook->next = NULL;
   assert(!hook->list);
@@ -164,13 +165,13 @@ void dfk_list_append(dfk_list_t* list, dfk_list_hook_t* hook)
 {
   assert(list);
   assert(hook);
-#ifdef DFK_DEBUG
+#ifdef DFK_DEBUG_ENABLED
   assert(!hook->list);
 #endif
 
   hook->next = NULL;
   hook->prev = list->tail;
-#ifdef DFK_DEBUG
+#ifdef DFK_DEBUG_ENABLED
   hook->list = list;
 #endif
   if (list->tail) {
@@ -190,13 +191,13 @@ void dfk_list_prepend(dfk_list_t* list, dfk_list_hook_t* hook)
 {
   assert(list);
   assert(hook);
-#ifdef DFK_DEBUG
+#ifdef DFK_DEBUG_ENABLED
   assert(!hook->list);
 #endif
 
   hook->prev = NULL;
   hook->next = list->head;
-#ifdef DFK_DEBUG
+#ifdef DFK_DEBUG_ENABLED
   hook->list = list;
 #endif
 
@@ -216,7 +217,7 @@ void dfk_list_prepend(dfk_list_t* list, dfk_list_hook_t* hook)
 void dfk_list_clear(dfk_list_t* list)
 {
   assert(list);
-#ifdef DFK_DEBUG
+#ifdef DFK_DEBUG_ENABLED
   {
     dfk_list_hook_t* i = list->head;
     while (i) {
@@ -236,7 +237,7 @@ void dfk_list_erase(dfk_list_t* list, dfk_list_hook_t* hook)
 {
   assert(list);
   assert(hook);
-#ifdef DFK_DEBUG
+#ifdef DFK_DEBUG_ENABLED
   assert(hook->list == list);
 #endif
 
@@ -278,7 +279,7 @@ void dfk_list_erase(dfk_list_t* list, dfk_list_hook_t* hook)
 
   hook->next = NULL;
   hook->prev = NULL;
-#ifdef DFK_DEBUG
+#ifdef DFK_DEBUG_ENABLED
   hook->list = NULL;
 #endif
 

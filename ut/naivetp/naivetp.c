@@ -71,7 +71,7 @@ static void* naivetp_conn_thread(void* arg)
     }
   }
   DFK_INFO(c->dfk, "{%p} terminated", (void*) c);
-  return c;
+  pthread_exit(c);
 }
 
 
@@ -100,7 +100,7 @@ static void* naivetp_main_thread(void* arg)
     }
   }
   DFK_INFO(s->dfk, "{%p} terminated", (void*) s);
-  return NULL;
+  pthread_exit(NULL);
 }
 
 

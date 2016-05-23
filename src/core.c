@@ -234,8 +234,8 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
       dfk_coro_t* i = (dfk_coro_t*) dfk->_.terminated_coros.head;
       dfk_list_clear(&dfk->_.terminated_coros);
       while (i) {
-        DFK_DEBUG(dfk, "corotine {%p} is terminated, cleanup", (void*) i);
         dfk_coro_t* n = (dfk_coro_t*) i->_.hook.next;
+        DFK_DEBUG(dfk, "corotine {%p} is terminated, cleanup", (void*) i);
         dfk_coro_free(i);
         i = n;
       }
@@ -275,6 +275,7 @@ static void dfk_event_loop(dfk_coro_t* coro, void* p)
   {
     int err = uv_loop_close(&loop);
     DFK_DEBUG(dfk, "{%p} uv_loop_close() returned %d", (void*) &loop, err);
+    DFK_UNUSED(err);
   }
   DFK_DEBUG(dfk, "terminated");
 }
