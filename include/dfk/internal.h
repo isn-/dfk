@@ -58,11 +58,9 @@ if ((dfk) && (dfk)->log) {\
 #define DFK_INFO(dfk, ...) DFK_LOG(dfk, dfk_log_info, __VA_ARGS__)
 
 #ifdef DFK_DEBUG
-#undef DFK_DEBUG
-#define DFK_DEBUG_ENABLED
-#define DFK_DEBUG(dfk, ...) DFK_LOG(dfk, dfk_log_debug, __VA_ARGS__)
+#define DFK_DBG(dfk, ...) DFK_LOG(dfk, dfk_log_debug, __VA_ARGS__)
 #else
-#define DFK_DEBUG(dfk, ...) DFK_UNUSED(dfk)
+#define DFK_DBG(dfk, ...) DFK_UNUSED(dfk)
 #endif
 
 #define DFK_STRINGIFY(D) DFK_STR__(D)

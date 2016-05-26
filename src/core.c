@@ -60,7 +60,7 @@ static void* dfk_default_malloc(void* dfk, size_t size)
 {
   void* err;
   err = malloc(size);
-  DFK_DEBUG((dfk_t*) dfk, "%lu bytes requested = %p",
+  DFK_DBG((dfk_t*) dfk, "%lu bytes requested = %p",
       (unsigned long) size, err);
   return err;
 }
@@ -68,7 +68,7 @@ static void* dfk_default_malloc(void* dfk, size_t size)
 
 static void dfk_default_free(void* dfk, void* p)
 {
-  DFK_DEBUG((dfk_t*) dfk, "release memory %p", (void*) p);
+  DFK_DBG((dfk_t*) dfk, "release memory %p", (void*) p);
   free(p);
 }
 
@@ -77,7 +77,7 @@ static void* dfk_default_realloc(void* dfk, void* p, size_t size)
 {
   void* err;
   err = realloc(p, size);
-  DFK_DEBUG((dfk_t*) dfk, "resize %p to %lu bytes requested = %p",
+  DFK_DBG((dfk_t*) dfk, "resize %p to %lu bytes requested = %p",
       p, (unsigned long) size, err);
   return err;
 }
@@ -226,7 +226,7 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
       dfk->_.current = scheduler;
       break;
     }
-    DFK_DEBUG(dfk, "coroutines pending: %lu, terminated: %lu",
+    DFK_DBG(dfk, "coroutines pending: %lu, terminated: %lu",
         (unsigned long) dfk_list_size(&dfk->_.pending_coros),
         (unsigned long) dfk_list_size(&dfk->_.terminated_coros));
     {
@@ -235,7 +235,7 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
       dfk_list_clear(&dfk->_.terminated_coros);
       while (i) {
         dfk_coro_t* n = (dfk_coro_t*) i->_.hook.next;
-        DFK_DEBUG(dfk, "corotine {%p} is terminated, cleanup", (void*) i);
+        DFK_DBG(dfk, "corotine {%p} is terminated, cleanup", (void*) i);
         dfk_coro_free(i);
         i = n;
       }
@@ -243,7 +243,7 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
     if (dfk_list_size(&dfk->_.pending_coros)) {
       dfk->_.current = (dfk_coro_t*) dfk->_.pending_coros.head;
       dfk_list_pop_front(&dfk->_.pending_coros);
-      DFK_DEBUG(dfk, "next coroutine to run {%p}", (void*) dfk->_.current);
+      DFK_DBG(dfk, "next coroutine to run {%p}", (void*) dfk->_.current);
       dfk_yield(scheduler, dfk->_.current);
       dfk->_.current = scheduler;
     }
@@ -264,20 +264,20 @@ static void dfk_event_loop(dfk_coro_t* coro, void* p)
   assert(dfk);
   uv_loop_init(&loop);
   dfk->_.uvloop = &loop;
-  DFK_DEBUG(dfk, "initialized");
+  DFK_DBG(dfk, "initialized");
   dfk_yield(coro, dfk->_.scheduler);
   while (uv_loop_alive(&loop)) {
-    DFK_DEBUG(dfk, "{%p} poll", (void*) &loop);
+    DFK_DBG(dfk, "{%p} poll", (void*) &loop);
     if (uv_run(&loop, UV_RUN_DEFAULT) == 0) {
-      DFK_DEBUG(dfk, "{%p} no more active handlers", (void*) &loop);
+      DFK_DBG(dfk, "{%p} no more active handlers", (void*) &loop);
     }
   }
   {
     int err = uv_loop_close(&loop);
-    DFK_DEBUG(dfk, "{%p} uv_loop_close() returned %d", (void*) &loop, err);
+    DFK_DBG(dfk, "{%p} uv_loop_close() returned %d", (void*) &loop, err);
     DFK_UNUSED(err);
   }
-  DFK_DEBUG(dfk, "terminated");
+  DFK_DBG(dfk, "terminated");
 }
 
 
@@ -287,10 +287,10 @@ int dfk_yield(dfk_coro_t* from, dfk_coro_t* to)
     return dfk_err_badarg;
   }
 #ifdef DFK_NAMED_COROUTINES
-  DFK_DEBUG((from ? from : to)->dfk, "context switch {%s} -> {%s}",
+  DFK_DBG((from ? from : to)->dfk, "context switch {%s} -> {%s}",
       from ? from->_.name : "(nil)", to ? to->_.name : "(nil)");
 #else
-  DFK_DEBUG((from ? from : to)->dfk, "context switch {%p} -> {%p}",
+  DFK_DBG((from ? from : to)->dfk, "context switch {%p} -> {%p}",
       (void*) from, (void*) to);
 #endif
   coro_transfer(from ? &from->_.ctx : &init, to ? &to->_.ctx : &init);

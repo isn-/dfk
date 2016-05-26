@@ -30,12 +30,12 @@
 #pragma once
 #include <stddef.h>
 #include <stdint.h>
-#include <dfk/internal.h>
+#include <dfk/config.h>
 
 typedef struct dfk_list_hook_t {
   struct dfk_list_hook_t* next;
   struct dfk_list_hook_t* prev;
-#ifdef DFK_DEBUG_ENABLED
+#ifdef DFK_DEBUG
   struct dfk_list_t* list;
 #endif
 } dfk_list_hook_t;
