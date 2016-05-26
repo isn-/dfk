@@ -33,6 +33,7 @@ set(DFK_STACK "FIXED" CACHE STRING "Stack growth strategy, options are: FIXED, S
 set(DFK_STACK_SIZE 1048576 CACHE STRING "Default stack size, in bytes")
 set(DFK_EVENT_LOOP "LIBUV" CACHE STRING "Event loop implementation, options are: LIBUV.")
 set(DFK_DEBUG FALSE CACHE BOOL "Emit debug log messages.")
+set(DFK_THREADS FALSE CACHE BOOL "Enable multithreading support.")
 set(DFK_COVERAGE FALSE CACHE BOOL "Collect gcov coverage statistics.")
 set(DFK_VALGRIND FALSE CACHE BOOL "In addition to regular mode, run unit tests under valgrind.")
 

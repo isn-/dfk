@@ -62,6 +62,7 @@
 #define DFK_STACK_SIZE @DFK_STACK_SIZE@
 #define DFK_EVENT_LOOP "@DFK_EVENT_LOOP@"
 #cmakedefine DFK_DEBUG
+#cmakedefine DFK_THREADS
 #cmakedefine DFK_COVERAGE
 #cmakedefine DFK_VALGRIND
 
