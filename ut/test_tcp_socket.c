@@ -107,7 +107,6 @@ TEST_F(echo_fixture, tcp_socket, single_write_read)
 }
 
 
-/*
 static void multi_write_read(dfk_coro_t* coro, void* p)
 {
   dfk_t* dfk = coro->dfk;
@@ -156,13 +155,14 @@ static void multi_write_read(dfk_coro_t* coro, void* p)
 }
 
 
-(echo_fixture, tcp_socket, multi_write_read)
+TEST_F(echo_fixture, tcp_socket, multi_write_read)
 {
   ASSERT(dfk_run(&fixture->dfk, multi_write_read, NULL));
   ASSERT_OK(dfk_work(&fixture->dfk));
 }
 
 
+/*
 static void read_all(dfk_tcp_socket_t* sock)
 {
   char out[10240] = {0};
