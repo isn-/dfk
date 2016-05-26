@@ -3,5 +3,5 @@
    Memcheck:Leak
    fun:*alloc
    ...
-   fun:pthread_create@@GLIBC_2.2.5
+   fun:pthread_create@@GLIBC_*
 }
