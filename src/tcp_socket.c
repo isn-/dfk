@@ -521,7 +521,10 @@ static void dfk_tcp_socket_on_read(uv_stream_t* p, ssize_t nread, const uv_buf_t
   arg = (dfk_tcp_socket_read_async_arg_t*) sock->_.arg.obj;
   assert(arg);
   DFK_INFO(sock->dfk, "(%p) %ld bytes read", (void*) sock, (long) nread);
-  if (nread < 0) {
+  if (nread == 0) {
+    /* read returned EAGAIN or EWOULDBLOCK */
+    return;
+  } else if (nread < 0) {
     arg->err = dfk_err_sys;
   } else {
     arg->nbytes = nread;
