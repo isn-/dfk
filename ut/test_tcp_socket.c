@@ -64,6 +64,7 @@ static void connect_disconnect(dfk_coro_t* coro, void* p)
   ASSERT_OK(dfk_tcp_socket_connect(&sock, "127.0.0.1", 10020));
   *connected = 1;
   ASSERT_OK(dfk_tcp_socket_close(&sock));
+  ASSERT_OK(dfk_tcp_socket_free(&sock));
 }
 
 
@@ -97,6 +98,7 @@ static void single_write_read(dfk_coro_t* coro, void* p)
     }
   }
   ASSERT_OK(dfk_tcp_socket_close(&sock));
+  ASSERT_OK(dfk_tcp_socket_free(&sock));
 }
 
 
@@ -152,6 +154,7 @@ static void multi_write_read(dfk_coro_t* coro, void* p)
     ASSERT(memcmp(in, out, sizeof(out)) == 0);
   }
   ASSERT_OK(dfk_tcp_socket_close(&sock));
+  ASSERT_OK(dfk_tcp_socket_free(&sock));
 }
 
 
