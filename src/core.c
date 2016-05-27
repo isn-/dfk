@@ -96,7 +96,7 @@ int dfk_init(dfk_t* dfk)
   dfk->malloc = dfk_default_malloc;
   dfk->free = dfk_default_free;
   dfk->realloc = dfk_default_realloc;
-#ifdef DFK_DEBUG_ENABLED
+#ifdef DFK_DEBUG
   dfk->log = dfk_default_log;
 #else
   DFK_UNUSED(dfk_default_log);
