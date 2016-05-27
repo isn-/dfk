@@ -38,7 +38,7 @@
 
 struct coro_context init;
 
-
+#ifdef DFK_DEBUG
 static void dfk_default_log(void* ud, int channel, const char* msg)
 {
   char strchannel[5] = {0};
@@ -54,6 +54,7 @@ static void dfk_default_log(void* ud, int channel, const char* msg)
   printf("[%.5s] %.503s\n", strchannel, msg);
   fflush(stdout);
 }
+#endif /* DFK_DEBUG */
 
 
 static void* dfk_default_malloc(void* dfk, size_t size)
@@ -99,7 +100,6 @@ int dfk_init(dfk_t* dfk)
 #ifdef DFK_DEBUG
   dfk->log = dfk_default_log;
 #else
-  DFK_UNUSED(dfk_default_log);
   dfk->log = NULL;
 #endif
   dfk->default_stack_size = DFK_STACK_SIZE;

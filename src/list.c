@@ -30,6 +30,9 @@
 #include <dfk/internal/list.h>
 
 
+#ifdef NDEBUG
+#define DFK_LIST_CHECK_INVARIANTS(list) DFK_UNUSED(list)
+#else
 static void dfk_list_check_invariants(dfk_list_t* list)
 {
   assert(list);
@@ -95,15 +98,8 @@ static void dfk_list_check_invariants(dfk_list_t* list)
 #endif
 }
 
-#ifndef NDEBUG
 #define DFK_LIST_CHECK_INVARIANTS(list) dfk_list_check_invariants((list))
-#else
-#define DFK_LIST_CHECK_INVARIANTS(list) \
-do { \
-DFK_UNUSED(list); \
-DFK_UNUSED(dfk_list_check_invariants); \
-} while (0)
-#endif
+#endif /* NDEBUG */
 
 
 void dfk_list_init(dfk_list_t* list)
