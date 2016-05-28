@@ -68,11 +68,35 @@ if ((dfk) && (dfk)->log) {\
 
 #define DFK_SIZE(c) (sizeof((c)) / sizeof((c)[0]))
 
-#define DFK_CALL(c) \
+#define DFK_CALL(dfk, c) \
 { \
   int err; \
   if ((err = (c)) != dfk_err_ok) { \
+    DFK_ERROR((dfk), "Call \"" DFK_STRINGIFY(c) "\" " \
+        "failed with code %d (%s)", err, dfk_strerr((dfk), err)); \
     return err; \
+  } \
+}
+
+/* Same as DFK_CALL, but does not return error code */
+#define DFK_CALL_RVOID(dfk, c) \
+{ \
+  int err; \
+  if ((err = (c)) != dfk_err_ok) { \
+    DFK_ERROR((dfk), "Call \"" DFK_STRINGIFY(c) "\" " \
+        "failed with code %d (%s)", err, dfk_strerr((dfk), err)); \
+    return; \
+  } \
+}
+
+/* Same as DFK_CALL, but jump to label instead of return */
+#define DFK_CALL_GOTO(dfk, c, label) \
+{ \
+  int err; \
+  if ((err = (c)) != dfk_err_ok) { \
+    DFK_ERROR((dfk), "Call \"" DFK_STRINGIFY(c) "\" " \
+        "failed with code %d (%s)", err, dfk_strerr((dfk), err)); \
+    goto label; \
   } \
 }
 
@@ -80,15 +104,41 @@ if ((dfk) && (dfk)->log) {\
 { \
   int err; \
   if ((err = (c)) != 0) {\
+    DFK_ERROR((dfk), "Syscall \"" DFK_STRINGIFY(c) "\" " \
+        "failed with code %d", err); \
     (dfk)->sys_errno = err; \
     return dfk_err_sys; \
+  } \
+}
+
+/* Same as DFK_SYSCALL, but does not return error code */
+#define DFK_SYSCALL_RVOID(dfk, c) \
+{ \
+  int err; \
+  if ((err = (c)) != 0) {\
+    DFK_ERROR((dfk), "Syscall \"" DFK_STRINGIFY(c) "\" " \
+        "failed with code %d", err); \
+    (dfk)->sys_errno = err; \
+    return; \
+  } \
+}
+
+/* Same as DFK_CALL, but jump to label instead of return */
+#define DFK_SYSCALL_GOTO(dfk, c, label) \
+{ \
+  int err; \
+  if ((err = (c)) != 0) {\
+    DFK_ERROR((dfk), "Syscall \"" DFK_STRINGIFY(c) "\" " \
+        "failed with code %d", err); \
+    (dfk)->sys_errno = err; \
+    goto label; \
   } \
 }
 
 #define DFK_THIS_CORO(dfk) (dfk)->_.current
 
 #define DFK_YIELD_EVENTLOOP(dfk) \
-  DFK_CALL(dfk_yield(DFK_THIS_CORO((dfk)), (dfk)->_.eventloop));
+  DFK_CALL((dfk), dfk_yield(DFK_THIS_CORO((dfk)), (dfk)->_.eventloop));
 
 #pragma GCC diagnostic pop
 

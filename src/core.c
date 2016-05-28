@@ -309,7 +309,7 @@ int dfk_work(dfk_t* dfk)
   if (!dfk->_.scheduler) {
     return dfk->dfk_errno;
   }
-  DFK_CALL(dfk_coro_name(dfk->_.scheduler, "scheduler"));
+  DFK_CALL(dfk, dfk_coro_name(dfk->_.scheduler, "scheduler"));
   /* Exclude scheduler from run queue */
   assert((dfk_coro_t*) dfk->_.pending_coros.tail == dfk->_.scheduler);
   dfk_list_pop_back(&dfk->_.pending_coros);
@@ -318,19 +318,19 @@ int dfk_work(dfk_t* dfk)
   if (!dfk->_.eventloop) {
     return dfk->dfk_errno;
   }
-  DFK_CALL(dfk_coro_name(dfk->_.eventloop, "event_loop"));
+  DFK_CALL(dfk, dfk_coro_name(dfk->_.eventloop, "event_loop"));
   /* Exclude event_loop from run queue */
   assert((dfk_coro_t*) dfk->_.pending_coros.tail == dfk->_.eventloop);
   dfk_list_pop_back(&dfk->_.pending_coros);
 
-  DFK_CALL(dfk_yield(NULL, dfk->_.scheduler));
+  DFK_CALL(dfk, dfk_yield(NULL, dfk->_.scheduler));
 
   /* Scheduler and eventloop are still in "terminated" state
    * Cleanup them manually
    */
   dfk_list_clear(&dfk->_.terminated_coros);
-  DFK_CALL(dfk_coro_free(dfk->_.scheduler));
-  DFK_CALL(dfk_coro_free(dfk->_.eventloop));
+  DFK_CALL(dfk, dfk_coro_free(dfk->_.scheduler));
+  DFK_CALL(dfk, dfk_coro_free(dfk->_.eventloop));
   dfk->_.scheduler = NULL;
   dfk->_.eventloop = NULL;
   DFK_INFO(dfk, "work cycle {%p} done", (void*) dfk);
