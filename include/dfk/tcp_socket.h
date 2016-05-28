@@ -91,7 +91,7 @@ int dfk_tcp_socket_listen(
     dfk_tcp_socket_t* sock,
     const char* endpoint,
     uint16_t port,
-    void (*callback)(dfk_t*, dfk_tcp_socket_t*, int),
+    void (*callback)(dfk_coro_t*, dfk_tcp_socket_t*),
     size_t backlog);
 
 
