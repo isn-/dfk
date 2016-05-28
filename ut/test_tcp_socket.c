@@ -165,16 +165,17 @@ TEST_F(echo_fixture, tcp_socket, multi_write_read)
 }
 
 
-/*
-
 typedef struct {
+  dfk_t* dfk;
   const char* endpoint;
   uint16_t port;
-} connector_arg;
+  int connected;
+} ut_connector_arg_t;
 
-static void* connector_start_stop(void* arg)
+
+static void* ut_connector_start_stop(void* arg)
 {
-  connector_arg* carg = (connector_arg*) arg;
+  ut_connector_arg_t* carg = (ut_connector_arg_t*) arg;
   int sockfd, i;
   struct sockaddr_in addr;
   struct timespec req, rem;
@@ -186,49 +187,64 @@ static void* connector_start_stop(void* arg)
   addr.sin_port = htons(carg->port);
   inet_aton(carg->endpoint, (struct in_addr*) &addr.sin_addr.s_addr);
   for (i = 0; i < 32; ++i) {
+    DFK_DBG(carg->dfk, "try to connect, attempt %d", i);
     if (connect(sockfd, (struct sockaddr*) &addr, sizeof(addr)) == 0) {
+      DFK_DBG(carg->dfk, "connected");
+      carg->connected = 1;
       break;
     }
-    // wait for 1, 4, 9, 16, 25, ... , 1024 milliseconds //
+    /* wait for 1, 4, 9, 16, 25, ... , 1024 milliseconds */
     req.tv_nsec = i * i * 1000000;
+    DFK_DBG(carg->dfk, "connect attempt failed, retry in %d msec", i * i);
     nanosleep(&req, &rem);
   }
   close(sockfd);
+  pthread_exit(NULL);
   return NULL;
 }
 
 
-static void on_new_connection_close(dfk_tcp_socket_t* lsock, dfk_tcp_socket_t* sock, int err)
+static void on_new_connection_close(dfk_coro_t* coro, dfk_tcp_socket_t* sock)
 {
-  ASSERT(lsock != NULL);
+  ASSERT(coro != NULL);
   ASSERT(sock != NULL);
-  ASSERT(err == dfk_err_ok);
-  *((int*) (lsock->userdata)) += 1;
-  ASSERT_OK(dfk_tcp_socket_close(lsock));
   ASSERT_OK(dfk_tcp_socket_close(sock));
 }
 
-(tcp_socket, listen_start_stop)
+
+static void ut_listen_start_stop(dfk_coro_t* coro, void* p)
 {
-  int nconnected = 0;
-  pthread_t cthread;
-  connector_arg carg;
-  dfk_context_t* ctx = dfk_default_context();
   dfk_tcp_socket_t sock;
-  dfk_event_loop_t loop;
-  ASSERT_OK(dfk_event_loop_init(&loop, ctx));
-  ASSERT_OK(dfk_tcp_socket_init(&sock, &loop));
-  ASSERT_OK(dfk_tcp_socket_start_listen(
-    &sock, "127.0.0.1", 10000, on_new_connection_close, 0));
-  sock.userdata = &nconnected;
+  DFK_UNUSED(p);
+  ASSERT_OK(dfk_tcp_socket_init(&sock, coro->dfk));
+  ASSERT_OK(dfk_tcp_socket_listen(&sock, "127.0.0.1", 10000, on_new_connection_close, 0));
+  ASSERT_OK(dfk_tcp_socket_free(&sock));
+}
+
+
+DISABLED_TEST(tcp_socket, listen_start_stop)
+{
+  pthread_t cthread;
+  ut_connector_arg_t carg;
+  dfk_t dfk;
+
+  ASSERT_OK(dfk_init(&dfk));
+  ASSERT(dfk_run(&dfk, ut_listen_start_stop, NULL));
+
+  carg.dfk = &dfk;
   carg.port = 10000;
   carg.endpoint = "127.0.0.1";
-  ASSERT(pthread_create(&cthread, NULL, &connector_start_stop, &carg) == 0);
-  ASSERT_OK(dfk_event_loop_run(&loop));
-  ASSERT_OK(dfk_event_loop_join(&loop));
-  ASSERT(nconnected == 1);
+  carg.connected = 0;
+  ASSERT(!pthread_create(&cthread, NULL, &ut_connector_start_stop, &carg));
+
+  ASSERT_OK(dfk_work(&dfk));
+  ASSERT_OK(dfk_free(&dfk));
+
+  ASSERT(carg.connected == 1);
   ASSERT(pthread_join(cthread, NULL) == 0);
 }
+
+/*
 
 static void* connector_read_write(void* arg)
 {
