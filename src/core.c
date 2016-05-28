@@ -183,6 +183,7 @@ int dfk_coro_name(dfk_coro_t* coro, const char* fmt, ...)
     va_list args;
     va_start(args, fmt);
     snprintf(coro->_.name, sizeof(coro->_.name), fmt, args);
+    DFK_DBG(coro->dfk, "{%p} is now known as %s", (void*) coro, coro->_.name);
     va_end(args);
 #else
     DFK_UNUSED(coro);
