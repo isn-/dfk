@@ -150,13 +150,13 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg)
     dfk_coro_t* coro = DFK_MALLOC(dfk, dfk->default_stack_size);
     char* stack_base = (char*) coro + sizeof(dfk_coro_t);
     size_t stack_size = dfk->default_stack_size - sizeof(dfk_coro_t);
-#ifdef DFK_VALGRIND
-    coro->_.stack_id = VALGRIND_STACK_REGISTER(stack_base, stack_base + stack_size);
-#endif
     if (!coro) {
       dfk->dfk_errno = dfk_err_nomem;
       return NULL;
     }
+#ifdef DFK_VALGRIND
+    coro->_.stack_id = VALGRIND_STACK_REGISTER(stack_base, stack_base + stack_size);
+#endif
     coro->dfk = dfk;
     dfk_list_hook_init(&coro->_.hook);
     coro->_.ep = ep;
@@ -241,6 +241,7 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
         i = n;
       }
     }
+    /* Execute coroutine from the front on pending_coros list */
     if (dfk_list_size(&dfk->_.pending_coros)) {
       dfk->_.current = (dfk_coro_t*) dfk->_.pending_coros.head;
       dfk_list_pop_front(&dfk->_.pending_coros);
