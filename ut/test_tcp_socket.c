@@ -224,7 +224,7 @@ static void ut_listen_start_stop(dfk_coro_t* coro, void* p)
 }
 
 
-DISABLED_TEST(tcp_socket, listen_start_stop)
+TEST(tcp_socket, listen_start_stop)
 {
   pthread_t cthread;
   ut_connector_arg_t carg;
