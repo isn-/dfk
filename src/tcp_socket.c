@@ -197,7 +197,8 @@ int dfk_tcp_socket_connect(
 
 typedef struct dfk_tcp_socket_accepted_main_arg_t {
   uv_stream_t* stream;
-  void (*callback)(dfk_coro_t*, dfk_tcp_socket_t*);
+  void (*callback)(dfk_coro_t*, dfk_tcp_socket_t*, void*);
+  void* cbarg;
 } dfk_tcp_socket_accepted_main_arg_t;
 
 
@@ -213,8 +214,9 @@ static void dfk_tcp_socket_accepted_main(dfk_coro_t* coro, void* p)
 
   DFK_CALL_RVOID(coro->dfk, dfk_tcp_socket_init(&sock, coro->dfk));
   DFK_SYSCALL_RVOID(coro->dfk, uv_accept(arg->stream, (uv_stream_t*) &sock._.socket));
+  DFK_INFO(coro->dfk, "{%p} connection accepted", (void*) &sock);
 
-  arg->callback(coro, &sock);
+  arg->callback(coro, &sock, arg->cbarg);
 }
 
 
@@ -224,7 +226,8 @@ static void dfk_tcp_socket_accepted_main(dfk_coro_t* coro, void* p)
  */
 typedef struct dfk_tcp_socket_listen_obj_t {
   dfk_coro_t* yieldback;
-  void (*callback)(dfk_coro_t*, dfk_tcp_socket_t*);
+  void (*callback)(dfk_coro_t*, dfk_tcp_socket_t*, void*);
+  void* cbarg;
   int err;
 } dfk_tcp_socket_listen_obj_t;
 
@@ -252,8 +255,9 @@ static void dfk_tcp_socket_on_new_connection(uv_stream_t* p, int status)
   {
     dfk_tcp_socket_accepted_main_arg_t aarg;
     dfk_coro_t* coro;
-    aarg.callback = arg->callback;
     aarg.stream = p;
+    aarg.callback = arg->callback;
+    aarg.cbarg = arg->cbarg;
     coro = dfk_run(sock->dfk, dfk_tcp_socket_accepted_main, &aarg);
     dfk_coro_name(coro, "conn.%p", p->accepted_fd);
   }
@@ -264,7 +268,8 @@ int dfk_tcp_socket_listen(
     dfk_tcp_socket_t* sock,
     const char* endpoint,
     uint16_t port,
-    void (*callback)(dfk_coro_t*, dfk_tcp_socket_t*),
+    void (*callback)(dfk_coro_t*, dfk_tcp_socket_t*, void*),
+    void* cbarg,
     size_t backlog)
 {
   if (sock == NULL || endpoint == NULL || callback == NULL) {
@@ -300,6 +305,7 @@ int dfk_tcp_socket_listen(
 
     arg.yieldback = DFK_THIS_CORO(sock->dfk);
     arg.callback = callback;
+    arg.cbarg = cbarg;
     arg.err = dfk_err_ok;
     sock->_.arg.obj = &arg;
 

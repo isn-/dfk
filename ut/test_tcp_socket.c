@@ -204,11 +204,13 @@ static void* ut_connector_start_stop(void* arg)
 }
 
 
-static void on_new_connection_close(dfk_coro_t* coro, dfk_tcp_socket_t* sock)
+static void on_new_connection_close(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* cbarg)
 {
   ASSERT(coro != NULL);
   ASSERT(sock != NULL);
+  ASSERT(cbarg != NULL);
   ASSERT_OK(dfk_tcp_socket_close(sock));
+  ASSERT_OK(dfk_tcp_socket_close((dfk_tcp_socket_t*) cbarg));
 }
 
 
@@ -217,7 +219,7 @@ static void ut_listen_start_stop(dfk_coro_t* coro, void* p)
   dfk_tcp_socket_t sock;
   DFK_UNUSED(p);
   ASSERT_OK(dfk_tcp_socket_init(&sock, coro->dfk));
-  ASSERT_OK(dfk_tcp_socket_listen(&sock, "127.0.0.1", 10000, on_new_connection_close, 0));
+  ASSERT_OK(dfk_tcp_socket_listen(&sock, "127.0.0.1", 10000, on_new_connection_close, &sock, 0));
   ASSERT_OK(dfk_tcp_socket_free(&sock));
 }
 
