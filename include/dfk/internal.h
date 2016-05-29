@@ -137,8 +137,18 @@ if ((dfk) && (dfk)->log) {\
 
 #define DFK_THIS_CORO(dfk) (dfk)->_.current
 
-#define DFK_YIELD_EVENTLOOP(dfk) \
-  DFK_CALL((dfk), dfk_yield(DFK_THIS_CORO((dfk)), (dfk)->_.eventloop));
+#define DFK_IO(dfk) \
+{\
+  dfk_coro_t* self = DFK_THIS_CORO((dfk)); \
+  dfk_list_append(&(dfk)->_.iowait_coros, (dfk_list_hook_t*) self); \
+  DFK_CALL((dfk), dfk_yield(self, (dfk)->_.scheduler)); \
+}
+
+#define DFK_SCHEDULE(dfk, yieldback) \
+{ \
+  dfk_list_erase(&(dfk)->_.iowait_coros, (dfk_list_hook_t*) (yieldback)); \
+  dfk_list_append(&(dfk)->_.pending_coros, (dfk_list_hook_t*) (yieldback)); \
+}
 
 #pragma GCC diagnostic pop
 

@@ -150,6 +150,7 @@ typedef struct dfk_iovec_t {
 typedef struct dfk_t {
   struct {
     dfk_list_t pending_coros;
+    dfk_list_t iowait_coros;
     dfk_list_t terminated_coros;
     struct dfk_coro_t* current;
 

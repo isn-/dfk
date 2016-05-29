@@ -90,6 +90,7 @@ int dfk_init(dfk_t* dfk)
     return dfk_err_badarg;
   }
   dfk_list_init(&dfk->_.pending_coros);
+  dfk_list_init(&dfk->_.iowait_coros);
   dfk_list_init(&dfk->_.terminated_coros);
   dfk->_.current = NULL;
   dfk->_.scheduler = NULL;
@@ -117,6 +118,7 @@ int dfk_free(dfk_t* dfk)
     return dfk_err_badarg;
   }
   dfk_list_free(&dfk->_.terminated_coros);
+  dfk_list_free(&dfk->_.iowait_coros);
   dfk_list_free(&dfk->_.pending_coros);
   return dfk_err_ok;
 }
@@ -219,35 +221,51 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
   dfk_yield(scheduler, dfk->_.eventloop);
   dfk->_.current = scheduler;
   while (1) {
+    DFK_DBG(dfk, "coroutines pending: %lu, terminated: %lu, iowait: %lu",
+        (unsigned long) dfk_list_size(&dfk->_.pending_coros),
+        (unsigned long) dfk_list_size(&dfk->_.terminated_coros),
+        (unsigned long) dfk_list_size(&dfk->_.iowait_coros));
+
     if (!dfk_list_size(&dfk->_.terminated_coros)
-        && !dfk_list_size(&dfk->_.pending_coros)) {
+        && !dfk_list_size(&dfk->_.pending_coros)
+        && !dfk_list_size(&dfk->_.iowait_coros)) {
       /* Cleanup event loop*/
       dfk->_.current = dfk->_.eventloop;
       dfk_yield(scheduler, dfk->_.eventloop);
       dfk->_.current = scheduler;
       break;
     }
-    DFK_DBG(dfk, "coroutines pending: %lu, terminated: %lu",
-        (unsigned long) dfk_list_size(&dfk->_.pending_coros),
-        (unsigned long) dfk_list_size(&dfk->_.terminated_coros));
+
     {
       /* Cleanup terminated coroutines */
       dfk_coro_t* i = (dfk_coro_t*) dfk->_.terminated_coros.head;
       dfk_list_clear(&dfk->_.terminated_coros);
       while (i) {
-        dfk_coro_t* n = (dfk_coro_t*) i->_.hook.next;
+        dfk_coro_t* next = (dfk_coro_t*) i->_.hook.next;
         DFK_DBG(dfk, "corotine {%p} is terminated, cleanup", (void*) i);
         dfk_coro_free(i);
-        i = n;
+        i = next;
       }
     }
-    /* Execute coroutine from the front on pending_coros list */
-    if (dfk_list_size(&dfk->_.pending_coros)) {
-      dfk->_.current = (dfk_coro_t*) dfk->_.pending_coros.head;
-      dfk_list_pop_front(&dfk->_.pending_coros);
-      DFK_DBG(dfk, "next coroutine to run {%p}", (void*) dfk->_.current);
-      dfk_yield(scheduler, dfk->_.current);
-      dfk->_.current = scheduler;
+
+    {
+      /* Execute pending coroutines */
+      dfk_coro_t* i = (dfk_coro_t*) dfk->_.pending_coros.head;
+      dfk_list_clear(&dfk->_.pending_coros);
+      while (i) {
+        dfk_coro_t* next = (dfk_coro_t*) i->_.hook.next;
+        DFK_DBG(dfk, "next coroutine to run {%p}", (void*) i);
+        dfk->_.current = i;
+        dfk_yield(scheduler, i);
+        i = next;
+      }
+    }
+
+    if (!dfk_list_size(&dfk->_.pending_coros)
+        && dfk_list_size(&dfk->_.iowait_coros))
+    {
+      /* pending_coros list is empty - switch to IO with possible blocking */
+      dfk_yield(scheduler, dfk->_.eventloop);
     }
   }
   DFK_INFO(dfk, "no pending coroutines left in execution queue, jobs done");
@@ -256,7 +274,7 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
 }
 
 
-static void dfk_event_loop(dfk_coro_t* coro, void* p)
+static void dfk_eventloop(dfk_coro_t* coro, void* p)
 {
   uv_loop_t loop;
   dfk_t* dfk;
@@ -273,6 +291,7 @@ static void dfk_event_loop(dfk_coro_t* coro, void* p)
     if (uv_run(&loop, UV_RUN_DEFAULT) == 0) {
       DFK_DBG(dfk, "{%p} no more active handlers", (void*) &loop);
     }
+    dfk_yield(coro, dfk->_.scheduler);
   }
   {
     int err = uv_loop_close(&loop);
@@ -316,11 +335,11 @@ int dfk_work(dfk_t* dfk)
   assert((dfk_coro_t*) dfk->_.pending_coros.tail == dfk->_.scheduler);
   dfk_list_pop_back(&dfk->_.pending_coros);
 
-  dfk->_.eventloop = dfk_run(dfk, dfk_event_loop, NULL);
+  dfk->_.eventloop = dfk_run(dfk, dfk_eventloop, NULL);
   if (!dfk->_.eventloop) {
     return dfk->dfk_errno;
   }
-  DFK_CALL(dfk, dfk_coro_name(dfk->_.eventloop, "event_loop"));
+  DFK_CALL(dfk, dfk_coro_name(dfk->_.eventloop, "eventloop"));
   /* Exclude event_loop from run queue */
   assert((dfk_coro_t*) dfk->_.pending_coros.tail == dfk->_.eventloop);
   dfk_list_pop_back(&dfk->_.pending_coros);
