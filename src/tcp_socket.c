@@ -74,15 +74,8 @@ int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk)
     return dfk_err_badarg;
   }
   DFK_DBG(dfk, "{%p}", (void*) sock);
-  {
-    int err = uv_tcp_init(dfk->_.uvloop, &sock->_.socket);
-    sock->_.socket.data = sock;
-    if (err != 0) {
-      DFK_ERROR(dfk, "{%p} uv_tcp_init returned %d", (void*) sock, err);
-      dfk->sys_errno = err;
-      return dfk_err_sys;
-    }
-  }
+  DFK_SYSCALL(dfk, uv_tcp_init(dfk->_.uvloop, &sock->_.socket));
+  sock->_.socket.data = sock;
   sock->_.arg.func = NULL;
   sock->_.flags = TCP_SOCKET_SPARE;
   sock->userdata = NULL;
@@ -98,10 +91,7 @@ int dfk_tcp_socket_free(dfk_tcp_socket_t* sock)
   }
   DFK_DBG(sock->dfk, "{%p}", (void*) sock);
   if (STATE(sock) != TCP_SOCKET_SPARE) {
-    int err;
-    if ((err = dfk_tcp_socket_close(sock)) != dfk_err_ok) {
-      return err;
-    }
+    DFK_CALL(sock->dfk, dfk_tcp_socket_close(sock));
   }
   return dfk_err_ok;
 }
@@ -221,6 +211,7 @@ static void dfk_tcp_socket_accepted_main(dfk_coro_t* coro, void* p)
  */
 typedef struct dfk_tcp_socket_listen_obj_t {
   dfk_coro_t* yieldback;
+  dfk_coro_t* close_yieldback;
   void (*callback)(dfk_coro_t*, dfk_tcp_socket_t*, void*);
   void* cbarg;
   int err;
@@ -299,6 +290,7 @@ int dfk_tcp_socket_listen(
       (void*) sock, endpoint, port, (unsigned long) backlog);
 
     arg.yieldback = DFK_THIS_CORO(sock->dfk);
+    arg.close_yieldback = NULL;
     arg.callback = callback;
     arg.cbarg = cbarg;
     arg.err = dfk_err_ok;
@@ -320,7 +312,13 @@ static void dfk_tcp_socket_on_close(uv_handle_t* p)
   assert(sock->dfk);
   assert(STATE(sock) & TCP_SOCKET_CLOSING);
   DFK_INFO(sock->dfk, "{%p} is now closed", (void*) sock);
-  DFK_SCHEDULE(sock->dfk, (dfk_coro_t*) sock->_.arg.obj);
+  if (STATE(sock) & TCP_SOCKET_LISTENING) {
+    dfk_tcp_socket_listen_obj_t* obj = (dfk_tcp_socket_listen_obj_t*) sock->_.arg.obj;
+    DFK_SCHEDULE(sock->dfk, obj->close_yieldback);
+    DFK_SCHEDULE(sock->dfk, obj->yieldback);
+  } else {
+    DFK_SCHEDULE(sock->dfk, (dfk_coro_t*) sock->_.arg.obj);
+  }
 }
 
 
@@ -337,13 +335,16 @@ int dfk_tcp_socket_close(dfk_tcp_socket_t* sock)
   }
 
   assert(sock->dfk);
-  assert(sock->_.arg.obj == NULL);
-  sock->_.arg.obj = DFK_THIS_CORO(sock->dfk);
+  if (STATE(sock) & TCP_SOCKET_LISTENING) {
+    ((dfk_tcp_socket_listen_obj_t*) sock->_.arg.obj)->close_yieldback =
+      DFK_THIS_CORO(sock->dfk);
+  } else {
+    sock->_.arg.obj = DFK_THIS_CORO(sock->dfk);
+  }
   sock->_.flags |= TCP_SOCKET_CLOSING;
   DFK_INFO(sock->dfk, "{%p} start close", (void*) sock);
   uv_close((uv_handle_t*) &sock->_.socket, dfk_tcp_socket_on_close);
   DFK_IO(sock->dfk);
-  sock->_.arg.obj = NULL;
   assert(STATE(sock) & TCP_SOCKET_CLOSING);
   TO_STATE(sock, TCP_SOCKET_CLOSED);
   return dfk_err_ok;

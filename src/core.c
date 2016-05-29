@@ -265,6 +265,7 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
         && dfk_list_size(&dfk->_.iowait_coros))
     {
       /* pending_coros list is empty - switch to IO with possible blocking */
+      DFK_DBG(dfk, "no pending coroutines, will do I/O");
       dfk_yield(scheduler, dfk->_.eventloop);
     }
   }
@@ -288,7 +289,7 @@ static void dfk_eventloop(dfk_coro_t* coro, void* p)
   dfk_yield(coro, dfk->_.scheduler);
   while (uv_loop_alive(&loop)) {
     DFK_DBG(dfk, "{%p} poll", (void*) &loop);
-    if (uv_run(&loop, UV_RUN_DEFAULT) == 0) {
+    if (uv_run(&loop, UV_RUN_ONCE) == 0) {
       DFK_DBG(dfk, "{%p} no more active handlers", (void*) &loop);
     }
     dfk_yield(coro, dfk->_.scheduler);
