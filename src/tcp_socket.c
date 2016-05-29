@@ -472,17 +472,11 @@ ssize_t dfk_tcp_socket_readv(
     dfk_iovec_t* iov,
     size_t niov)
 {
-  if (!sock) {
-    return -1;
+  if (!sock || (iov && !niov)) {
+    return dfk_err_badarg;
   }
-  assert(sock->dfk);
-  if (!iov) {
-    sock->dfk->dfk_errno = dfk_err_badarg;
-    return -1;
-  }
-  DFK_UNUSED(niov);
-  sock->dfk->dfk_errno = dfk_err_not_implemented;
-  return -1;
+  /* optimizations are not supported yet */
+  return dfk_tcp_socket_read(sock, iov[0].data, iov[0].size);
 }
 
 
@@ -522,35 +516,48 @@ ssize_t dfk_tcp_socket_write(
     char* buf,
     size_t nbytes)
 {
-  if (!sock) {
-    return -1;
+  if (!sock || (!buf && nbytes)) {
+    return dfk_err_badarg;
   }
-  if (!buf && nbytes != 0) {
-    sock->dfk->dfk_errno = dfk_err_badarg;
-    return -1;
+  dfk_iovec_t iovec;
+  iovec.data = buf;
+  iovec.size = nbytes;
+  return dfk_tcp_socket_writev(sock, &iovec, 1);
+}
+
+
+ssize_t dfk_tcp_socket_writev(
+    dfk_tcp_socket_t* sock,
+    dfk_iovec_t* iov,
+    size_t niov)
+{
+  if (!sock || (!iov && niov)) {
+    return dfk_err_badarg;
+  }
+
+  if (STATE(sock) & TCP_SOCKET_WRITING) {
+    return dfk_err_inprog;
+  }
+
+  if (!(STATE(sock) & TCP_SOCKET_CONNECTED)) {
+    return dfk_err_badarg;
   }
 
   {
     uv_write_t request;
     dfk_tcp_socket_write_async_arg_t arg;
-    uv_buf_t uvbuf = uv_buf_init(buf, nbytes);
+    size_t i, totalbytes = 0;
 
     assert(sock->dfk);
 
-    if (STATE(sock) & TCP_SOCKET_WRITING) {
-      sock->dfk->dfk_errno = dfk_err_inprog;
-      return -1;
+    for (i = 0; i < niov; ++i) {
+      totalbytes += iov[i].size;
     }
 
-    if (!(STATE(sock) & TCP_SOCKET_CONNECTED)) {
-      sock->dfk->dfk_errno = dfk_err_badarg;
-      return -1;
-    }
+    DFK_DBG(sock->dfk, "(%p) write %lu bytes from %lu chunks",
+        (void*) sock, (unsigned long) totalbytes, (unsigned long) niov);
 
-    DFK_DBG(sock->dfk, "(%p) write %lu bytes",
-        (void*) sock, (unsigned long) nbytes);
-
-    if (nbytes == 0) {
+    if (niov == 0) {
       return dfk_err_ok;
     }
 
@@ -563,8 +570,8 @@ ssize_t dfk_tcp_socket_write(
     DFK_SYSCALL(sock->dfk, uv_write(
         &request,
         (uv_stream_t*) &sock->_.socket,
-        &uvbuf,
-        1,
+        (uv_buf_t*) iov,
+        niov,
         dfk_tcp_socket_on_write));
 
     sock->_.flags |= TCP_SOCKET_WRITING;
@@ -576,26 +583,7 @@ ssize_t dfk_tcp_socket_write(
     sock->_.flags ^= TCP_SOCKET_WRITING;
 
     sock->dfk->dfk_errno = arg.err;
-    return arg.err == dfk_err_ok ? (ssize_t) nbytes : -1;
+    return arg.err == dfk_err_ok ? (ssize_t) totalbytes : -1;
   }
-}
-
-
-ssize_t dfk_tcp_socket_writev(
-    dfk_tcp_socket_t* sock,
-    dfk_iovec_t* iov,
-    size_t niov)
-{
-  if (!sock) {
-    return -1;
-  }
-  assert(sock->dfk);
-  if (!iov) {
-    sock->dfk->dfk_errno = dfk_err_badarg;
-    return -1;
-  }
-  DFK_UNUSED(niov);
-  sock->dfk->dfk_errno = dfk_err_not_implemented;
-  return -1;
 }
 
