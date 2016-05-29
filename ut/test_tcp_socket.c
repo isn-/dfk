@@ -190,7 +190,7 @@ static void* ut_connector_start_stop(void* arg)
     DFK_DBG(carg->dfk, "try to connect, attempt %d", i);
     if (connect(sockfd, (struct sockaddr*) &addr, sizeof(addr)) == 0) {
       DFK_DBG(carg->dfk, "connected");
-      carg->connected = 1;
+      carg->connected += 1;
       break;
     }
     /* wait for 1, 4, 9, 16, 25, ... , 1024 milliseconds */
@@ -246,11 +246,10 @@ TEST(tcp_socket, listen_start_stop)
   ASSERT(pthread_join(cthread, NULL) == 0);
 }
 
-/*
 
-static void* connector_read_write(void* arg)
+static void* ut_connector_read_write(void* arg)
 {
-  connector_arg* carg = (connector_arg*) arg;
+  ut_connector_arg_t* carg = (ut_connector_arg_t*) arg;
   int sockfd;
   unsigned int i;
   ssize_t nread = 0, nwritten = 0;
@@ -266,10 +265,13 @@ static void* connector_read_write(void* arg)
   addr.sin_port = htons(carg->port);
   inet_aton(carg->endpoint, (struct in_addr*) &addr.sin_addr.s_addr);
   for (i = 0; i < 32; ++i) {
+    DFK_DBG(carg->dfk, "try to connect, attempt %d", i);
     if (connect(sockfd, (struct sockaddr*) &addr, sizeof(addr)) == 0) {
+      DFK_DBG(carg->dfk, "connected");
+      carg->connected += 1;
       break;
     }
-    // wait for 1, 4, 9, 16, 25, ... , 1024 milliseconds //
+    /* wait for 1, 4, 9, 16, 25, ... , 1024 milliseconds */
     req.tv_nsec = i * i * 1000000;
     nanosleep(&req, &rem);
   }
@@ -291,51 +293,64 @@ static void* connector_read_write(void* arg)
   return NULL;
 }
 
-static void on_new_connection_echo(dfk_tcp_socket_t* lsock, dfk_tcp_socket_t* sock, int err)
-{
-  char buf[512] = {0};
-  size_t nread;
 
-  ASSERT(lsock != NULL);
+static void on_new_connection_echo(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* cbarg)
+{
+  ASSERT(coro != NULL);
   ASSERT(sock != NULL);
-  ASSERT(err == dfk_err_ok);
-  (void) lsock;
+  ASSERT(cbarg != NULL);
+
+  DFK_UNUSED(cbarg);
 
   for (;;) {
-    err = dfk_tcp_socket_read(sock, buf, sizeof(buf), &nread);
-    if (err != dfk_err_ok) {
+    char buf[512] = {0};
+    ssize_t nbytes = dfk_tcp_socket_read(sock, buf, sizeof(buf));
+    printf("nbytes read %d", (int) nbytes);
+    if (nbytes < 0) {
       break;
     }
-    err = dfk_tcp_socket_write(sock, buf, nread);
-    if (err != dfk_err_ok) {
+    nbytes = dfk_tcp_socket_write(sock, buf, nbytes);
+    printf("nbytes written %d", (int) nbytes);
+    if (nbytes < 0) {
       break;
     }
   }
 
-  (void) dfk_tcp_socket_close(sock);
-  (void) dfk_tcp_socket_close(lsock);
+  ASSERT_OK(dfk_tcp_socket_close(sock));
+  ASSERT_OK(dfk_tcp_socket_close((dfk_tcp_socket_t*) cbarg));
 }
 
-(tcp_socket, listen_read_write)
+
+static void ut_listen_read_write(dfk_coro_t* coro, void* p)
 {
-  int nconnected = 0;
-  pthread_t cthread;
-  connector_arg carg;
-  dfk_context_t* ctx = dfk_default_context();
   dfk_tcp_socket_t sock;
-  dfk_event_loop_t loop;
-  ASSERT_OK(dfk_event_loop_init(&loop, ctx));
-  ASSERT_OK(dfk_tcp_socket_init(&sock, &loop));
-  ASSERT_OK(dfk_tcp_socket_start_listen(
-    &sock, "127.0.0.1", 10000, on_new_connection_echo, 0));
-  sock.userdata = &nconnected;
+  DFK_UNUSED(p);
+  ASSERT_OK(dfk_tcp_socket_init(&sock, coro->dfk));
+  ASSERT_OK(dfk_tcp_socket_listen(&sock, "127.0.0.1", 10000, on_new_connection_echo, &sock, 0));
+  ASSERT_OK(dfk_tcp_socket_free(&sock));
+}
+
+
+
+TEST(tcp_socket, listen_read_write)
+{
+  pthread_t cthread;
+  ut_connector_arg_t carg;
+  dfk_t dfk;
+
+  ASSERT_OK(dfk_init(&dfk));
+  ASSERT(dfk_run(&dfk, ut_listen_read_write, NULL));
+
+  carg.dfk = &dfk;
   carg.port = 10000;
   carg.endpoint = "127.0.0.1";
-  ASSERT(pthread_create(&cthread, NULL, &connector_read_write, &carg) == 0);
-  ASSERT_OK(dfk_event_loop_run(&loop));
-  ASSERT_OK(dfk_event_loop_join(&loop));
-  ASSERT(nconnected == 1);
+  carg.connected = 0;
+  ASSERT(!pthread_create(&cthread, NULL, &ut_connector_read_write, &carg));
+
+  ASSERT_OK(dfk_work(&dfk));
+  ASSERT_OK(dfk_free(&dfk));
+
+  ASSERT(carg.connected == 1);
   ASSERT(pthread_join(cthread, NULL) == 0);
 }
 
-*/
