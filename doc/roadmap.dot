@@ -1,7 +1,7 @@
 digraph "DFK Library Roadmap" {
   node [shape=box];
 
-  tcp_socket [label="#1\nTCP socket"];
+  tcp_socket [label="#1\nTCP socket" fillcolor=green style=filled];
   udp_socket [label="#2\nUDP socket"];
 
   http_parser [label="#3\nJoyent HTTP Parser"];
