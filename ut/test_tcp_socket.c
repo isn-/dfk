@@ -87,13 +87,15 @@ static void single_write_read(dfk_coro_t* coro, void* p)
   {
     char buffer[64] = {0};
     size_t i;
+    ssize_t nread;
     for (i = 0; i < sizeof(buffer) / sizeof(buffer[0]); ++i) {
       buffer[i] = (char) (i + 24) % 256;
     }
     ASSERT(dfk_tcp_socket_write(&sock, buffer, sizeof(buffer)) == sizeof(buffer));
     memset(buffer, 0, sizeof(buffer));
-    ASSERT(dfk_tcp_socket_read(&sock, buffer, sizeof(buffer)) == sizeof(buffer));
-    for (i = 0; i < sizeof(buffer) / sizeof(buffer[0]); ++i) {
+    nread = dfk_tcp_socket_read(&sock, buffer, sizeof(buffer));
+    ASSERT(nread > 0);
+    for (i = 0; i < (size_t) nread; ++i) {
       ASSERT(buffer[i] == (char) (i + 24) % 256);
     }
   }
@@ -161,6 +163,47 @@ static void multi_write_read(dfk_coro_t* coro, void* p)
 TEST_F(echo_fixture, tcp_socket, multi_write_read)
 {
   ASSERT(dfk_run(&fixture->dfk, multi_write_read, NULL));
+  ASSERT_OK(dfk_work(&fixture->dfk));
+}
+
+
+static void single_writev_readv(dfk_coro_t* coro, void* p)
+{
+  dfk_t* dfk = coro->dfk;
+  dfk_tcp_socket_t sock;
+  DFK_UNUSED(p);
+  ASSERT_OK(dfk_tcp_socket_init(&sock, dfk));
+  ASSERT_OK(dfk_tcp_socket_connect(&sock, "127.0.0.1", 10020));
+  {
+    char buffer[64] = {0};
+    size_t i;
+    ssize_t nread;
+    for (i = 0; i < sizeof(buffer) / sizeof(buffer[0]); ++i) {
+      buffer[i] = (char) (i + 24) % 256;
+    }
+    dfk_iovec_t chunks[3];
+    chunks[0].data = buffer;
+    chunks[0].size = 32;
+    chunks[1].data = buffer + 32;
+    chunks[1].size = 16;
+    chunks[2].data = buffer + 48;
+    chunks[2].size = 16;
+    ASSERT(dfk_tcp_socket_writev(&sock, chunks, 3) == sizeof(buffer));
+    memset(buffer, 0, sizeof(buffer));
+    nread = dfk_tcp_socket_readv(&sock, chunks, 3);
+    ASSERT(nread > 0);
+    for (i = 0; i < (size_t) nread; ++i) {
+      ASSERT(buffer[i] == (char) (i + 24) % 256);
+    }
+  }
+  ASSERT_OK(dfk_tcp_socket_close(&sock));
+  ASSERT_OK(dfk_tcp_socket_free(&sock));
+}
+
+
+TEST_F(echo_fixture, tcp_socket, single_writev_readv)
+{
+  ASSERT(dfk_run(&fixture->dfk, single_writev_readv, NULL));
   ASSERT_OK(dfk_work(&fixture->dfk));
 }
 
