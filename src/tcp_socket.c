@@ -199,6 +199,7 @@ static void dfk_tcp_socket_accepted_main(dfk_coro_t* coro, void* p)
 
   DFK_CALL_RVOID(coro->dfk, dfk_tcp_socket_init(&sock, coro->dfk));
   DFK_SYSCALL_RVOID(coro->dfk, uv_accept(arg->stream, (uv_stream_t*) &sock._.socket));
+  TO_STATE(&sock, TCP_SOCKET_CONNECTED);
   DFK_INFO(coro->dfk, "{%p} connection accepted", (void*) &sock);
 
   arg->callback(coro, &sock, arg->cbarg);
@@ -452,8 +453,9 @@ ssize_t dfk_tcp_socket_read(
     assert(STATE(sock) & TCP_SOCKET_READING);
     sock->_.flags ^= TCP_SOCKET_READING;
 
-    DFK_INFO(sock->dfk, "(%p) read returned %d, bytes read %lu",
-        (void*) sock, arg.err, (unsigned long) arg.nbytes);
+    DFK_INFO(sock->dfk, "(%p) read returned %d (%s), bytes read %lu",
+        (void*) sock, arg.err, dfk_strerr(sock->dfk, arg.err),
+        (unsigned long) arg.nbytes);
 
     if (arg.err != dfk_err_ok) {
       sock->dfk->dfk_errno = arg.err;
