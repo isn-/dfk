@@ -287,8 +287,8 @@ TEST(tcp_socket, listen_start_stop)
   ASSERT_OK(dfk_work(&dfk));
   ASSERT_OK(dfk_free(&dfk));
 
-  ASSERT(carg.connected == 1);
   ASSERT(pthread_join(cthread, NULL) == 0);
+  ASSERT(carg.connected == 1);
 }
 
 
@@ -396,7 +396,7 @@ TEST(tcp_socket, listen_read_write)
   ASSERT_OK(dfk_work(&dfk));
   ASSERT_OK(dfk_free(&dfk));
 
-  ASSERT(carg.connected == 1);
   ASSERT(pthread_join(cthread, NULL) == 0);
+  ASSERT(carg.connected == 1);
 }
 
