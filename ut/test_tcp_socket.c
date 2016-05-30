@@ -176,12 +176,12 @@ static void single_writev_readv(dfk_coro_t* coro, void* p)
   ASSERT_OK(dfk_tcp_socket_connect(&sock, "127.0.0.1", 10020));
   {
     char buffer[64] = {0};
+    dfk_iovec_t chunks[3];
     size_t i;
     ssize_t nread;
     for (i = 0; i < sizeof(buffer) / sizeof(buffer[0]); ++i) {
       buffer[i] = (char) (i + 24) % 256;
     }
-    dfk_iovec_t chunks[3];
     chunks[0].data = buffer;
     chunks[0].size = 32;
     chunks[1].data = buffer + 32;

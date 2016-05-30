@@ -519,10 +519,12 @@ ssize_t dfk_tcp_socket_write(
   if (!sock || (!buf && nbytes)) {
     return dfk_err_badarg;
   }
-  dfk_iovec_t iovec;
-  iovec.data = buf;
-  iovec.size = nbytes;
-  return dfk_tcp_socket_writev(sock, &iovec, 1);
+  {
+    dfk_iovec_t iovec;
+    iovec.data = buf;
+    iovec.size = nbytes;
+    return dfk_tcp_socket_writev(sock, &iovec, 1);
+  }
 }
 
 
