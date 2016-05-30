@@ -223,14 +223,14 @@ static void* ut_connector_start_stop(void* arg)
   struct sockaddr_in addr;
   struct timespec req, rem;
 
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  ASSERT_RET(sockfd != -1, NULL);
   memset((char *) &addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_port = htons(carg->port);
   inet_aton(carg->endpoint, (struct in_addr*) &addr.sin_addr.s_addr);
   for (i = 0; i < 32; ++i) {
     DFK_DBG(carg->dfk, "try to connect, attempt %d", i);
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    ASSERT_RET(sockfd != -1, NULL);
     if (connect(sockfd, (struct sockaddr*) &addr, sizeof(addr)) == 0) {
       DFK_DBG(carg->dfk, "connected");
       carg->connected += 1;
@@ -241,6 +241,7 @@ static void* ut_connector_start_stop(void* arg)
     memset(&rem, 0, sizeof(rem));
     req.tv_nsec = i * i * 1000000;
     DFK_DBG(carg->dfk, "connect attempt failed, retry in %d msec", i * i);
+    close(sockfd);
     nanosleep(&req, &rem);
   }
   close(sockfd);
@@ -303,14 +304,14 @@ static void* ut_connector_read_write(void* arg)
   struct timespec req, rem;
   unsigned char buf[1234] = {0};
 
-  sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  ASSERT_RET(sockfd != -1, NULL);
   memset((char *) &addr, 0, sizeof(addr));
   addr.sin_family = AF_INET;
   addr.sin_port = htons(carg->port);
   inet_aton(carg->endpoint, (struct in_addr*) &addr.sin_addr.s_addr);
   for (i = 0; i < 32; ++i) {
     DFK_DBG(carg->dfk, "try to connect, attempt %d", i);
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    ASSERT_RET(sockfd != -1, NULL);
     if (connect(sockfd, (struct sockaddr*) &addr, sizeof(addr)) == 0) {
       DFK_DBG(carg->dfk, "connected");
       carg->connected += 1;
@@ -321,6 +322,7 @@ static void* ut_connector_read_write(void* arg)
     memset(&rem, 0, sizeof(rem));
     req.tv_nsec = i * i * 1000000;
     DFK_DBG(carg->dfk, "connect attempt failed, retry in %d msec", i * i);
+    close(sockfd);
     nanosleep(&req, &rem);
   }
   for (i = 0; i < sizeof(buf); ++i) {
