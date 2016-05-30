@@ -71,7 +71,7 @@ static void connect_disconnect(dfk_coro_t* coro, void* p)
 TEST_F(echo_fixture, tcp_socket, connect_disconnect)
 {
   int connected = 0;
-  ASSERT(dfk_run(&fixture->dfk, connect_disconnect, &connected));
+  ASSERT(dfk_run(&fixture->dfk, connect_disconnect, &connected, 0));
   ASSERT_OK(dfk_work(&fixture->dfk));
   EXPECT(connected == 1);
 }
@@ -106,7 +106,7 @@ static void single_write_read(dfk_coro_t* coro, void* p)
 
 TEST_F(echo_fixture, tcp_socket, single_write_read)
 {
-  ASSERT(dfk_run(&fixture->dfk, single_write_read, NULL));
+  ASSERT(dfk_run(&fixture->dfk, single_write_read, NULL, 0));
   ASSERT_OK(dfk_work(&fixture->dfk));
 }
 
@@ -162,7 +162,7 @@ static void multi_write_read(dfk_coro_t* coro, void* p)
 
 TEST_F(echo_fixture, tcp_socket, multi_write_read)
 {
-  ASSERT(dfk_run(&fixture->dfk, multi_write_read, NULL));
+  ASSERT(dfk_run(&fixture->dfk, multi_write_read, NULL, 0));
   ASSERT_OK(dfk_work(&fixture->dfk));
 }
 
@@ -203,7 +203,7 @@ static void single_writev_readv(dfk_coro_t* coro, void* p)
 
 TEST_F(echo_fixture, tcp_socket, single_writev_readv)
 {
-  ASSERT(dfk_run(&fixture->dfk, single_writev_readv, NULL));
+  ASSERT(dfk_run(&fixture->dfk, single_writev_readv, NULL, 0));
   ASSERT_OK(dfk_work(&fixture->dfk));
 }
 
@@ -237,6 +237,8 @@ static void* ut_connector_start_stop(void* arg)
       break;
     }
     /* wait for 1, 4, 9, 16, 25, ... , 1024 milliseconds */
+    memset(&req, 0, sizeof(req));
+    memset(&rem, 0, sizeof(rem));
     req.tv_nsec = i * i * 1000000;
     DFK_DBG(carg->dfk, "connect attempt failed, retry in %d msec", i * i);
     nanosleep(&req, &rem);
@@ -274,7 +276,7 @@ TEST(tcp_socket, listen_start_stop)
   dfk_t dfk;
 
   ASSERT_OK(dfk_init(&dfk));
-  ASSERT(dfk_run(&dfk, ut_listen_start_stop, NULL));
+  ASSERT(dfk_run(&dfk, ut_listen_start_stop, NULL, 0));
 
   carg.dfk = &dfk;
   carg.port = 10000;
@@ -315,7 +317,10 @@ static void* ut_connector_read_write(void* arg)
       break;
     }
     /* wait for 1, 4, 9, 16, 25, ... , 1024 milliseconds */
+    memset(&req, 0, sizeof(req));
+    memset(&rem, 0, sizeof(rem));
     req.tv_nsec = i * i * 1000000;
+    DFK_DBG(carg->dfk, "connect attempt failed, retry in %d msec", i * i);
     nanosleep(&req, &rem);
   }
   for (i = 0; i < sizeof(buf); ++i) {
@@ -348,12 +353,10 @@ static void on_new_connection_echo(dfk_coro_t* coro, dfk_tcp_socket_t* sock, voi
   for (;;) {
     char buf[512] = {0};
     ssize_t nbytes = dfk_tcp_socket_read(sock, buf, sizeof(buf));
-    printf("nbytes read %d", (int) nbytes);
     if (nbytes < 0) {
       break;
     }
     nbytes = dfk_tcp_socket_write(sock, buf, nbytes);
-    printf("nbytes written %d", (int) nbytes);
     if (nbytes < 0) {
       break;
     }
@@ -382,7 +385,7 @@ TEST(tcp_socket, listen_read_write)
   dfk_t dfk;
 
   ASSERT_OK(dfk_init(&dfk));
-  ASSERT(dfk_run(&dfk, ut_listen_read_write, NULL));
+  ASSERT(dfk_run(&dfk, ut_listen_read_write, NULL, 0));
 
   carg.dfk = &dfk;
   carg.port = 10000;

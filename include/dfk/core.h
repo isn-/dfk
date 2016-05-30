@@ -218,7 +218,7 @@ int dfk_free(dfk_t* dfk);
  * @pre dfk != NULL
  * @pre ep != NULL
  */
-dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg);
+dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg, size_t argsize);
 
 
 /**

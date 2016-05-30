@@ -245,7 +245,7 @@ static void dfk_tcp_socket_on_new_connection(uv_stream_t* p, int status)
     aarg.stream = p;
     aarg.callback = arg->callback;
     aarg.cbarg = arg->cbarg;
-    coro = dfk_run(sock->dfk, dfk_tcp_socket_accepted_main, &aarg);
+    coro = dfk_run(sock->dfk, dfk_tcp_socket_accepted_main, &aarg, sizeof(aarg));
     dfk_coro_name(coro, "conn.%p", p->accepted_fd);
   }
 }

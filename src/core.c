@@ -139,7 +139,7 @@ static void dfk_coro_main(void* arg)
 }
 
 
-dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg)
+dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg, size_t argsize)
 {
   if (!dfk) {
     return NULL;
@@ -156,13 +156,22 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg)
       dfk->dfk_errno = dfk_err_nomem;
       return NULL;
     }
+    if (argsize) {
+      memcpy(stack_base, arg, argsize);
+      stack_base += argsize;
+      stack_size -= argsize;
+    }
 #ifdef DFK_VALGRIND
     coro->_.stack_id = VALGRIND_STACK_REGISTER(stack_base, stack_base + stack_size);
 #endif
     coro->dfk = dfk;
     dfk_list_hook_init(&coro->_.hook);
     coro->_.ep = ep;
-    coro->_.arg = arg;
+    if (argsize) {
+      coro->_.arg = stack_base - argsize;
+    } else {
+      coro->_.arg = arg;
+    }
 #ifdef DFK_NAMED_COROUTINES
     snprintf(coro->_.name, sizeof(coro->_.name), "%p", (void*) coro);
 #endif
@@ -327,7 +336,7 @@ int dfk_work(dfk_t* dfk)
   }
   DFK_INFO(dfk, "start work cycle {%p}", (void*) dfk);
 
-  dfk->_.scheduler = dfk_run(dfk, dfk_scheduler, NULL);
+  dfk->_.scheduler = dfk_run(dfk, dfk_scheduler, NULL, 0);
   if (!dfk->_.scheduler) {
     return dfk->dfk_errno;
   }
@@ -336,7 +345,7 @@ int dfk_work(dfk_t* dfk)
   assert((dfk_coro_t*) dfk->_.pending_coros.tail == dfk->_.scheduler);
   dfk_list_pop_back(&dfk->_.pending_coros);
 
-  dfk->_.eventloop = dfk_run(dfk, dfk_eventloop, NULL);
+  dfk->_.eventloop = dfk_run(dfk, dfk_eventloop, NULL, 0);
   if (!dfk->_.eventloop) {
     return dfk->dfk_errno;
   }

@@ -82,7 +82,7 @@ TEST(core, no_subroutines)
   dfk_t dfk;
   int invoked = 0;
   ASSERT_OK(dfk_init(&dfk));
-  ASSERT(dfk_run(&dfk, do_inc_arg, &invoked));
+  ASSERT(dfk_run(&dfk, do_inc_arg, &invoked, 0));
   ASSERT_OK(dfk_work(&dfk));
   EXPECT(invoked);
   ASSERT_OK(dfk_free(&dfk));
@@ -94,8 +94,8 @@ TEST(core, two_coros_in_clip)
   dfk_t dfk;
   int invoked = 0;
   ASSERT_OK(dfk_init(&dfk));
-  ASSERT(dfk_run(&dfk, do_inc_arg, &invoked));
-  ASSERT(dfk_run(&dfk, do_inc_arg, &invoked));
+  ASSERT(dfk_run(&dfk, do_inc_arg, &invoked, 0));
+  ASSERT(dfk_run(&dfk, do_inc_arg, &invoked, 0));
   ASSERT_OK(dfk_work(&dfk));
   EXPECT(invoked == 2);
   ASSERT_OK(dfk_free(&dfk));
@@ -107,7 +107,7 @@ static void do_spawn_and_die(dfk_coro_t* coro, void* arg)
   int* count = (int*) arg;
   *count -= 1;
   if (*count) {
-    dfk_run(coro->dfk, do_spawn_and_die, arg);
+    dfk_run(coro->dfk, do_spawn_and_die, arg, 0);
   }
 }
 
@@ -117,7 +117,7 @@ TEST(core, spawn_and_die)
   dfk_t dfk;
   int count = 8;
   ASSERT_OK(dfk_init(&dfk));
-  ASSERT(dfk_run(&dfk, do_spawn_and_die, &count));
+  ASSERT(dfk_run(&dfk, do_spawn_and_die, &count, 0));
   ASSERT_OK(dfk_work(&dfk));
   EXPECT(count == 0);
   ASSERT_OK(dfk_free(&dfk));
