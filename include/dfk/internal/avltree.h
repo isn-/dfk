@@ -39,20 +39,23 @@ typedef struct dfk_avltree_hook_t {
 #endif
 } dfk_avltree_hook_t;
 
-typedef struct dfk_avltree_t {
-  dfk_avltree_hook_t* root;
-} dfk_avltree_t;
-
 typedef int (*dfk_avltree_cmp)(dfk_avltree_hook_t*, dfk_avltree_hook_t*);
 typedef int (*dfk_avltree_lookup_cmp)(dfk_avltree_hook_t*, void*);
 
-void dfk_avltree_init(dfk_avltree_t* t, dfk_avltree_cmp cmp);
-void dfk_avltree_free(dfk_avltree_t* t);
+typedef struct dfk_avltree_t {
+  dfk_avltree_hook_t* root;
+  dfk_avltree_cmp cmp;
+} dfk_avltree_t;
+
+typedef int (*dfk_avltree_traversal_cb)(dfk_avltree_t*, dfk_avltree_hook_t*);
+
+void dfk_avltree_init(dfk_avltree_t* tree, dfk_avltree_cmp cmp);
+void dfk_avltree_free(dfk_avltree_t* tree);
 
 void dfk_avltree_hook_init(dfk_avltree_hook_t* h);
 void dfk_avltree_hook_free(dfk_avltree_hook_t* h);
 
-void dfk_avltree_insert(dfk_avltree_t* t, dfk_avltree_hook_t* e);
-void dfk_avltree_erase(dfk_avltree_t* t, dfk_avltree_hook_t* e);
-dfk_avltree_hook_t* dfk_avltree_lookup(dfk_avltree_t* t, void* e, dfk_avltree_lookup_cmp cmp);
+dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* e);
+void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e);
+dfk_avltree_hook_t* dfk_avltree_lookup(dfk_avltree_t* tree, void* e, dfk_avltree_lookup_cmp cmp);
 

@@ -28,50 +28,168 @@
 #include <dfk/internal.h>
 #include <dfk/internal/avltree.h>
 
-void dfk_avltree_init(dfk_avltree_t* t, dfk_avltree_cmp cmp)
+
+#ifdef NDEBUG
+#define DFK_AVLTREE_CHECK_INVARIANTS(tree) DFK_UNUSED(tree)
+#else
+
+#include <stdint.h>
+#include <stdio.h>
+
+typedef void (*dfk__avltree_print_cb)(dfk_avltree_hook_t* hook);
+static void dfk__avltree_print(dfk_avltree_hook_t* tree, dfk__avltree_print_cb cb, size_t lvl, int64_t mask, int orient)
 {
-  DFK_UNUSED(t);
-  DFK_UNUSED(cmp);
+  if (!tree) {
+    return;
+  }
+  DFK_UNUSED(tree);
+  {
+    int64_t left_mask = mask | (1 << lvl);
+    int64_t right_mask = mask | (1 << lvl);
+    if (lvl) {
+      if (orient == -1) {
+        left_mask ^= (1 << (lvl - 1));
+      } else if (orient == 1) {
+        right_mask ^= (1 << (lvl - 1));
+      }
+    }
+    dfk__avltree_print(tree->right, cb, lvl + 1, left_mask, -1);
+    if (lvl) {
+      size_t i;
+      for (i = 0; i < lvl - 1; ++i) {
+        if (mask & (1 << i)) {
+          printf(" │ ");
+        } else {
+          printf("   ");
+        }
+      }
+      if (orient == -1) {
+        printf(" ┌─");
+      } else {
+        printf(" └─");
+      }
+    }
+    cb(tree);
+    dfk__avltree_print(tree->left, cb, lvl + 1, right_mask, 1);
+  }
 }
 
 
-void dfk_avltree_free(dfk_avltree_t* t)
+static void dfk__avltree_print_ptr(dfk_avltree_hook_t* hook)
 {
-  DFK_UNUSED(t);
+  printf("%p\n", (void*) hook);
 }
 
 
-void dfk_avltree_hook_init(dfk_avltree_hook_t* h)
+static void dfk__avltree_check_invariants(dfk_avltree_t* tree)
 {
-  DFK_UNUSED(h);
+  dfk__avltree_print(tree->root, dfk__avltree_print_ptr, 0, 0, 0);
+  DFK_UNUSED(tree);
+}
+
+#define DFK_AVLTREE_CHECK_INVARIANTS(tree) dfk__avltree_check_invariants((tree))
+#endif /* NDEBUG */
+
+
+static int dfk__avltree_dfs(dfk_avltree_t* tree, dfk_avltree_hook_t* hook, dfk_avltree_traversal_cb cb)
+{
+  int err;
+  if (!hook) {
+    return 0;
+  }
+  if ((err = dfk__avltree_dfs(tree, hook->left, cb)) != 0) {
+    return err;
+  }
+  if ((err = dfk__avltree_dfs(tree, hook->right, cb)) != 0) {
+    return err;
+  }
+  return cb(tree, hook);
 }
 
 
-void dfk_avltree_hook_free(dfk_avltree_hook_t* h)
+void dfk_avltree_init(dfk_avltree_t* tree, dfk_avltree_cmp cmp)
 {
-  DFK_UNUSED(h);
+  assert(tree);
+  assert(cmp);
+  tree->cmp = cmp;
+  tree->root = NULL;
 }
 
 
-void dfk_avltree_insert(dfk_avltree_t* t, dfk_avltree_hook_t* e)
+static int dfk__avltree_free_cb(dfk_avltree_t* tree, dfk_avltree_hook_t* hook)
 {
-  DFK_UNUSED(t);
+  DFK_UNUSED(tree);
+  dfk_avltree_hook_free(hook);
+  return 0;
+}
+
+
+void dfk_avltree_free(dfk_avltree_t* tree)
+{
+  assert(tree);
+  (void) dfk__avltree_dfs(tree, tree->root, dfk__avltree_free_cb);
+}
+
+
+void dfk_avltree_hook_init(dfk_avltree_hook_t* hook)
+{
+  assert(hook);
+  hook->left = NULL;
+  hook->right = NULL;
+  hook->bal = 0;
+#ifdef DFK_DEBUG
+  hook->tree = NULL;
+#endif
+}
+
+
+void dfk_avltree_hook_free(dfk_avltree_hook_t* hook)
+{
+  assert(hook);
+  hook->left = NULL;
+  hook->right = NULL;
+  hook->bal = 0;
+#ifdef DFK_DEBUG
+  hook->tree = NULL;
+#endif
+}
+
+
+dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
+{
   DFK_UNUSED(e);
+  DFK_UNUSED(tree);
+  DFK_AVLTREE_CHECK_INVARIANTS(tree);
+  return e;
 }
 
 
-void dfk_avltree_erase(dfk_avltree_t* t, dfk_avltree_hook_t* e)
+void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
 {
-  DFK_UNUSED(t);
+  DFK_UNUSED(tree);
   DFK_UNUSED(e);
+  DFK_AVLTREE_CHECK_INVARIANTS(tree);
 }
 
 
-dfk_avltree_hook_t* dfk_avltree_lookup(dfk_avltree_t* t, void* e, dfk_avltree_lookup_cmp cmp)
+dfk_avltree_hook_t* dfk_avltree_lookup(dfk_avltree_t* tree, void* e, dfk_avltree_lookup_cmp cmp)
 {
-  DFK_UNUSED(t);
-  DFK_UNUSED(e);
-  DFK_UNUSED(cmp);
+  assert(tree);
+  assert(e);
+  assert(cmp);
+  {
+    dfk_avltree_hook_t* i = tree->root;
+    while (i) {
+      int cmpres = cmp(e, i);
+      if (cmpres < 0) {
+        i = i->left;
+      } else if (cmpres > 0) {
+        i = i->right;
+      } else {
+        return i;
+      }
+    }
+  }
   return NULL;
 }
 
