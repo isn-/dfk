@@ -40,7 +40,6 @@ set(DFK_VALGRIND FALSE CACHE BOOL "In addition to regular mode, run unit tests u
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 check_include_files(assert.h DFK_HAVE_ASSERT_H)
 check_include_files(stddef.h DFK_HAVE_STDDEF_H)
