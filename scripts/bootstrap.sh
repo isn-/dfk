@@ -42,3 +42,17 @@ mkdir -r $LIBUV_BUILD_DIR && cd $LIBUV_BUILD_DIR
 CFLAGS=-fPIC CPPFLAGS=-fPIC ./configure --prefix=$PREFIX --enable-shared=no --enable-static=yes
 make -j
 make install
+
+# ---------- http-parser ----------
+HTTP_PARSER_VERSION=2.7.0
+HTTP_PARSER_SOURCE_DIR=$PREFIX/src/http-parser-$HTTP_PARSER_VERSION
+HTTP_PARSER_BUILD_DIR=$PREFIX/build/http-parser-$HTTP_PARSER_VERSION
+HTTP_PARSER_TARBALL=$PREFIX/tarball/http-parser-v$HTTP_PARSER_VERSION.tar.gz
+HTTP_PARSER_URL=https://github.com/nodejs/http-parser/archive/v$HTTP_PARSER_VERSION.tar.gz
+
+[ -e $HTTP_PARSER_TARBALL ] || wget --continue -O $HTTP_PARSER_TARBALL $HTTP_PARSER_URL
+[ -e $HTTP_PARSER_SOURCE_DIR ] || tar xzf $HTTP_PARSER_TARBALL -C $PREFIX/src
+cd $HTTP_PARSER_SOURCE_DIR
+make -j package
+cp libhttp_parser.a $PREFIX/lib
+cp http_parser.h $PREFIX/include
