@@ -72,7 +72,7 @@ if(${DFK_VALGRIND})
 endif()
 
 if("${DFK_EVENT_LOOP}" STREQUAL "LIBUV")
-  find_package(LibUV REQUIRED)
+  find_package(libuv REQUIRED)
   include_directories(${LIBUV_INCLUDE_DIRS})
 endif()
 
