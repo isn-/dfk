@@ -100,6 +100,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 add_subdirectory(thirdparty)
 
+fw_c_flags("-std=c99")
 fw_c_flags("-Werror -Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition")
 
 add_library(dfk
