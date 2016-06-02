@@ -84,7 +84,7 @@ if(DFK_COVERAGE AND NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
 endif()
 
 if(DFK_COVERAGE)
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} --coverage -O0")
+  fw_c_flags("--coverage -O0")
 endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"
@@ -100,7 +100,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 add_subdirectory(thirdparty)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror -Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition")
+fw_c_flags("-Werror -Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition")
 
 add_library(dfk
   src/core.c

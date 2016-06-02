@@ -2,6 +2,14 @@ include(CMakeParseArguments)
 
 find_package(Git)
 
+function(fw_c_flags)
+  if (NOT CMAKE_C_FLAGS)
+    set(CMAKE_C_FLAGS "${ARGN}" PARENT_SCOPE)
+  else()
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${ARGN}" PARENT_SCOPE)
+  endif()
+endfunction()
+
 function(fw_version_from_git out_version out_major out_minor out_patch)
   if(NOT GIT_FOUND)
     message(FATAL_ERROR "Can not get version - 'git' is not installed")
