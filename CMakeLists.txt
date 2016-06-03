@@ -26,12 +26,12 @@ set(DFK_BUILD_SAMPLES FALSE CACHE BOOL "Build code samples.")
 
 set(DFK_PAGE_SIZE ${page_size} CACHE STRING "Memory page size of target platform.")
 set(DFK_TCP_BACKLOG 128 CACHE STRING "Default TCP backlog size")
-set(DFK_COROUTINE "ASM" CACHE STRING "Coroutine implementation, options are: ASM.")
+set(DFK_COROUTINE ASM CACHE STRING "Coroutine implementation, options are: ASM.")
 set(DFK_NAMED_COROUTINES TRUE CACHE BOOL "Enable user-provided names for coroutines.")
 set(DFK_COROUTINE_NAME_LENGTH 32 CACHE STRING "Maximum size of coroutine name, including zero termination byte.")
-set(DFK_STACK "FIXED" CACHE STRING "Stack growth strategy, options are: FIXED, SEGMENTED, COPY, SWAP")
+set(DFK_STACK FIXED CACHE STRING "Stack growth strategy, options are: FIXED, SEGMENTED, COPY, SWAP")
 set(DFK_STACK_SIZE 1048576 CACHE STRING "Default stack size, in bytes")
-set(DFK_EVENT_LOOP "LIBUV" CACHE STRING "Event loop implementation, options are: LIBUV.")
+set(DFK_EVENT_LOOP LIBUV CACHE STRING "Event loop implementation, options are: LIBUV.")
 set(DFK_DEBUG FALSE CACHE BOOL "Emit debug log messages.")
 set(DFK_THREADS FALSE CACHE BOOL "Enable multithreading support.")
 set(DFK_COVERAGE FALSE CACHE BOOL "Collect gcov coverage statistics.")
@@ -71,7 +71,7 @@ if(${DFK_VALGRIND})
   mark_as_advanced(VALGRIND)
 endif()
 
-if("${DFK_EVENT_LOOP}" STREQUAL "LIBUV")
+if("${DFK_EVENT_LOOP}" STREQUAL LIBUV)
   find_package(libuv REQUIRED)
   include_directories(${LIBUV_INCLUDE_DIRS})
 endif()
@@ -90,7 +90,7 @@ endif()
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"
   ${CMAKE_CURRENT_BINARY_DIR}/dfk/config.h @ONLY)
 
-if("${DFK_COROUTINE}" STREQUAL "ASM")
+if("${DFK_COROUTINE}" STREQUAL ASM)
   add_definitions(-DCORO_ASM)
 endif()
 
@@ -102,6 +102,10 @@ add_subdirectory(thirdparty)
 
 fw_c_flags("-std=c99")
 fw_c_flags("-Werror -Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition")
+
+if(NOT APPLE AND "${DFK_EVENT_LOOP}" STREQUAL LIBUV)
+  add_definitions(-D_GNU_SOURCE)
+endif()
 
 add_library(dfk
   src/core.c
