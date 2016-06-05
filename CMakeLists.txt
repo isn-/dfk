@@ -22,7 +22,7 @@ endif()
 
 set(DFK_BUILD_UNIT_TESTS TRUE CACHE BOOL "Build unit tests.")
 set(DFK_BUILD_AUTO_TESTS TRUE CACHE BOOL "Build auto tests.")
-set(DFK_BUILD_SAMPLES FALSE CACHE BOOL "Build code samples.")
+set(DFK_BUILD_SAMPLES TRUE CACHE BOOL "Build code samples.")
 
 set(DFK_PAGE_SIZE ${page_size} CACHE STRING "Memory page size of target platform.")
 set(DFK_TCP_BACKLOG 128 CACHE STRING "Default TCP backlog size")

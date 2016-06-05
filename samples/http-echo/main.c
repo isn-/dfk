@@ -24,8 +24,8 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <dfk.h>
 #include <dfk/internal.h>
 
@@ -36,36 +36,20 @@ typedef struct args_t {
 } args_t;
 
 
-static void connection_handler(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
+static void echo(dfk_t* dfk, dfk_http_req_t* req, dfk_http_resp_t* resp)
 {
-  char buf[512] = {0};
-  ssize_t nread, nwritten;
-
-  DFK_UNUSED(coro);
-  DFK_UNUSED(p);
-
-  for (;;) {
-    nread = dfk_tcp_socket_read(sock, buf, sizeof(buf));
-    if (nread < 0) {
-      break;
-    }
-    nwritten = dfk_tcp_socket_write(sock, buf, nread);
-    if (nwritten != nread) {
-      break;
-    }
-  }
-
-  (void) dfk_tcp_socket_close(sock);
+  DFK_UNUSED(dfk);
+  DFK_UNUSED(req);
+  resp->code = 200;
 }
 
 
 static void dfk_main(dfk_coro_t* coro, void* p)
 {
-  dfk_tcp_socket_t sock;
+  dfk_http_t srv;
   args_t* args = (args_t*) p;
-  DFK_CALL_RVOID(coro->dfk, dfk_tcp_socket_init(&sock, coro->dfk));
-  DFK_CALL_RVOID(coro->dfk,
-      dfk_tcp_socket_listen(&sock, args->argv[1], atoi(args->argv[2]), connection_handler, NULL, 0));
+  DFK_CALL_RVOID(coro->dfk, dfk_http_init(&srv, coro->dfk));
+  DFK_CALL_RVOID(coro->dfk, dfk_http_serve(&srv, args->argv[1], atoi(args->argv[2]), echo));
 }
 
 
