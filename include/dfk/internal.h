@@ -29,7 +29,6 @@
 
 #pragma once
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wvariadic-macros"
 
 #include <stddef.h>
 #include <string.h>
@@ -44,8 +43,17 @@
 #define DFK_FREE(dfk, p) (dfk)->free((dfk), p)
 #define DFK_REALLOC(dfk, p, nbytes) (dfk)->realloc((dfk), p, nbytes)
 
+#define DFK_MAX(x, y) ((x) > (y) ? (x) : (y))
+#define DFK_MIN(x, y) ((x) < (y) ? (x) : (y))
+
+/*
+ * A cheat to suppress -Waddress warning:
+ * instead of straightforward "if ((dfk)..." we write
+ * "if (((void*) (dfk) != NULL)..."
+ * Suggested by http://stackoverflow.com/a/27048575
+ */
 #define DFK_LOG(dfk, channel, ...) \
-if ((dfk) && (dfk)->log) {\
+if (((void*) (dfk) != NULL) && (dfk)->log) {\
   char msg[512] = {0};\
   int printed;\
   printed = snprintf(msg, sizeof(msg), "%s (%s:%d) ", __func__, DFK_FILENAME, __LINE__);\
