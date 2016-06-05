@@ -65,4 +65,5 @@
 #cmakedefine DFK_THREADS
 #cmakedefine DFK_COVERAGE
 #cmakedefine DFK_VALGRIND
+#define DFK_HTTP_HEADERS_BUFFER @DFK_HTTP_HEADERS_BUFFER@
 

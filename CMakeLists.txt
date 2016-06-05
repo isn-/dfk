@@ -36,6 +36,7 @@ set(DFK_DEBUG FALSE CACHE BOOL "Emit debug log messages.")
 set(DFK_THREADS FALSE CACHE BOOL "Enable multithreading support.")
 set(DFK_COVERAGE FALSE CACHE BOOL "Collect gcov coverage statistics.")
 set(DFK_VALGRIND FALSE CACHE BOOL "In addition to regular mode, run unit tests under valgrind.")
+set(DFK_HTTP_HEADERS_BUFFER 10240 CACHE STRING "Buffer for HTTP headers, stack-allocated.")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -111,7 +112,8 @@ add_library(dfk
   src/core.c
   src/list.c
   src/avltree.c
-  src/tcp_socket.c)
+  src/tcp_socket.c
+  src/http.c)
 
 target_link_libraries(dfk
   coro

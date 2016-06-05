@@ -1,10 +1,9 @@
 /**
- * @file dfk.h
- * @brief Dfk - HTTP backend in C
+ * @file dfk/http.h
+ * HTTP server
  *
- * @author Stanislav Ivochkin
  * @copyright
- * Copyright (c) 2015, 2016, Stanislav Ivochkin. All Rights Reserved.
+ * Copyright (c) 2016, Stanislav Ivochkin. All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,19 +27,31 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
-#pragma once
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <dfk/config.h>
-#include <dfk/core.h>
 #include <dfk/tcp_socket.h>
-#include <dfk/http.h>
 
-#ifdef __cplusplus
-}
-#endif
+typedef struct dfk_http_req_t {
+  void* ph;
+} dfk_http_req_t;
+
+typedef struct dfk_http_resp_t {
+  int code;
+} dfk_http_resp_t;
+
+typedef void (*dfk_http_handler)(dfk_t*, struct dfk_http_req_t*, struct dfk_http_resp_t*);
+
+typedef struct dfk_http_t {
+  struct {
+    dfk_tcp_socket_t listensock;
+    dfk_http_handler handler;
+  } _;
+  dfk_t* dfk;
+} dfk_http_t;
+
+int dfk_http_init(dfk_http_t* http, dfk_t* dfk);
+int dfk_http_free(dfk_http_t* http);
+int dfk_http_serve(dfk_http_t* http,
+    const char* endpoint,
+    uint16_t port,
+    dfk_http_handler handler);
 
