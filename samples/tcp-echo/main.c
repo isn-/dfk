@@ -74,7 +74,7 @@ int main(int argc, char** argv)
   dfk_t dfk;
   args_t args;
   if (argc != 3) {
-    fprintf(stderr, "usage: %s <ip> <port>", argv[0]);
+    fprintf(stderr, "usage: %s <ip> <port>\n", argv[0]);
     return 1;
   }
   args.argc = argc;

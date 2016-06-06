@@ -233,14 +233,14 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
       snprintf(respbuf, sizeof(respbuf), "HTTP/1.0 %3d OK\r\n", resp.code);
       /* @todo remove it */
       dfk_tcp_socket_write(sock, respbuf, sizeof(respbuf) - 1);
-      dfk__http_req_free(&req);
-      dfk__http_resp_free(&resp);
     }
   }
 
-  dfk__http_parser_data_free(&pdata);
-
 connection_broken:
+  dfk__http_parser_data_free(&pdata);
+  dfk__http_resp_free(&resp);
+  dfk__http_req_free(&req);
+
   DFK_CALL_RVOID(http->dfk, dfk_tcp_socket_close(sock));
 }
 
