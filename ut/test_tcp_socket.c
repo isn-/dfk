@@ -402,3 +402,38 @@ TEST(tcp_socket, listen_read_write)
   ASSERT(carg.connected == 1);
 }
 
+TEST(tcp_socket, errors)
+{
+  dfk_t dfk;
+  dfk_tcp_socket_t sock;
+  char buf[1];
+  dfk_iovec_t iov[1];
+
+  EXPECT(dfk_tcp_socket_init(NULL, NULL) == dfk_err_badarg);
+  EXPECT(dfk_tcp_socket_init(&sock, NULL) == dfk_err_badarg);
+  EXPECT(dfk_tcp_socket_init(NULL, &dfk) == dfk_err_badarg);
+
+  EXPECT(dfk_tcp_socket_free(NULL) == dfk_err_badarg);
+
+  EXPECT(dfk_tcp_socket_connect(NULL, "127.0.0.1", 10000) == dfk_err_badarg);
+  EXPECT(dfk_tcp_socket_connect(&sock, NULL, 10000) == dfk_err_badarg);
+
+  EXPECT(dfk_tcp_socket_listen(NULL, "127.0.0.1", 10000, on_new_connection_close, NULL, 0) == dfk_err_badarg);
+  EXPECT(dfk_tcp_socket_listen(&sock, NULL, 10000, on_new_connection_close, NULL, 0) == dfk_err_badarg);
+  EXPECT(dfk_tcp_socket_listen(&sock, "127.0.0.1", 10000, NULL, NULL, 0) == dfk_err_badarg);
+
+  EXPECT(dfk_tcp_socket_close(NULL) == dfk_err_badarg);
+
+  EXPECT(dfk_tcp_socket_read(NULL, buf, sizeof(buf)) == dfk_err_badarg);
+  EXPECT(dfk_tcp_socket_read(&sock, NULL, sizeof(buf)) == dfk_err_badarg);
+
+  EXPECT(dfk_tcp_socket_readv(NULL, iov, sizeof(iov)) == dfk_err_badarg);
+  EXPECT(dfk_tcp_socket_readv(&sock, NULL, sizeof(iov)) == dfk_err_badarg);
+
+  EXPECT(dfk_tcp_socket_write(NULL, buf, sizeof(buf)) == dfk_err_badarg);
+  EXPECT(dfk_tcp_socket_write(&sock, NULL, sizeof(buf)) == dfk_err_badarg);
+
+  EXPECT(dfk_tcp_socket_writev(NULL, iov, sizeof(iov)) == dfk_err_badarg);
+  EXPECT(dfk_tcp_socket_writev(&sock, NULL, sizeof(iov)) == dfk_err_badarg);
+}
+
