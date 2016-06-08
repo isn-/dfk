@@ -135,6 +135,7 @@ static void* out_of_memory(void* p, size_t size)
 TEST(core, errors)
 {
   dfk_t dfk;
+  dfk_coro_t coro;
   EXPECT(dfk_init(NULL) == dfk_err_badarg);
   EXPECT(dfk_free(NULL) == dfk_err_badarg);
   EXPECT(dfk_run(NULL, do_spawn_and_die, NULL, 0) == NULL);
@@ -143,6 +144,7 @@ TEST(core, errors)
   dfk.malloc = out_of_memory;
   EXPECT(dfk_run(&dfk, do_spawn_and_die, NULL, 0) == NULL);
   EXPECT(dfk_coro_name(NULL, "foo") == dfk_err_badarg);
+  EXPECT(dfk_coro_name(&coro, NULL, 1) == dfk_err_badarg);
   EXPECT(dfk_yield(NULL, NULL) == dfk_err_badarg);
   EXPECT(dfk_work(NULL) == dfk_err_badarg);
 }
