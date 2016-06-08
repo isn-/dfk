@@ -33,7 +33,7 @@
 typedef struct dfk_avltree_hook_t {
   struct dfk_avltree_hook_t* left;
   struct dfk_avltree_hook_t* right;
-  unsigned char bal;
+  signed char bal;
 #ifdef DFK_DEBUG
   struct dfk_avltree_t* tree;
 #endif

@@ -34,6 +34,7 @@
 #else
 
 #include <stdint.h>
+#include <stddef.h>
 #include <stdio.h>
 
 typedef void (*dfk__avltree_print_cb)(dfk_avltree_hook_t* hook);
@@ -58,15 +59,15 @@ static void dfk__avltree_print(dfk_avltree_hook_t* tree, dfk__avltree_print_cb c
       size_t i;
       for (i = 0; i < lvl - 1; ++i) {
         if (mask & (1 << i)) {
-          printf(" │ ");
+          printf("│ ");
         } else {
-          printf("   ");
+          printf("  ");
         }
       }
       if (orient == -1) {
-        printf(" ┌─");
-      } else {
-        printf(" └─");
+        printf("┌─");
+      } else if (orient == 1) {
+        printf("└─");
       }
     }
     cb(tree);
@@ -83,7 +84,8 @@ static void dfk__avltree_print_ptr(dfk_avltree_hook_t* hook)
 
 static void dfk__avltree_check_invariants(dfk_avltree_t* tree)
 {
-  dfk__avltree_print(tree->root, dfk__avltree_print_ptr, 0, 0, 0);
+  DFK_UNUSED(dfk__avltree_print);
+  DFK_UNUSED(dfk__avltree_print_ptr);
   DFK_UNUSED(tree);
 }
 
@@ -155,10 +157,195 @@ void dfk_avltree_hook_free(dfk_avltree_hook_t* hook)
 }
 
 
+static void dfk__avltree_single_rot(dfk_avltree_hook_t* parent, dfk_avltree_hook_t* prime, int dir)
+{
+  dfk_avltree_hook_t* x;
+  /*
+   * Input arguments are
+   * prime: (A)
+   * parent node relatively to the prime: (P)
+   * "x" variable stores a pointer to the "B" node
+   *
+   */
+  if (prime->bal == 2) {
+    /*
+     * Following rotation is performed:
+     *
+     *     ┌─c (height = h+1)        ┌─c
+     *   ┌─B                       P─B
+     *   │ └─b (height = h)    =>    │ ┌─b
+     * P─A                           └─A
+     *   └─a (height = h)              └─a
+     *
+     */
+    x = prime->right;
+    assert(x);
+    assert(x->bal == 1);
+    prime->right = x->left;
+    x->left = prime;
+    prime->bal = 0;
+    x->bal = 0;
+  } else {
+    /*
+     * Following rotation is performed:
+     *
+     *   ┌─a (height = h)              ┌─a
+     * P─A                           ┌─A
+     *   │ ┌─b (height = h)    =>    │ └─b
+     *   └─B                       P─B
+     *     └─c (height = h+1)        └─c
+     */
+    x = prime->left;
+    assert(prime->bal == -2);
+    assert(x);
+    assert(x->bal == -1);
+    prime->left = x->right;
+    x->right = prime;
+    prime->bal = 0;
+    x->bal = 0;
+  }
+  if (dir == -1) {
+    parent->left = x;
+  } else {
+    assert(dir == 1);
+    parent->right = x;
+  }
+}
+
+
+static void dfk__avltree_double_rot(dfk_avltree_hook_t* parent, dfk_avltree_hook_t* prime, int dir)
+{
+  dfk_avltree_hook_t* x;
+  /*
+   * Input arguments are
+   * prime: (A)
+   * parent node relatively to the prime: (P)
+   * Local variables refer to their capital-letter equivalents
+   * (b to B node, x to X node)
+   */
+  if (prime->bal == 2) {
+    /*
+     * Following rotation is performed:
+     *
+     *     ┌─d (height = h)              ┌─d
+     *   ┌─B                           ┌─B
+     *   │ │ ┌─c (height = h)          │ └─c
+     *   │ └─X                   =>  P─X
+     *   │   └─b (height = h-1)        │ ┌─b
+     * P─A                             └─A
+     *   └─a (height = h)                └─a
+     */
+    dfk_avltree_hook_t* b = prime->right;
+    x = prime->right->left;
+    assert(b->bal == -1);
+    assert(x->bal == 1);
+    prime->right = x->left;
+    x->left = prime;
+    b->left = x->right;
+    x->right = b;
+    b->bal = 0;
+    x->bal = 0;
+    prime->bal = -1;
+  } else {
+    /*
+     * Following rotation is performed:
+     *
+     *   ┌─a (height = h)                ┌─a
+     * P─A                             ┌─A
+     *   │   ┌─b (height = h-1)        │ └─b
+     *   │ ┌─X                   =>  P─X
+     *   │ │ └─c (height = h)          │ ┌─c
+     *   └─B                           └─B
+     *     └─d (height = h)              └─d
+     */
+    dfk_avltree_hook_t* b = prime->right;
+    x = prime->right->left;
+    assert(prime->bal == -2);
+    assert(b->bal == 1);
+    assert(x->bal == -1);
+    prime->left = x->right;
+    x->right = prime;
+    b->right = x->left;
+    x->left = b;
+    b->bal = 0;
+    x->bal = 0;
+    prime->bal = 1;
+  }
+  if (dir == -1) {
+    parent->left = x;
+  } else {
+    assert(dir == 1);
+    parent->right = x;
+  }
+}
+
+
 dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
 {
-  DFK_UNUSED(e);
-  DFK_UNUSED(tree);
+  assert(tree);
+  assert(e);
+  {
+    dfk_avltree_hook_t* i = tree->root;
+    dfk_avltree_hook_t* prime_parent = NULL;
+    dfk_avltree_hook_t* prime = NULL;
+    int prime_parent_dir = 0;
+    DFK_UNUSED(prime_parent);
+    while (i) {
+      int cmp = tree->cmp(i, e);
+      if (cmp < 0) {
+        if (i->left) {
+          if (i->left->bal) {
+            prime = i->left;
+            prime_parent = i;
+            prime_parent_dir = -1;
+          }
+          i = i->left;
+        } else {
+          i->left = e;
+          break;
+        }
+      } else if (cmp > 0) {
+        if (i->right) {
+          if (i->right->bal) {
+            prime = i->right;
+            prime_parent = i;
+            prime_parent_dir = 1;
+          }
+          i = i->right;
+        } else {
+          i->right = e;
+          break;
+        }
+      } else {
+        return NULL;
+      }
+    }
+    i = prime;
+    while (i != e) {
+      int cmp = tree->cmp(i, e);
+      if (cmp < 0) {
+        i->bal -= 1;
+        i = i->left;
+      } else if (cmp > 0) {
+        i->bal += 1;
+        i = i->right;
+      } else {
+        assert(i == e);
+        break;
+      }
+    }
+
+    DFK_UNUSED(dfk__avltree_single_rot);
+    DFK_UNUSED(prime_parent_dir);
+    DFK_UNUSED(dfk__avltree_double_rot);
+    if ((prime->bal == 2 && prime->right->bal == -1)
+        || (prime->bal == -2 && prime->left->bal == 1)) {
+      dfk__avltree_double_rot(prime_parent, prime, prime_parent_dir);
+    } else if ((prime->bal == 2 && prime->right->bal == 1)
+        || (prime->bal == -2 && prime->left->bal == -1)) {
+      dfk__avltree_single_rot(prime_parent, prime, prime_parent_dir);
+    }
+  }
   DFK_AVLTREE_CHECK_INVARIANTS(tree);
   return e;
 }
