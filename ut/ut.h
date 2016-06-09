@@ -58,14 +58,14 @@ void ut_##group##_##name(void) \
 void _ut_##group##_##name(void)
 
 #define DISABLED_TEST_F(fixture_name, group, name) \
-void _ut_##group##_##name(fixture_name*); \
+void _ut_##group##_##name(fixture_name##_t*); \
 void ut_##group##_##name(void) \
 { \
   (void) _ut_##group##_##name; \
   ut_disable(DFK_STRINGIFY(group), DFK_STRINGIFY(name)); \
 } \
 \
-void _ut_##group##_##name(fixture_name*)
+void _ut_##group##_##name(fixture_name##_t* fixture)
 
 #define EXPECT(expr) \
 if (!(expr)) { \
