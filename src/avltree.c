@@ -367,7 +367,7 @@ dfk_avltree_hook_t* dfk_avltree_lookup(dfk_avltree_t* tree, void* e, dfk_avltree
   {
     dfk_avltree_hook_t* i = tree->root;
     while (i) {
-      int cmpres = cmp(e, i);
+      int cmpres = cmp(i, e);
       if (cmpres < 0) {
         i = i->left;
       } else if (cmpres > 0) {
