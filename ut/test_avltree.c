@@ -426,3 +426,114 @@ TEST_F(tree_fixture, avltree, insert_double_left_rotation)
   EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
 }
 
+
+TEST_F(tree_fixture, avltree, insert_single_left_rotation)
+{
+  /*
+   *   ┌─15                   ┌─17
+   *  10     --insert 17-->  15
+   *                          └─10
+   */
+
+  fixture->in_nodes = ut_parse_avltree(&fixture->dfk, &fixture->in_tree,
+      /* 0 */ "15  0 -1 -1\n"
+      /* 1 */ "10  1 -1  0\n"
+  );
+
+  fixture->expected_nodes = ut_parse_avltree(&fixture->dfk, &fixture->expected_tree,
+      /* 0 */ "17  0 -1 -1\n"
+      /* 1 */ "10  0 -1 -1\n"
+      /* 2 */ "15  0  1  0\n"
+  );
+
+  fixture->new_node.value = 17;
+  dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
+  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+}
+
+
+TEST_F(tree_fixture, avltree, insert_single_right_rotation)
+{
+  /*
+   *  15                     ┌─15
+   *   └─10  --insert 7-->  10
+   *                         └─7
+   */
+
+  fixture->in_nodes = ut_parse_avltree(&fixture->dfk, &fixture->in_tree,
+      /* 0 */ "10  0 -1 -1\n"
+      /* 1 */ "15 -1  0 -1\n"
+  );
+
+  fixture->expected_nodes = ut_parse_avltree(&fixture->dfk, &fixture->expected_tree,
+      /* 0 */ "15  0 -1 -1\n"
+      /* 1 */ " 7  0 -1 -1\n"
+      /* 2 */ "10  0  1  0\n"
+  );
+
+  fixture->new_node.value = 7;
+  dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
+  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+}
+
+
+
+static int node_int_lookup_cmp(dfk_avltree_hook_t* hook, void* v)
+{
+  int* value = (int*) v;
+  node_t* node = (node_t*) hook;
+  printf("cmp %d vs %d\n", *value, node->value);
+  if (*value < node->value) {
+    return -1;
+  } else if (*value > node->value) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+
+TEST_F(tree_fixture, avltree, lookup)
+{
+  /*
+   *
+   *         ┌─23
+   *      ┌─18
+   *      │  └─16
+   *   ┌─15
+   *   │  └─11
+   *  10
+   *   └─5
+   *     └─1
+   */
+  int query[] = {10, 15, 11, 16, 23, 18, 1};
+
+  fixture->in_nodes = ut_parse_avltree(&fixture->dfk, &fixture->in_tree,
+      /* 0 */ "23  0 -1 -1\n"
+      /* 1 */ "18  0  2  0\n"
+      /* 2 */ "16  0 -1 -1\n"
+      /* 3 */ "15  1  4  1\n"
+      /* 4 */ "11  0 -1 -1\n"
+      /* 5 */ " 5 -1  6 -1\n"
+      /* 6 */ " 1  0 -1 -1\n"
+      /* 7 */ "10  1  5  3\n"
+  );
+
+  {
+    size_t i;
+    for (i = 0; i < DFK_SIZE(query); ++i) {
+      printf("lookup %d\n", query[i]);
+      dfk_avltree_hook_t* res = dfk_avltree_lookup(
+          &fixture->in_tree, query + i, node_int_lookup_cmp);
+      ASSERT(res);
+      EXPECT(((node_t*) res)->value == query[i]);
+    }
+  }
+  {
+    int non_existent = 12;
+    EXPECT(!dfk_avltree_lookup(&fixture->in_tree, &non_existent, node_int_lookup_cmp));
+    non_existent = -1;
+    EXPECT(!dfk_avltree_lookup(&fixture->in_tree, &non_existent, node_int_lookup_cmp));
+  }
+}
+
