@@ -322,7 +322,7 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* 
     }
 
     {
-      dfk_avltree_hook_t* new_prime;
+      dfk_avltree_hook_t* new_prime = NULL;
       if ((prime->bal == 2 && prime->right->bal == -1)
           || (prime->bal == -2 && prime->left->bal == 1)) {
         new_prime = dfk__avltree_double_rot(prime);
