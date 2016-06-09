@@ -78,7 +78,7 @@ static void dfk__avltree_print(dfk_avltree_hook_t* tree, dfk__avltree_print_cb c
 
 static void dfk__avltree_print_ptr(dfk_avltree_hook_t* hook)
 {
-  printf("%p\n", (void*) hook);
+  printf("%p (%hhd)\n", (void*) hook, hook->bal);
 }
 
 
@@ -157,7 +157,7 @@ void dfk_avltree_hook_free(dfk_avltree_hook_t* hook)
 }
 
 
-static void dfk__avltree_single_rot(dfk_avltree_hook_t* parent, dfk_avltree_hook_t* prime, int dir)
+static dfk_avltree_hook_t* dfk__avltree_single_rot(dfk_avltree_hook_t* prime)
 {
   dfk_avltree_hook_t* x;
   /*
@@ -204,16 +204,11 @@ static void dfk__avltree_single_rot(dfk_avltree_hook_t* parent, dfk_avltree_hook
     prime->bal = 0;
     x->bal = 0;
   }
-  if (dir == -1) {
-    parent->left = x;
-  } else {
-    assert(dir == 1);
-    parent->right = x;
-  }
+  return x;
 }
 
 
-static void dfk__avltree_double_rot(dfk_avltree_hook_t* parent, dfk_avltree_hook_t* prime, int dir)
+static dfk_avltree_hook_t* dfk__avltree_double_rot(dfk_avltree_hook_t* prime)
 {
   dfk_avltree_hook_t* x;
   /*
@@ -237,8 +232,6 @@ static void dfk__avltree_double_rot(dfk_avltree_hook_t* parent, dfk_avltree_hook
      */
     dfk_avltree_hook_t* b = prime->right;
     x = prime->right->left;
-    assert(b->bal == -1);
-    assert(x->bal == 1);
     prime->right = x->left;
     x->left = prime;
     b->left = x->right;
@@ -258,11 +251,8 @@ static void dfk__avltree_double_rot(dfk_avltree_hook_t* parent, dfk_avltree_hook
      *   └─B                           └─B
      *     └─d (height = h)              └─d
      */
-    dfk_avltree_hook_t* b = prime->right;
-    x = prime->right->left;
-    assert(prime->bal == -2);
-    assert(b->bal == 1);
-    assert(x->bal == -1);
+    dfk_avltree_hook_t* b = prime->left;
+    x = prime->left->right;
     prime->left = x->right;
     x->right = prime;
     b->right = x->left;
@@ -271,12 +261,7 @@ static void dfk__avltree_double_rot(dfk_avltree_hook_t* parent, dfk_avltree_hook
     x->bal = 0;
     prime->bal = 1;
   }
-  if (dir == -1) {
-    parent->left = x;
-  } else {
-    assert(dir == 1);
-    parent->right = x;
-  }
+  return x;
 }
 
 
@@ -287,9 +272,9 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* 
   {
     dfk_avltree_hook_t* i = tree->root;
     dfk_avltree_hook_t* prime_parent = NULL;
-    dfk_avltree_hook_t* prime = NULL;
+    dfk_avltree_hook_t* prime = tree->root;
     int prime_parent_dir = 0;
-    DFK_UNUSED(prime_parent);
+
     while (i) {
       int cmp = tree->cmp(i, e);
       if (cmp < 0) {
@@ -320,6 +305,7 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* 
         return NULL;
       }
     }
+
     i = prime;
     while (i != e) {
       int cmp = tree->cmp(i, e);
@@ -335,15 +321,29 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* 
       }
     }
 
-    DFK_UNUSED(dfk__avltree_single_rot);
-    DFK_UNUSED(prime_parent_dir);
-    DFK_UNUSED(dfk__avltree_double_rot);
-    if ((prime->bal == 2 && prime->right->bal == -1)
-        || (prime->bal == -2 && prime->left->bal == 1)) {
-      dfk__avltree_double_rot(prime_parent, prime, prime_parent_dir);
-    } else if ((prime->bal == 2 && prime->right->bal == 1)
-        || (prime->bal == -2 && prime->left->bal == -1)) {
-      dfk__avltree_single_rot(prime_parent, prime, prime_parent_dir);
+    {
+      dfk_avltree_hook_t* new_prime;
+      if ((prime->bal == 2 && prime->right->bal == -1)
+          || (prime->bal == -2 && prime->left->bal == 1)) {
+        new_prime = dfk__avltree_double_rot(prime);
+      } else if ((prime->bal == 2 && prime->right->bal == 1)
+          || (prime->bal == -2 && prime->left->bal == -1)) {
+        new_prime = dfk__avltree_single_rot(prime);
+      }
+      switch (prime_parent_dir) {
+        case -1: {
+           prime_parent->left = new_prime;
+           break;
+        }
+        case 0: {
+          tree->root = new_prime;
+          break;
+        }
+        case 1: {
+          prime_parent->right = new_prime;
+          break;
+        }
+      }
     }
   }
   DFK_AVLTREE_CHECK_INVARIANTS(tree);

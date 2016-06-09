@@ -156,7 +156,7 @@ static int ut_trees_equal(dfk_avltree_hook_t* l, dfk_avltree_hook_t* r, dfk_avlt
 }
 
 
-DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_1a)
+TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_1a)
 {
   /*
    * Based on http://stackoverflow.com/a/13843966
@@ -168,7 +168,7 @@ DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_1a)
 
   fixture->in_nodes = ut_parse_avltree(&fixture->dfk, &fixture->in_tree,
       /* 0 */ " 4  0 -1 -1\n"
-      /* 1 */ "20  1  0 -1\n"
+      /* 1 */ "20 -1  0 -1\n"
   );
 
   fixture->expected_nodes = ut_parse_avltree(&fixture->dfk, &fixture->expected_tree,
@@ -183,7 +183,7 @@ DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_1a)
 }
 
 
-DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_2a)
+TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_2a)
 {
   /*
    * Based on http://stackoverflow.com/a/13843966
@@ -205,9 +205,12 @@ DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_2a)
   );
 
   fixture->expected_nodes = ut_parse_avltree(&fixture->dfk, &fixture->expected_tree,
-      /* 0 */ "20  0 -1 -1\n"
-      /* 1 */ " 4  0 -1 -1\n"
-      /* 2 */ "15  0  1  0\n"
+      /* 0 */ "26  0 -1 -1\n"
+      /* 1 */ "15  0 -1 -1\n"
+      /* 2 */ "20  0  1  0\n"
+      /* 3 */ " 3  0 -1 -1\n"
+      /* 4 */ " 4 -1  3 -1\n"
+      /* 5 */ " 9  0  4  2\n"
   );
 
   fixture->new_node.value = 15;
@@ -216,7 +219,7 @@ DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_2a)
 }
 
 
-DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_3a)
+TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_3a)
 {
   /*
    * Based on http://stackoverflow.com/a/13843966
@@ -253,7 +256,7 @@ DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_3a)
       /*  2 */ "26  0  1  0\n"
       /*  3 */ "15  0 -1 -1\n"
       /*  4 */ "11  1 -1  3\n"
-      /*  5 */ "20  0  2  4\n"
+      /*  5 */ "20  0  4  2\n"
       /*  6 */ " 7  0 -1 -1\n"
       /*  7 */ " 2  0 -1 -1\n"
       /*  8 */ " 3 -1  7 -1\n"
@@ -267,7 +270,7 @@ DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_3a)
 }
 
 
-DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_1b)
+TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_1b)
 {
   /*
    * Based on http://stackoverflow.com/a/13843966
@@ -294,7 +297,7 @@ DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_1b)
 }
 
 
-DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_2b)
+TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_2b)
 {
   /*
    * Based on http://stackoverflow.com/a/13843966
@@ -330,7 +333,7 @@ DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_2b)
 }
 
 
-DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_3b)
+TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_3b)
 {
   /*
    * Based on http://stackoverflow.com/a/13843966
@@ -371,7 +374,7 @@ DISABLED_TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_3b)
       /*  6 */ " 7  1 -1  5\n"
       /*  7 */ " 2  0 -1 -1\n"
       /*  8 */ " 3 -1  7 -1\n"
-      /*  9 */ " 4  0  8  2\n"
+      /*  9 */ " 4  0  8  6\n"
       /* 10 */ " 9  0  9  4\n"
   );
 
