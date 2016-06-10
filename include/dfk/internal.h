@@ -58,7 +58,7 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
   int printed;\
   printed = snprintf(msg, sizeof(msg), "%s (%s:%d) ", __func__, DFK_FILENAME, __LINE__);\
   snprintf(msg + printed , sizeof(msg) - printed, __VA_ARGS__);\
-  (dfk)->log((dfk)->userdata, channel, msg);\
+  (dfk)->log((dfk), channel, msg);\
 }
 
 #define DFK_ERROR(dfk, ...) DFK_LOG(dfk, dfk_log_error, __VA_ARGS__)

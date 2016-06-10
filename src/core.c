@@ -39,10 +39,10 @@
 struct coro_context init;
 
 #ifdef DFK_DEBUG
-static void dfk_default_log(void* ud, int channel, const char* msg)
+static void dfk_default_log(dfk_t* dfk, int channel, const char* msg)
 {
   char strchannel[5] = {0};
-  DFK_UNUSED(ud);
+  DFK_UNUSED(dfk);
   switch(channel) {
     case dfk_log_error: memcpy(strchannel, "error", 5); break;
     case dfk_log_warning: memcpy(strchannel, "warn_", 5); break;
@@ -57,30 +57,30 @@ static void dfk_default_log(void* ud, int channel, const char* msg)
 #endif /* DFK_DEBUG */
 
 
-static void* dfk_default_malloc(void* dfk, size_t size)
+static void* dfk_default_malloc(dfk_t* dfk, size_t size)
 {
-  void* err;
-  err = malloc(size);
-  DFK_DBG((dfk_t*) dfk, "%lu bytes requested = %p",
-      (unsigned long) size, err);
-  return err;
+  void* res;
+  res = malloc(size);
+  DFK_DBG(dfk, "%lu bytes requested = %p",
+      (unsigned long) size, res);
+  return res;
 }
 
 
-static void dfk_default_free(void* dfk, void* p)
+static void dfk_default_free(dfk_t* dfk, void* p)
 {
-  DFK_DBG((dfk_t*) dfk, "release memory %p", (void*) p);
+  DFK_DBG(dfk, "release memory %p", (void*) p);
   free(p);
 }
 
 
-static void* dfk_default_realloc(void* dfk, void* p, size_t size)
+static void* dfk_default_realloc(dfk_t* dfk, void* p, size_t size)
 {
-  void* err;
-  err = realloc(p, size);
-  DFK_DBG((dfk_t*) dfk, "resize %p to %lu bytes requested = %p",
-      p, (unsigned long) size, err);
-  return err;
+  void* res;
+  res = realloc(p, size);
+  DFK_DBG(dfk, "resize %p to %lu bytes requested = %p",
+      p, (unsigned long) size, res);
+  return res;
 }
 
 
@@ -205,16 +205,13 @@ int dfk_coro_name(dfk_coro_t* coro, const char* fmt, ...)
 }
 
 
-static int dfk_coro_free(dfk_coro_t* coro)
+static void dfk_coro_free(dfk_coro_t* coro)
 {
-  if (!coro) {
-    return dfk_err_badarg;
-  }
+  assert(coro);
 #ifdef DFK_VALGRIND
   VALGRIND_STACK_DEREGISTER(coro->_.stack_id);
 #endif
   DFK_FREE(coro->dfk, coro);
-  return dfk_err_ok;
 }
 
 
@@ -347,6 +344,7 @@ int dfk_work(dfk_t* dfk)
 
   dfk->_.eventloop = dfk_run(dfk, dfk_eventloop, NULL, 0);
   if (!dfk->_.eventloop) {
+    dfk_coro_free(dfk->_.scheduler);
     return dfk->dfk_errno;
   }
   DFK_CALL(dfk, dfk_coro_name(dfk->_.eventloop, "eventloop"));
@@ -360,8 +358,8 @@ int dfk_work(dfk_t* dfk)
    * Cleanup them manually
    */
   dfk_list_clear(&dfk->_.terminated_coros);
-  DFK_CALL(dfk, dfk_coro_free(dfk->_.scheduler));
-  DFK_CALL(dfk, dfk_coro_free(dfk->_.eventloop));
+  dfk_coro_free(dfk->_.scheduler);
+  dfk_coro_free(dfk->_.eventloop);
   dfk->_.scheduler = NULL;
   dfk->_.eventloop = NULL;
   DFK_INFO(dfk, "work cycle {%p} done", (void*) dfk);

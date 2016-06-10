@@ -24,6 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <stdlib.h>
 #include <dfk.h>
 #include <dfk/internal.h>
 #include "ut.h"
@@ -124,7 +125,7 @@ TEST(core, spawn_and_die)
 }
 
 
-static void* out_of_memory(void* p, size_t size)
+static void* out_of_memory(dfk_t* p, size_t size)
 {
   DFK_UNUSED(p);
   DFK_UNUSED(size);
@@ -147,5 +148,57 @@ TEST(core, errors)
   EXPECT(dfk_coro_name(&coro, NULL, 1) == dfk_err_badarg);
   EXPECT(dfk_yield(NULL, NULL) == dfk_err_badarg);
   EXPECT(dfk_work(NULL) == dfk_err_badarg);
+}
+
+
+TEST(core, default_memory_functions)
+{
+  dfk_t dfk;
+  char* p;
+  const size_t size = 10000;
+  EXPECT_OK(dfk_init(&dfk));
+  p = dfk.malloc(NULL, size);
+  ASSERT(p);
+  {
+    size_t i = 0;
+    for (i = 0; i < size; ++i) {
+      (void) p[i];
+    }
+  }
+  p = dfk.realloc(NULL, p, 2 * size);
+  ASSERT(p);
+  {
+    size_t i = 0;
+    for (i = 0; i < 2 * size; ++i) {
+      (void) p[i];
+    }
+  }
+  dfk.free(NULL, p);
+}
+
+
+static void* bad_malloc(dfk_t* dfk, size_t nbytes)
+{
+  int* nfail = (int*) dfk->userdata;
+  if (!*nfail) {
+    return NULL;
+  }
+  (*nfail)--;
+  return malloc(nbytes);
+}
+
+
+TEST(core, bad_malloc)
+{
+  size_t i;
+  for (i = 0; i < 2; ++i) {
+    dfk_t dfk;
+    size_t nfail = i;
+    EXPECT_OK(dfk_init(&dfk));
+    dfk.userdata = &nfail;
+    dfk.malloc = bad_malloc;
+    EXPECT(dfk_work(&dfk) == dfk_err_nomem);
+    EXPECT_OK(dfk_free(&dfk));
+  }
 }
 

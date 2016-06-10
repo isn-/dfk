@@ -161,11 +161,11 @@ typedef struct dfk_t {
 
   void* userdata;
 
-  void* (*malloc) (void*, size_t);
-  void (*free) (void*, void*);
-  void* (*realloc)(void*, void*, size_t);
+  void* (*malloc) (struct dfk_t*, size_t);
+  void (*free) (struct dfk_t*, void*);
+  void* (*realloc)(struct dfk_t*, void*, size_t);
 
-  void (*log)(void*, int, const char*);
+  void (*log)(struct dfk_t*, int, const char*);
 
   size_t default_stack_size;
 
