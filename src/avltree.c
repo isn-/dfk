@@ -324,18 +324,20 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* 
           || (prime->bal == -2 && prime->left->bal == -1)) {
         new_prime = dfk__avltree_single_rot(prime);
       }
-      switch (prime_parent_dir) {
-        case -1: {
-           prime_parent->left = new_prime;
-           break;
-        }
-        case 0: {
-          tree->root = new_prime;
-          break;
-        }
-        case 1: {
-          prime_parent->right = new_prime;
-          break;
+      if (new_prime) {
+        switch (prime_parent_dir) {
+          case -1: {
+             prime_parent->left = new_prime;
+             break;
+          }
+          case 0: {
+            tree->root = new_prime;
+            break;
+          }
+          case 1: {
+            prime_parent->right = new_prime;
+            break;
+          }
         }
       }
     }
