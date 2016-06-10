@@ -93,19 +93,16 @@ static void dfk__avltree_check_invariants(dfk_avltree_t* tree)
 #endif /* NDEBUG */
 
 
-static int dfk__avltree_dfs(dfk_avltree_t* tree, dfk_avltree_hook_t* hook, dfk_avltree_traversal_cb cb)
+typedef int (*dfk_avltree_traversal_cb)(dfk_avltree_t*, dfk_avltree_hook_t*);
+
+static void dfk__avltree_dfs(dfk_avltree_t* tree, dfk_avltree_hook_t* hook, dfk_avltree_traversal_cb cb)
 {
-  int err;
   if (!hook) {
-    return 0;
+    return;
   }
-  if ((err = dfk__avltree_dfs(tree, hook->left, cb)) != 0) {
-    return err;
-  }
-  if ((err = dfk__avltree_dfs(tree, hook->right, cb)) != 0) {
-    return err;
-  }
-  return cb(tree, hook);
+  dfk__avltree_dfs(tree, hook->left, cb);
+  dfk__avltree_dfs(tree, hook->right, cb);
+  cb(tree, hook);
 }
 
 
@@ -315,9 +312,6 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* 
       } else if (cmp > 0) {
         i->bal += 1;
         i = i->right;
-      } else {
-        assert(i == e);
-        break;
       }
     }
 

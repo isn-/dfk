@@ -47,8 +47,6 @@ typedef struct dfk_avltree_t {
   dfk_avltree_cmp cmp;
 } dfk_avltree_t;
 
-typedef int (*dfk_avltree_traversal_cb)(dfk_avltree_t*, dfk_avltree_hook_t*);
-
 void dfk_avltree_init(dfk_avltree_t* tree, dfk_avltree_cmp cmp);
 void dfk_avltree_free(dfk_avltree_t* tree);
 
