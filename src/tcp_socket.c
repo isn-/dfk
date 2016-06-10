@@ -425,14 +425,19 @@ ssize_t dfk_tcp_socket_read(
     return 0;
   }
 
+  if (STATE(sock) & TCP_SOCKET_READING) {
+    return dfk_err_inprog;
+  }
+
+  if (!(STATE(sock) & TCP_SOCKET_CONNECTED)) {
+    return dfk_err_badarg;
+  }
+
   {
     dfk_tcp_socket_read_async_arg_t arg;
 
     DFK_DBG(sock->dfk, "{%p} read upto %lu bytes to %p",
         (void*) sock, (unsigned long) nbytes, (void*) buf);
-    if (STATE(sock) & TCP_SOCKET_READING) {
-      return dfk_err_inprog;
-    }
     sock->_.flags |= TCP_SOCKET_READING;
 
     assert(sock->_.arg.obj == NULL);

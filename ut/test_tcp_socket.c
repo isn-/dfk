@@ -379,7 +379,6 @@ static void ut_listen_read_write(dfk_coro_t* coro, void* p)
 }
 
 
-
 TEST(tcp_socket, listen_read_write)
 {
   pthread_t cthread;
@@ -401,6 +400,27 @@ TEST(tcp_socket, listen_read_write)
   ASSERT(pthread_join(cthread, NULL) == 0);
   ASSERT(carg.connected == 1);
 }
+
+
+static void ut_connect_failed(dfk_coro_t* coro, void* p)
+{
+  dfk_tcp_socket_t sock;
+  DFK_UNUSED(p);
+  ASSERT_OK(dfk_tcp_socket_init(&sock, coro->dfk));
+  ASSERT(dfk_tcp_socket_connect(&sock, "127.0.0.1", 12345) == dfk_err_sys);
+  ASSERT_OK(dfk_tcp_socket_free(&sock));
+}
+
+
+TEST(tcp_socket, connect_failed)
+{
+  dfk_t dfk;
+  ASSERT_OK(dfk_init(&dfk));
+  ASSERT(dfk_run(&dfk, ut_connect_failed, NULL, 0));
+  ASSERT_OK(dfk_work(&dfk));
+  ASSERT_OK(dfk_free(&dfk));
+}
+
 
 TEST(tcp_socket, errors)
 {
