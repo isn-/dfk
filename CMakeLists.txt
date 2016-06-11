@@ -37,6 +37,7 @@ set(DFK_THREADS FALSE CACHE BOOL "Enable multithreading support.")
 set(DFK_COVERAGE FALSE CACHE BOOL "Collect gcov coverage statistics.")
 set(DFK_VALGRIND FALSE CACHE BOOL "In addition to regular mode, run unit tests under valgrind.")
 set(DFK_HTTP_HEADERS_BUFFER 10240 CACHE STRING "Buffer for HTTP headers, stack-allocated.")
+set(DFK_IGNORE_SIGPIPE TRUE CACHE BOOL "Ignore SIGPIPE when entering dfk loop.")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")

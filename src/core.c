@@ -32,6 +32,10 @@
 #include <dfk.h>
 #include <dfk/internal.h>
 
+#ifdef DFK_IGNORE_SIGPIPE
+#include <signal.h>
+#endif
+
 #ifdef DFK_VALGRIND
 #include <valgrind/valgrind.h>
 #endif
@@ -332,6 +336,10 @@ int dfk_work(dfk_t* dfk)
     return dfk_err_badarg;
   }
   DFK_INFO(dfk, "start work cycle {%p}", (void*) dfk);
+
+#ifdef DFK_IGNORE_SIGPIPE
+  (void) signal(SIGPIPE, SIG_IGN);
+#endif
 
   dfk->_.scheduler = dfk_run(dfk, dfk_scheduler, NULL, 0);
   if (!dfk->_.scheduler) {
