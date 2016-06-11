@@ -38,7 +38,7 @@ typedef struct dfk_http_resp_t {
   int code;
 } dfk_http_resp_t;
 
-typedef void (*dfk_http_handler)(dfk_t*, struct dfk_http_req_t*, struct dfk_http_resp_t*);
+typedef int (*dfk_http_handler)(dfk_t*, dfk_http_req_t*, dfk_http_resp_t*);
 
 typedef struct dfk_http_t {
   struct {

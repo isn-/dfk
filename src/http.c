@@ -29,25 +29,6 @@
 #include <dfk.h>
 #include <dfk/internal.h>
 
-int dfk_http_init(dfk_http_t* http, dfk_t* dfk)
-{
-  if (!http || !dfk) {
-    return dfk_err_badarg;
-  }
-  DFK_DBG(http->dfk, "{%p}", (void*) http);
-  http->dfk = dfk;
-  return dfk_tcp_socket_init(&http->_.listensock, dfk);
-}
-
-
-int dfk_http_free(dfk_http_t* http)
-{
-  if (!http) {
-    return dfk_err_badarg;
-  }
-  return dfk_tcp_socket_free(&http->_.listensock);
-}
-
 
 static int dfk__http_req_init(dfk_http_req_t* req)
 {
@@ -242,6 +223,26 @@ connection_broken:
   dfk__http_req_free(&req);
 
   DFK_CALL_RVOID(http->dfk, dfk_tcp_socket_close(sock));
+}
+
+
+int dfk_http_init(dfk_http_t* http, dfk_t* dfk)
+{
+  if (!http || !dfk) {
+    return dfk_err_badarg;
+  }
+  DFK_DBG(http->dfk, "{%p}", (void*) http);
+  http->dfk = dfk;
+  return dfk_tcp_socket_init(&http->_.listensock, dfk);
+}
+
+
+int dfk_http_free(dfk_http_t* http)
+{
+  if (!http) {
+    return dfk_err_badarg;
+  }
+  return dfk_tcp_socket_free(&http->_.listensock);
 }
 
 

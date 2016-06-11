@@ -36,11 +36,12 @@ typedef struct args_t {
 } args_t;
 
 
-static void echo(dfk_t* dfk, dfk_http_req_t* req, dfk_http_resp_t* resp)
+static int echo(dfk_t* dfk, dfk_http_req_t* req, dfk_http_resp_t* resp)
 {
   DFK_UNUSED(dfk);
   DFK_UNUSED(req);
   resp->code = 200;
+  return 0;
 }
 
 
