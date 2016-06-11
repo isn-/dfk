@@ -7,19 +7,15 @@ digraph "DFK Library Roadmap" {
   http_parser [label="#3\nJoyent HTTP Parser"];
 
   http_server [label="#4\nHTTP server"];
-    tcp_socket -> http_server
     http_parser -> http_server
+    htbl -> http_server
+    avltree -> http_server
 
   curl [label="#5\ncurl library wrapper"];
-    tcp_socket -> curl;
 
   redis [label="#6\nhiredis library wrapper"];
-    tcp_socket -> redis;
 
   libpq [label="#7\nlibpq library wrapper"];
-    tcp_socket -> libpq;
-
-  threadpool [label="#8\nThread Pool"];
 
   ws [label="#9\nWebSocket server"];
 
@@ -33,14 +29,23 @@ digraph "DFK Library Roadmap" {
     udp_socket -> beacon;
 
   static [label="#14\nHTTP static server"];
-    threadpool -> static;
-
-  router [label="#15\nHTTP router"];
 
   mt [label="#16\nMultithreading"];
 
+  trie [label="#17\nTrie - dfk_trie"];
+
+  re [label="#18\nRegular expressions engine - dfk_re"];
+
+  htbl [label="#19\nHash table - dfk_htbl"];
+
+  avltree [label="#20\nAVL tree - dfk_avltree"];
+
+  router [label="#15\nHTTP router"];
+    http_server -> router;
+    trie -> router;
+    re -> router;
+
   dfk010 [label="dfk-0.1.0" shape=oval];
-    tcp_socket -> dfk010
     http_server -> dfk010
 
   dfk020 [label="dfk-0.2.0" shape=oval];
@@ -48,6 +53,7 @@ digraph "DFK Library Roadmap" {
     redis -> dfk020;
     curl -> dfk020;
     libpq -> dfk020;
+    router -> dfk020;
 
   dfk030 [label="dfk-0.3.0" shape=oval];
     mt -> dfk030;
@@ -57,8 +63,7 @@ digraph "DFK Library Roadmap" {
 
   future -> udp_socket;
   future -> ws;
-  future -> threadpool;
   future -> python;
   future -> lua;
-  future -> router;
+  future -> static;
 }
