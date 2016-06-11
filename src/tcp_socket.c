@@ -90,7 +90,7 @@ int dfk_tcp_socket_free(dfk_tcp_socket_t* sock)
     return dfk_err_badarg;
   }
   DFK_DBG(sock->dfk, "{%p}", (void*) sock);
-  if (STATE(sock) != TCP_SOCKET_SPARE) {
+  if (STATE(sock) != TCP_SOCKET_CLOSED) {
     DFK_CALL(sock->dfk, dfk_tcp_socket_close(sock));
   }
   return dfk_err_ok;
