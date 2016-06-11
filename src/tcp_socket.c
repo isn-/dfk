@@ -106,7 +106,7 @@ typedef struct dfk_tcp_socket_connect_async_arg_t {
 /**
  * Sets connect result and yields back to dfk_tcp_socket_connect caller
  */
-static void dfk_tcp_socket_on_connect(uv_connect_t* p, int status)
+static void dfk__tcp_socket_on_connect(uv_connect_t* p, int status)
 {
   dfk_tcp_socket_t* sock = (dfk_tcp_socket_t*) p->data;
   dfk_tcp_socket_connect_async_arg_t* arg;
@@ -164,7 +164,7 @@ int dfk_tcp_socket_connect(
         &connect,
         &sock->_.socket,
         (const struct sockaddr*) &dest,
-        dfk_tcp_socket_on_connect));
+        dfk__tcp_socket_on_connect));
 
     TO_STATE(sock, TCP_SOCKET_CONNECTING);
     DFK_IO(sock->dfk);
@@ -187,7 +187,7 @@ typedef struct dfk_tcp_socket_accepted_main_arg_t {
 } dfk_tcp_socket_accepted_main_arg_t;
 
 
-static void dfk_tcp_socket_accepted_main(dfk_coro_t* coro, void* p)
+static void dfk__tcp_socket_accepted_main(dfk_coro_t* coro, void* p)
 {
   dfk_tcp_socket_accepted_main_arg_t* arg =
     (dfk_tcp_socket_accepted_main_arg_t*) p;
@@ -219,7 +219,7 @@ typedef struct dfk_tcp_socket_listen_obj_t {
 } dfk_tcp_socket_listen_obj_t;
 
 
-static void dfk_tcp_socket_on_new_connection(uv_stream_t* p, int status)
+static void dfk__tcp_socket_on_new_connection(uv_stream_t* p, int status)
 {
   dfk_tcp_socket_t* sock;
   dfk_tcp_socket_listen_obj_t* arg;
@@ -245,7 +245,7 @@ static void dfk_tcp_socket_on_new_connection(uv_stream_t* p, int status)
     aarg.stream = p;
     aarg.callback = arg->callback;
     aarg.cbarg = arg->cbarg;
-    coro = dfk_run(sock->dfk, dfk_tcp_socket_accepted_main, &aarg, sizeof(aarg));
+    coro = dfk_run(sock->dfk, dfk__tcp_socket_accepted_main, &aarg, sizeof(aarg));
     dfk_coro_name(coro, "conn.%p", p->accepted_fd);
   }
 }
@@ -283,7 +283,7 @@ int dfk_tcp_socket_listen(
     DFK_SYSCALL(sock->dfk, uv_listen(
       (uv_stream_t*) &sock->_.socket,
       backlog,
-      dfk_tcp_socket_on_new_connection));
+      dfk__tcp_socket_on_new_connection));
 
     TO_STATE(sock, TCP_SOCKET_LISTENING);
     DFK_INFO(sock->dfk, "{%p} listen on %s:%u, backlog %lu",
@@ -302,7 +302,7 @@ int dfk_tcp_socket_listen(
 }
 
 
-static void dfk_tcp_socket_on_close(uv_handle_t* p)
+static void dfk__tcp_socket_on_close(uv_handle_t* p)
 {
   dfk_tcp_socket_t* sock;
 
@@ -343,7 +343,7 @@ int dfk_tcp_socket_close(dfk_tcp_socket_t* sock)
   }
   sock->_.flags |= TCP_SOCKET_CLOSING;
   DFK_INFO(sock->dfk, "{%p} start close", (void*) sock);
-  uv_close((uv_handle_t*) &sock->_.socket, dfk_tcp_socket_on_close);
+  uv_close((uv_handle_t*) &sock->_.socket, dfk__tcp_socket_on_close);
   DFK_IO(sock->dfk);
   assert(STATE(sock) & TCP_SOCKET_CLOSING);
   TO_STATE(sock, TCP_SOCKET_CLOSED);
@@ -359,7 +359,7 @@ typedef struct dfk_tcp_socket_read_async_arg_t {
 } dfk_tcp_socket_read_async_arg_t;
 
 
-static void dfk_tcp_socket_on_read(uv_stream_t* p, ssize_t nread, const uv_buf_t* buf)
+static void dfk__tcp_socket_on_read(uv_stream_t* p, ssize_t nread, const uv_buf_t* buf)
 {
   dfk_tcp_socket_read_async_arg_t* arg;
   dfk_tcp_socket_t* sock;
@@ -391,7 +391,7 @@ static void dfk_tcp_socket_on_read(uv_stream_t* p, ssize_t nread, const uv_buf_t
   DFK_SCHEDULE(sock->dfk, arg->yieldback);
 }
 
-static void dfk_tcp_socket_on_alloc(uv_handle_t* p, size_t hint, uv_buf_t* buf)
+static void dfk__tcp_socket_on_alloc(uv_handle_t* p, size_t hint, uv_buf_t* buf)
 {
   dfk_tcp_socket_read_async_arg_t* arg;
   dfk_tcp_socket_t* sock;
@@ -448,8 +448,8 @@ ssize_t dfk_tcp_socket_read(
 
     DFK_SYSCALL(sock->dfk, uv_read_start(
         (uv_stream_t*) &sock->_.socket,
-        dfk_tcp_socket_on_alloc,
-        dfk_tcp_socket_on_read));
+        dfk__tcp_socket_on_alloc,
+        dfk__tcp_socket_on_read));
 
     DFK_IO(sock->dfk);
 
@@ -490,7 +490,7 @@ typedef struct dfk_tcp_socket_write_async_arg_t {
 } dfk_tcp_socket_write_async_arg_t;
 
 
-static void dfk_tcp_socket_on_write(uv_write_t* request, int status)
+static void dfk__tcp_socket_on_write(uv_write_t* request, int status)
 {
   dfk_tcp_socket_write_async_arg_t* arg;
   dfk_tcp_socket_t* sock;
@@ -578,7 +578,7 @@ ssize_t dfk_tcp_socket_writev(
         (uv_stream_t*) &sock->_.socket,
         (uv_buf_t*) iov,
         niov,
-        dfk_tcp_socket_on_write));
+        dfk__tcp_socket_on_write));
 
     sock->_.flags |= TCP_SOCKET_WRITING;
 
