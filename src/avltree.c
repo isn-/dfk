@@ -266,13 +266,22 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* 
 {
   assert(tree);
   assert(e);
+  assert(e->left == NULL);
+  assert(e->right == NULL);
+  assert(e->bal == 0);
+
+  if (tree->root == NULL) {
+    tree->root = e;
+    return tree->root;
+  }
+
   {
     dfk_avltree_hook_t* i = tree->root;
     dfk_avltree_hook_t* prime_parent = NULL;
     dfk_avltree_hook_t* prime = tree->root;
     int prime_parent_dir = 0;
 
-    while (i) {
+    while (1) {
       int cmp = tree->cmp(i, e);
       if (cmp < 0) {
         if (i->left) {
@@ -309,7 +318,8 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* 
       if (cmp < 0) {
         i->bal -= 1;
         i = i->left;
-      } else if (cmp > 0) {
+      } else  {
+        assert(cmp > 0);
         i->bal += 1;
         i = i->right;
       }
