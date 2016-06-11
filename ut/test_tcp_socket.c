@@ -43,12 +43,34 @@ typedef struct
 static void echo_fixture_setup(echo_fixture_t* f)
 {
   ASSERT_OK(dfk_init(&f->dfk));
-  f->ntp_server = naivetp_server_start(&f->dfk, 10020);
+  f->ntp_server = naivetp_server_start(&f->dfk, 10020, naivetp_server_echo);
   ASSERT(f->ntp_server);
 }
 
 
 static void echo_fixture_teardown(echo_fixture_t* f)
+{
+  naivetp_server_stop(f->ntp_server);
+  ASSERT_OK(dfk_free(&f->dfk));
+}
+
+
+typedef struct
+{
+  dfk_t dfk;
+  naivetp_server_t* ntp_server;
+} boor_fixture_t;
+
+
+static void boor_fixture_setup(boor_fixture_t* f)
+{
+  ASSERT_OK(dfk_init(&f->dfk));
+  f->ntp_server = naivetp_server_start(&f->dfk, 10020, naivetp_server_boor);
+  ASSERT(f->ntp_server);
+}
+
+
+static void boor_fixture_teardown(boor_fixture_t* f)
 {
   naivetp_server_stop(f->ntp_server);
   ASSERT_OK(dfk_free(&f->dfk));
@@ -417,6 +439,99 @@ TEST(tcp_socket, connect_failed)
   dfk_t dfk;
   ASSERT_OK(dfk_init(&dfk));
   ASSERT(dfk_run(&dfk, ut_connect_failed, NULL, 0));
+  ASSERT_OK(dfk_work(&dfk));
+  ASSERT_OK(dfk_free(&dfk));
+}
+
+
+static void ut_read_failed(dfk_coro_t* coro, void* p)
+{
+  dfk_tcp_socket_t sock;
+  char buf[1024] = {0};
+  DFK_UNUSED(p);
+  ASSERT_OK(dfk_tcp_socket_init(&sock, coro->dfk));
+  ASSERT_OK(dfk_tcp_socket_connect(&sock, "127.0.0.1", 10020));
+  ASSERT(dfk_tcp_socket_read(&sock, buf, sizeof(buf)) < 0);
+  ASSERT_OK(dfk_tcp_socket_free(&sock));
+}
+
+
+TEST_F(boor_fixture, tcp_socket, read_failed)
+{
+  dfk_t dfk;
+  DFK_UNUSED(fixture);
+  ASSERT_OK(dfk_init(&dfk));
+  ASSERT(dfk_run(&dfk, ut_read_failed, NULL, 0));
+  ASSERT_OK(dfk_work(&dfk));
+  ASSERT_OK(dfk_free(&dfk));
+}
+
+
+static void ut_write_failed(dfk_coro_t* coro, void* p)
+{
+  dfk_tcp_socket_t sock;
+  char buf[1024] = {0};
+  DFK_UNUSED(p);
+  ASSERT_OK(dfk_tcp_socket_init(&sock, coro->dfk));
+  ASSERT_OK(dfk_tcp_socket_connect(&sock, "127.0.0.1", 10020));
+  {
+    ssize_t nwritten = 1;
+    while (nwritten > 0) {
+      nwritten = dfk_tcp_socket_write(&sock, buf, sizeof(buf));
+    }
+  }
+  ASSERT_OK(dfk_tcp_socket_free(&sock));
+}
+
+
+TEST_F(boor_fixture, tcp_socket, write_failed)
+{
+  dfk_t dfk;
+  DFK_UNUSED(fixture);
+  ASSERT_OK(dfk_init(&dfk));
+  ASSERT(dfk_run(&dfk, ut_write_failed, NULL, 0));
+  ASSERT_OK(dfk_work(&dfk));
+  ASSERT_OK(dfk_free(&dfk));
+}
+
+
+static void ut_read_not_connected(dfk_coro_t* coro, void* p)
+{
+  dfk_tcp_socket_t sock;
+  char buf[1024] = {0};
+  DFK_UNUSED(p);
+  ASSERT_OK(dfk_tcp_socket_init(&sock, coro->dfk));
+  ASSERT(dfk_tcp_socket_read(&sock, buf, sizeof(buf)) == dfk_err_badarg);
+  ASSERT_OK(dfk_tcp_socket_free(&sock));
+}
+
+
+TEST(tcp_socket, read_not_connected)
+{
+  dfk_t dfk;
+  ASSERT_OK(dfk_init(&dfk));
+  ASSERT(dfk_run(&dfk, ut_read_not_connected, NULL, 0));
+  ASSERT_OK(dfk_work(&dfk));
+  ASSERT_OK(dfk_free(&dfk));
+}
+
+
+static void ut_write_not_connected(dfk_coro_t* coro, void* p)
+{
+  dfk_tcp_socket_t sock;
+  char buf[1024] = {0};
+  DFK_UNUSED(p);
+  ASSERT_OK(dfk_tcp_socket_init(&sock, coro->dfk));
+  ASSERT(dfk_tcp_socket_write(&sock, buf, sizeof(buf)) == dfk_err_badarg);
+  ASSERT_OK(dfk_tcp_socket_free(&sock));
+}
+
+
+TEST(tcp_socket, write_not_connected)
+{
+  dfk_t dfk;
+  ASSERT_OK(dfk_init(&dfk));
+  ASSERT(dfk_run(&dfk, ut_write_not_connected, NULL, 0));
   ASSERT_OK(dfk_work(&dfk));
   ASSERT_OK(dfk_free(&dfk));
 }

@@ -41,6 +41,7 @@ typedef struct _naivetp_server_t {
   int sock;
   pthread_t thread;
   dfk_t* dfk;
+  int protocol;
   struct client_t* clients;
 } _naivetp_server_t;
 
@@ -54,7 +55,7 @@ typedef struct client_t {
 } client_t;
 
 
-static void* naivetp_conn_thread(void* arg)
+static void* naivetp_conn_echo_thread(void* arg)
 {
   client_t* c = (client_t*) arg;
   DFK_INFO(c->dfk, "{%p} spawned", (void*) c);
@@ -75,6 +76,16 @@ static void* naivetp_conn_thread(void* arg)
 }
 
 
+static void* naivetp_conn_boor_thread(void* arg)
+{
+  client_t* c = (client_t*) arg;
+  DFK_INFO(c->dfk, "{%p} spawned, closing", (void*) c);
+  close(c->sock);
+  DFK_INFO(c->dfk, "{%p} closed, terminated", (void*) c);
+  pthread_exit(c);
+}
+
+
 static void* naivetp_main_thread(void* arg)
 {
   _naivetp_server_t* s = (_naivetp_server_t*) arg;
@@ -86,6 +97,7 @@ static void* naivetp_main_thread(void* arg)
 
   while ((csock = accept(s->sock, (struct sockaddr*) &addr, &addrlen)) > 0) {
     client_t* newclient = NULL;
+    void* (*handler)(void*) = NULL;
     DFK_INFO(s->dfk, "{%p} new connection %s:%d", (void*) s, inet_ntoa(addr.sin_addr), addr.sin_port);
     newclient = (client_t*) DFK_MALLOC(s->dfk, sizeof(client_t));
     newclient->sock = csock;
@@ -94,7 +106,18 @@ static void* naivetp_main_thread(void* arg)
     newclient->srv = s;
     s->clients = newclient;
 
-    if (pthread_create(&newclient->thread, NULL, &naivetp_conn_thread, newclient) != 0) {
+    switch(s->protocol) {
+      case naivetp_server_echo: {
+        handler = naivetp_conn_echo_thread;
+        break;
+      }
+      case naivetp_server_boor: {
+        handler = naivetp_conn_boor_thread;
+        break;
+      }
+    }
+
+    if (pthread_create(&newclient->thread, NULL, handler, newclient) != 0) {
       DFK_ERROR(s->dfk, "can not create thread");
       break;
     }
@@ -104,7 +127,7 @@ static void* naivetp_main_thread(void* arg)
 }
 
 
-naivetp_server_t* naivetp_server_start(dfk_t* dfk, uint16_t port)
+naivetp_server_t* naivetp_server_start(dfk_t* dfk, uint16_t port, int protocol)
 {
   naivetp_server_t* s = NULL;
   struct sockaddr_in addr;
@@ -120,6 +143,7 @@ naivetp_server_t* naivetp_server_start(dfk_t* dfk, uint16_t port)
   }
 
   s->dfk = dfk;
+  s->protocol = protocol;
   s->sock = socket(AF_INET, SOCK_STREAM, 0);
   if (s->sock < 0) {
     goto cleanup;

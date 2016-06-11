@@ -272,7 +272,6 @@ int dfk_tcp_socket_listen(
     dfk_tcp_socket_listen_obj_t arg;
 
     DFK_SYSCALL(sock->dfk, uv_ip4_addr(endpoint, port, &bind));
-    DFK_SYSCALL(sock->dfk, uv_ip4_addr(endpoint, port, &bind));
     DFK_SYSCALL(sock->dfk, uv_tcp_bind(&sock->_.socket, (struct sockaddr*) &bind, 0));
 
     if (backlog == 0) {
