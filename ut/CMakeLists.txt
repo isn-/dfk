@@ -5,6 +5,7 @@ set(ut_sources
   test_core.c
   test_list.c
   test_avltree.c
+  test_arena.c
   test_tcp_socket.c)
 
 set(ut_init_c "${CMAKE_CURRENT_BINARY_DIR}/ut_init.c")

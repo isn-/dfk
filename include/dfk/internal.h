@@ -45,6 +45,12 @@
 
 #define DFK_MAX(x, y) ((x) > (y) ? (x) : (y))
 #define DFK_MIN(x, y) ((x) < (y) ? (x) : (y))
+#define DFK_SWAP(type, x, y) \
+{ \
+  type tmp = (x); \
+  (x) = (y); \
+  (y) = tmp; \
+}
 
 /*
  * A cheat to suppress -Waddress warning:
