@@ -479,6 +479,9 @@ ssize_t dfk_tcp_socket_readv(
   if (!sock || (!iov && niov)) {
     return dfk_err_badarg;
   }
+  if (!niov) {
+    return dfk_err_ok;
+  }
   /* optimizations are not supported yet */
   return dfk_tcp_socket_read(sock, iov[0].data, iov[0].size);
 }
