@@ -144,6 +144,9 @@ typedef struct dfk_iovec_t {
 } dfk_iovec_t;
 
 
+typedef dfk_iovec_t dfk_buf_t;
+
+
 /**
  * dfk library context
  */
