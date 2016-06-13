@@ -28,7 +28,7 @@ mkdir -p $PREFIX/lib
 mkdir -p $PREFIX/build
 
 # ---------- libuv ----------
-LIBUV_VERSION=1.9.0
+LIBUV_VERSION=1.9.1
 LIBUV_SOURCE_DIR=$PREFIX/src/libuv-$LIBUV_VERSION
 LIBUV_BUILD_DIR=$PREFIX/build/libuv-$LIBUV_VERSION
 LIBUV_TARBALL=$PREFIX/tarball/libuv-v$LIBUV_VERSION.tar.gz
