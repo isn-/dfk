@@ -56,3 +56,22 @@ cd $HTTP_PARSER_SOURCE_DIR
 make -j package
 cp libhttp_parser.a $PREFIX/lib
 cp http_parser.h $PREFIX/include
+
+
+# ---------- curl ----------
+CURL_VERSION=7_49_1
+CURL_SOURCE_DIR=$PREFIX/src/curl-curl-$CURL_VERSION
+CURL_BUILD_DIR=$PREFIX/build/curl-$CURL_VERSION
+CURL_TARBALL=$PREFIX/tarball/curl-$CURL_VERSION.tar.gz
+CURL_URL=https://github.com/curl/curl/archive/curl-$CURL_VERSION.tar.gz
+
+[ -e $CURL_TARBALL ] || wget --continue -O $CURL_TARBALL $CURL_URL
+[ -e $CURL_SOURCE_DIR ] || tar xzf $CURL_TARBALL -C $PREFIX/src
+cd $CURL_SOURCE_DIR
+bash buildconf
+./configure --prefix=$PREFIX --disable-ftp --disable-file --disable-ldap \
+  --disable-ldaps --disable-rtsp --disable-proxy --disable-dict --disable-telnet \
+  --disable-tftp --disable-pop3 --disable-imap --disable-smb --disable-smtp \
+  --disable-gopher --disable-manual
+make -j
+make -j install
