@@ -80,7 +80,8 @@ int main(int argc, char** argv)
   args.argc = argc;
   args.argv = argv;
   dfk_init(&dfk);
-  (void) dfk_run(&dfk, dfk_main, &args, sizeof(args));
+  (void) dfk_run(&dfk, dfk_main, &args, 0);
   DFK_CALL(&dfk, dfk_work(&dfk));
   return dfk_free(&dfk);
 }
+
