@@ -94,6 +94,11 @@ typedef enum dfk_error_e {
   dfk_err_ok = 0,
 
   /**
+   * End of file (stream, iterator, etc)
+   */
+  dfk_err_eof,
+
+  /**
    * Memory allocation function returned NULL
    */
   dfk_err_nomem,

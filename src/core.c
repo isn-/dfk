@@ -381,6 +381,9 @@ const char* dfk_strerr(dfk_t* dfk, int err)
     case dfk_err_ok: {
       return "No error";
     }
+    case dfk_err_eof: {
+      return "End of file (stream, iterator)";
+    }
     case dfk_err_nomem: {
       return "Memory allocation function returned NULL";
     }

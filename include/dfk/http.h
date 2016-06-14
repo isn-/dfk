@@ -34,15 +34,39 @@
 
 
 typedef enum dfk_http_method_e {
-  DFK_HTTP_OPTIONS,
-  DFK_HTTP_GET,
-  DFK_HTTP_HEAD,
-  DFK_HTTP_POST,
-  DFK_HTTP_PUT,
-  DFK_HTTP_PATCH,
-  DFK_HTTP_DELETE,
-  DFK_HTTP_TRACE,
-  DFK_HTTP_CONNECT
+  DFK_HTTP_DELETE = 0,
+  DFK_HTTP_GET = 1,
+  DFK_HTTP_HEAD = 2,
+  DFK_HTTP_POST = 3,
+  DFK_HTTP_PUT = 4,
+  DFK_HTTP_CONNECT = 5,
+  DFK_HTTP_OPTIONS = 6,
+  DFK_HTTP_TRACE = 7,
+  DFK_HTTP_COPY = 8,
+  DFK_HTTP_LOCK = 9,
+  DFK_HTTP_MKCOL = 10,
+  DFK_HTTP_MOVE = 11,
+  DFK_HTTP_PROPFIND = 12,
+  DFK_HTTP_PROPPATCH = 13,
+  DFK_HTTP_SEARCH = 14,
+  DFK_HTTP_UNLOCK = 15,
+  DFK_HTTP_BIND = 16,
+  DFK_HTTP_REBIND = 17,
+  DFK_HTTP_UNBIND = 18,
+  DFK_HTTP_ACL = 19,
+  DFK_HTTP_REPORT = 20,
+  DFK_HTTP_MKACTIVITY = 21,
+  DFK_HTTP_CHECKOUT = 22,
+  DFK_HTTP_MERGE = 23,
+  DFK_HTTP_MSEARCH = 24,
+  DFK_HTTP_NOTIFY = 25,
+  DFK_HTTP_SUBSCRIBE = 26,
+  DFK_HTTP_UNSUBSCRIBE = 27,
+  DFK_HTTP_PATCH = 28,
+  DFK_HTTP_PURGE = 29,
+  DFK_HTTP_MKCALENDAR = 30,
+  DFK_HTTP_LINK = 31,
+  DFK_HTTP_UNLINK = 32
 } dfk_http_method_e;
 
 
@@ -115,29 +139,24 @@ typedef enum dfk_http_status_e {
 } dfk_http_status_e;
 
 
-typedef struct dfk_http_header_t {
-  struct {
-    dfk_avltree_hook_t hook;
-  } _;
-  dfk_buf_t name;
-  dfk_buf_t value;
-} dfk_http_header_t;
-
-
-typedef dfk_http_header_t dfk_http_argument_t;
-
-
 typedef struct dfk_http_req_t {
   struct {
     dfk_arena_t* arena;
     dfk_tcp_socket_t* sock;
+    dfk_avltree_t headers; /* contains dfk_http_header_t */
+    dfk_avltree_t arguments; /* contains dfk_http_argument_t */
+    dfk_buf_t bodypart;
   } _;
-  unsigned short http_major;
-  unsigned short http_minor;
+  struct {
+    unsigned short major;
+    unsigned short minor;
+  } version;
   dfk_http_method_e method;
   dfk_buf_t url;
-  dfk_avltree_t headers; /* contains dfk_http_header_t */
-  dfk_avltree_t arguments; /* contains dfk_http_argument_t */
+  dfk_buf_t user_agent;
+  dfk_buf_t host;
+  dfk_buf_t content_type;
+  uint64_t content_length;
 } dfk_http_req_t;
 
 
@@ -145,7 +164,7 @@ typedef struct dfk_http_resp_t {
   struct {
     dfk_arena_t* arena;
     dfk_tcp_socket_t* sock;
-    dfk_list_t headers;
+    dfk_avltree_t headers;
   } _;
   dfk_http_status_e code;
 } dfk_http_resp_t;
@@ -153,11 +172,14 @@ typedef struct dfk_http_resp_t {
 
 ssize_t dfk_http_read(dfk_http_req_t* req, const char* buf, size_t size);
 ssize_t dfk_http_readv(dfk_http_req_t* req, dfk_iovec_t* iov, size_t niov);
+dfk_buf_t dfk_http_get(dfk_http_req_t* req, const char* name, size_t namesize);
+dfk_buf_t dfk_http_getarg(dfk_http_req_t* req, const char* name, size_t namesize);
 
-ssize_t dfk_http_write(dfk_http_resp_t* resp, char* buf, size_t nbtes);
+
+ssize_t dfk_http_write(dfk_http_resp_t* resp, char* buf, size_t nbytes);
 ssize_t dfk_http_writev(dfk_http_resp_t* resp, dfk_iovec_t* iov, size_t niov);
+int dfk_http_set(dfk_http_resp_t* resp, const char* name, size_t namesize, const char* value, size_t valuesize);
 
-void dfk_http_set(dfk_http_resp_t* resp, const char* name, size_t namesize, size_t size, const char* fmt, ...);
 
 typedef int (*dfk_http_handler)(dfk_t*, dfk_http_req_t*, dfk_http_resp_t*);
 
