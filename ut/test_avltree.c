@@ -113,6 +113,12 @@ static node_t* ut_parse_avltree(dfk_t* dfk, dfk_avltree_t* tree, const char* def
   }
   nodes = DFK_MALLOC(dfk, nnodes * sizeof(node_t));
   {
+    size_t i;
+    for (i = 0; i < nnodes; ++i) {
+      nodes[i].hook.parent = NULL;
+    }
+  }
+  {
     const char* p = definition;
     const char* end = definition + strlen(definition);
     size_t i = 0;
@@ -125,11 +131,13 @@ static node_t* ut_parse_avltree(dfk_t* dfk, dfk_avltree_t* tree, const char* def
         nodes[i].hook.left = NULL;
       } else {
         nodes[i].hook.left = (dfk_avltree_hook_t*) (nodes + lindex);
+        ((dfk_avltree_hook_t*) (nodes + lindex))->parent = &nodes[i].hook;
       }
       if (rindex < 0) {
         nodes[i].hook.right = NULL;
       } else {
         nodes[i].hook.right = (dfk_avltree_hook_t*) (nodes + rindex);
+        ((dfk_avltree_hook_t*) (nodes + rindex))->parent = &nodes[i].hook;
       }
       while ((p < end) && (*p != '\n')) {
         ++p;
@@ -139,6 +147,7 @@ static node_t* ut_parse_avltree(dfk_t* dfk, dfk_avltree_t* tree, const char* def
     }
   }
   tree->root = (dfk_avltree_hook_t*) (nodes + nnodes - 1);
+  tree->root->parent = NULL;
   return nodes;
 }
 
