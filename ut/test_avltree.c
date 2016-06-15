@@ -567,12 +567,11 @@ TEST_F(tree_fixture, avltree, insert_existing)
   /*
    * Based on http://stackoverflow.com/a/13843966
    *
-   *    ┌─26
-   *   20
-   *    │ ┌─9
-   *    └─4
-   *      └─3
-   *
+   *   ┌─26
+   *  20
+   *   │ ┌─9
+   *   └─4
+   *     └─3
    */
 
   fixture->in_nodes = ut_parse_avltree(&fixture->dfk, &fixture->in_tree,
@@ -609,6 +608,50 @@ TEST(avltree, insert_empty)
   ASSERT(tree.root->bal == 0);
   ASSERT(tree.root->left == NULL);
   ASSERT(tree.root->right == NULL);
+}
+
+
+TEST_F(tree_fixture, avltree, insert_algcourse_cs_msu_su)
+{
+  /* Based on algcourse.cs.msu.su:
+   * http://algcourse.cs.msu.su/wp-content/uploads/2011/09/Lection19.pdf
+   * page 17
+   *
+   * Insertion of keys 4, 5, 7, 2, 1, 3, 6 into an empty tree should yield:
+   *
+   *    ┌─7
+   *  ┌─6
+   *  │ └─5
+   *  4
+   *  │ ┌─3
+   *  └─2
+   *    └─1
+   */
+  dfk_avltree_t tree;
+  int values[] = {4, 5, 7, 2, 1, 3, 6};
+  node_t nodes[DFK_SIZE(values)];
+  size_t i;
+
+  dfk_avltree_init(&tree, node_cmp);
+  for (i = 0; i < DFK_SIZE(nodes); ++i) {
+    dfk_avltree_hook_init(&nodes[i].hook);
+    nodes[i].value = values[i];
+  }
+  for (i = 0; i < DFK_SIZE(nodes); ++i) {
+    dfk_avltree_insert(&tree, (dfk_avltree_hook_t*) &nodes[i]);
+  }
+
+  fixture->expected_nodes = ut_parse_avltree(&fixture->dfk, &fixture->expected_tree,
+      /* 0 */ "7  0 -1 -1\n"
+      /* 1 */ "5  0 -1 -1\n"
+      /* 2 */ "6  0  1  0\n"
+      /* 3 */ "3  0 -1 -1\n"
+      /* 4 */ "1  0 -1 -1\n"
+      /* 5 */ "2  0  4  3\n"
+      /* 6 */ "4  0  5  2\n"
+  );
+
+  EXPECT(ut_trees_equal(tree.root, fixture->expected_tree.root, node_cmp));
 }
 
 
