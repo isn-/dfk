@@ -221,7 +221,7 @@ static int dfk__http_on_message_begin(http_parser* parser)
 static int dfk__http_on_url(http_parser* parser, const char* at, size_t size)
 {
   dfk__http_parser_data_t* p = (dfk__http_parser_data_t*) parser->data;
-  DFK_DBG(p->dfk, "{%p} %.*s", (void*) p->req, size, at);
+  DFK_DBG(p->dfk, "{%p} %.*s", (void*) p->req, (int) size, at);
   dfk__buf_append(&p->req->url, at, size);
   return 0;
 }
@@ -240,7 +240,7 @@ static int dfk__http_on_status(http_parser* parser, const char* at, size_t size)
 static int dfk__http_on_header_field(http_parser* parser, const char* at, size_t size)
 {
   dfk__http_parser_data_t* p = (dfk__http_parser_data_t*) parser->data;
-  DFK_DBG(p->dfk, "{%p} %.*s", (void*) p->req, size, at);
+  DFK_DBG(p->dfk, "{%p} %.*s", (void*) p->req, (int) size, at);
   if (!p->cheader || p->cheader->value.data) {
     if (p->cheader) {
       dfk_avltree_insert(&p->req->_.headers, (dfk_avltree_hook_t*) p->cheader);
@@ -256,7 +256,7 @@ static int dfk__http_on_header_field(http_parser* parser, const char* at, size_t
 static int dfk__http_on_header_value(http_parser* parser, const char* at, size_t size)
 {
   dfk__http_parser_data_t* p = (dfk__http_parser_data_t*) parser->data;
-  DFK_DBG(p->dfk, "{%p} %.*s", (void*) p->req, size, at);
+  DFK_DBG(p->dfk, "{%p} %.*s", (void*) p->req, (int) size, at);
   dfk__buf_append(&p->cheader->value, at, size);
   return 0;
 }
@@ -359,7 +359,7 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
       "%s %.*s HTTP/%hu.%hu",
       (void*) http,
       http_method_str((enum http_method) req.method),
-      req.url.size, req.url.data,
+      (int) req.url.size, req.url.data,
       req.version.major,
       req.version.minor);
 
