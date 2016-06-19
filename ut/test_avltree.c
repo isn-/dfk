@@ -742,6 +742,7 @@ TEST_F(tree_traversal_fixture, avltree, traversal_empty)
   dfk_avltree_it_t it;
   dfk_avltree_it_init(&fixture->tree, &it);
   EXPECT(dfk_avltree_it_end(&it));
+  dfk_avltree_it_free(&it);
 }
 
 
@@ -791,5 +792,6 @@ TEST_F(tree_traversal_fixture, avltree, traversal_complete)
     }
     EXPECT(i == 16);
   }
+  dfk_avltree_it_free(&it);
 }
 
