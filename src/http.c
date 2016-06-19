@@ -74,6 +74,7 @@ static void dfk__http_req_init(dfk_http_req_t* req, dfk_arena_t* arena, dfk_tcp_
   dfk_avltree_init(&req->_.headers, dfk__http_header_cmp);
   dfk_avltree_init(&req->_.arguments, dfk__http_header_cmp);
   req->_.bodypart = (dfk_buf_t) {NULL, 0};
+  req->url = (dfk_buf_t) {NULL, 0};
   req->user_agent = (dfk_buf_t) {NULL, 0};
   req->host = (dfk_buf_t) {NULL, 0};
   req->content_type = (dfk_buf_t) {NULL, 0};
