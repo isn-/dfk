@@ -118,7 +118,7 @@ static void dfk__avltree_check_invariants(dfk_avltree_t* tree)
 #endif /* NDEBUG */
 
 
-typedef int (*dfk_avltree_traversal_cb)(dfk_avltree_t*, dfk_avltree_hook_t*);
+typedef void (*dfk_avltree_traversal_cb)(dfk_avltree_t*, dfk_avltree_hook_t*);
 
 static void dfk__avltree_dfs(dfk_avltree_t* tree, dfk_avltree_hook_t* hook, dfk_avltree_traversal_cb cb)
 {
@@ -140,18 +140,17 @@ void dfk_avltree_init(dfk_avltree_t* tree, dfk_avltree_cmp cmp)
 }
 
 
-static int dfk__avltree_free_cb(dfk_avltree_t* tree, dfk_avltree_hook_t* hook)
+static void dfk__avltree_free_cb(dfk_avltree_t* tree, dfk_avltree_hook_t* hook)
 {
   DFK_UNUSED(tree);
   dfk_avltree_hook_free(hook);
-  return 0;
 }
 
 
 void dfk_avltree_free(dfk_avltree_t* tree)
 {
   assert(tree);
-  (void) dfk__avltree_dfs(tree, tree->root, dfk__avltree_free_cb);
+  dfk__avltree_dfs(tree, tree->root, dfk__avltree_free_cb);
 }
 
 
@@ -473,5 +472,53 @@ dfk_avltree_hook_t* dfk_avltree_lookup(dfk_avltree_t* tree, void* e, dfk_avltree
     }
   }
   return NULL;
+}
+
+
+void dfk_avltree_it_init(dfk_avltree_t* tree, dfk_avltree_it_t* it)
+{
+  assert(tree);
+  assert(it);
+  it->value = tree->root;
+  if (it->value) {
+    while (it->value->left) {
+      it->value = it->value->left;
+    }
+  }
+}
+
+
+void dfk_avltree_it_free(dfk_avltree_it_t* it)
+{
+  assert(it);
+  it->value = NULL;
+}
+
+
+void dfk_avltree_it_next(dfk_avltree_it_t* it)
+{
+  assert(it->value); /* can not increment end iterator */
+  if (it->value->right) {
+    it->value = it->value->right;
+    while (it->value->left) {
+      it->value = it->value->left;
+    }
+    return;
+  }
+  if (it->value->parent && it->value->parent->left == it->value) {
+    it->value = it->value->parent;
+    return;
+  }
+  while (it->value->parent && it->value->parent->right == it->value) {
+    it->value = it->value->parent;
+  }
+  it->value = it->value->parent;
+}
+
+
+int dfk_avltree_it_end(dfk_avltree_it_t* it)
+{
+  assert(it);
+  return it->value == NULL;
 }
 

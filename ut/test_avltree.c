@@ -672,7 +672,6 @@ static int node_int_lookup_cmp(dfk_avltree_hook_t* hook, void* v)
 TEST_F(tree_fixture, avltree, lookup)
 {
   /*
-   *
    *         ┌─23
    *      ┌─18
    *      │  └─16
@@ -712,4 +711,85 @@ TEST_F(tree_fixture, avltree, lookup)
   }
 }
 
+
+typedef struct tree_traversal_fixture_t {
+  dfk_t dfk;
+  dfk_avltree_t tree;
+  node_t* nodes;
+} tree_traversal_fixture_t;
+
+
+static void tree_traversal_fixture_setup(tree_traversal_fixture_t* f)
+{
+  dfk_init(&f->dfk);
+  f->nodes = NULL;
+  dfk_avltree_init(&f->tree, node_cmp);
+}
+
+
+static void tree_traversal_fixture_teardown(tree_traversal_fixture_t* f)
+{
+  dfk_avltree_free(&f->tree);
+  if (f->nodes) {
+    DFK_FREE(&f->dfk, f->nodes);
+  }
+  dfk_free(&f->dfk);
+}
+
+
+TEST_F(tree_traversal_fixture, avltree, traversal_empty)
+{
+  dfk_avltree_it_t it;
+  dfk_avltree_it_init(&fixture->tree, &it);
+  EXPECT(dfk_avltree_it_end(&it));
+}
+
+
+TEST_F(tree_traversal_fixture, avltree, traversal_complete)
+{
+  /*
+   *       ┌─15
+   *    ┌─14
+   *    │  └─13
+   * ┌─12
+   * │  │  ┌─11
+   * │  └─10
+   * │     └─9
+   * 8
+   * │   ┌─7
+   * │ ┌─6
+   * │ │ └─5
+   * └─4
+   *   │ ┌─3
+   *   └─2
+   *     └─1
+   */
+  dfk_avltree_it_t it;
+  fixture->nodes = ut_parse_avltree(&fixture->dfk, &fixture->tree,
+      /*  0 */ " 1  0 -1 -1\n"
+      /*  1 */ " 3  0 -1 -1\n"
+      /*  2 */ " 2  0  0  1\n"
+      /*  3 */ " 5  0 -1 -1\n"
+      /*  4 */ " 7  0 -1 -1\n"
+      /*  5 */ " 6  0  3  4\n"
+      /*  6 */ " 4  0  2  5\n"
+      /*  7 */ " 9  0 -1 -1\n"
+      /*  8 */ "11  0 -1 -1\n"
+      /*  9 */ "10  0  7  8\n"
+      /* 10 */ "13  0 -1 -1\n"
+      /* 11 */ "15  0 -1 -1\n"
+      /* 12 */ "14  0 10 11\n"
+      /* 13 */ "12  0  9 12\n"
+      /* 14 */ " 8  0  6 13\n"
+  );
+  dfk_avltree_it_init(&fixture->tree, &it);
+  {
+    int i = 0;
+    for (i = 1; i < 20 && !dfk_avltree_it_end(&it); ++i) {
+      EXPECT(((node_t*) it.value)->value == i);
+      dfk_avltree_it_next(&it);
+    }
+    EXPECT(i == 16);
+  }
+}
 

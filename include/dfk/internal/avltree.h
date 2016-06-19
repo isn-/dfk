@@ -48,6 +48,11 @@ typedef struct dfk_avltree_t {
   dfk_avltree_cmp cmp;
 } dfk_avltree_t;
 
+
+typedef struct dfk_avltree_it_t {
+  dfk_avltree_hook_t* value;
+} dfk_avltree_it_t;
+
 void dfk_avltree_init(dfk_avltree_t* tree, dfk_avltree_cmp cmp);
 void dfk_avltree_free(dfk_avltree_t* tree);
 
@@ -57,4 +62,9 @@ void dfk_avltree_hook_free(dfk_avltree_hook_t* h);
 dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* e);
 void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e);
 dfk_avltree_hook_t* dfk_avltree_lookup(dfk_avltree_t* tree, void* e, dfk_avltree_lookup_cmp cmp);
+
+void dfk_avltree_it_init(dfk_avltree_t* tree, dfk_avltree_it_t* it);
+void dfk_avltree_it_free(dfk_avltree_it_t* it);
+void dfk_avltree_it_next(dfk_avltree_it_t* it);
+int dfk_avltree_it_end(dfk_avltree_it_t* it);
 
