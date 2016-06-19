@@ -106,7 +106,6 @@ static void dfk__avltree_check_invariants(dfk_avltree_t* tree)
   DFK_UNUSED(dfk__avltree_print);
   DFK_UNUSED(dfk__avltree_print_ptr);
   assert(tree);
-  dfk__avltree_print(tree->root, dfk__avltree_print_ptr, 0, 0, 0);
   if (tree->root) {
     assert(!tree->root->parent);
     dfk__avltree_check_invariants_node(tree->root);
