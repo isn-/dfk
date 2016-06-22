@@ -128,6 +128,26 @@ int dfk_free(dfk_t* dfk)
 }
 
 
+static void dfk__stop(uv_async_t* h)
+{
+  dfk_t* dfk = (dfk_t*) h->data;
+  DFK_DBG(dfk, "{%p}", (void*) dfk);
+}
+
+
+int dfk_stop(dfk_t* dfk)
+{
+  if (!dfk || !dfk->_.uvloop) {
+    return dfk_err_badarg;
+  }
+  DFK_DBG(dfk, "{%p}", (void*) dfk);
+  DFK_SYSCALL(dfk, uv_async_init(dfk->_.uvloop, &dfk->_.stop, dfk__stop));
+  dfk->_.stop.data = dfk;
+  DFK_SYSCALL(dfk, uv_async_send(&dfk->_.stop));
+  return dfk_err_ok;
+}
+
+
 typedef struct {
   void (*ep)(dfk_t*, void*);
   void* arg;

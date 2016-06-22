@@ -165,6 +165,7 @@ typedef struct dfk_t {
     struct dfk_coro_t* scheduler;
     struct dfk_coro_t* eventloop;
     uv_loop_t* uvloop;
+    uv_async_t stop;
   } _;
 
   void* userdata;
@@ -249,6 +250,14 @@ int dfk_yield(dfk_coro_t* from, dfk_coro_t* to);
  * @pre dfk != NULL
  */
 int dfk_work(dfk_t* dfk);
+
+
+/**
+ * Stop dfk working cycle
+ *
+ * @pre dfk != NULL
+ */
+int dfk_stop(dfk_t* dfk);
 
 
 /**
