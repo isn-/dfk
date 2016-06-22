@@ -46,18 +46,24 @@ static void dfk__http_header_init(dfk__http_header_t* header)
 }
 
 
-static int dfk__http_header_cmp(dfk_avltree_hook_t* l, dfk_avltree_hook_t* r)
+static int dfk__http_header_lookup_cmp(dfk_avltree_hook_t* l, void* r)
 {
   dfk__http_header_t* lh = (dfk__http_header_t*) l;
-  dfk__http_header_t* rh = (dfk__http_header_t*) r;
-  size_t tocmp = DFK_MIN(lh->name.size, rh->name.size);
-  int res = strncmp(lh->name.data, rh->name.data, tocmp);
+  dfk_buf_t* rh = (dfk_buf_t*) r;
+  size_t tocmp = DFK_MIN(lh->name.size, rh->size);
+  int res = strncmp(lh->name.data, rh->data, tocmp);
   if (res) {
     return res;
   } else {
-    return lh->name.size > rh->name.size;
+    return lh->name.size > rh->size;
   }
   return res;
+}
+
+
+static int dfk__http_header_cmp(dfk_avltree_hook_t* l, dfk_avltree_hook_t* r)
+{
+  return dfk__http_header_lookup_cmp(l, &((dfk__http_header_t*) r)->name);
 }
 
 
@@ -383,6 +389,59 @@ connection_broken:
   dfk_arena_free(&arena);
 
   DFK_CALL_RVOID(http->dfk, dfk_tcp_socket_close(sock));
+}
+
+dfk_buf_t dfk_http_get(dfk_http_req_t* req, const char* name, size_t namesize)
+{
+  if (!req || (!name && namesize)) {
+    return (dfk_buf_t) {NULL, 0};
+  }
+  {
+    dfk_buf_t e = (dfk_buf_t) {(char*) name, namesize};
+    dfk__http_header_t* h = (dfk__http_header_t*)
+      dfk_avltree_lookup(&req->_.headers, &e, NULL);
+    if (h) {
+      return h->value;
+    } else {
+      return (dfk_buf_t) {NULL, 0};
+    }
+  }
+}
+
+
+int dfk_http_headers_begin(dfk_http_req_t* req, dfk_http_headers_it* it)
+{
+  if (!req || !it) {
+    return dfk_err_badarg;
+  }
+  dfk_avltree_it_init(&req->_.headers, &it->_.it);
+  it->value.field = ((dfk__http_header_t*) it->_.it.value)->name;
+  it->value.value = ((dfk__http_header_t*) it->_.it.value)->value;
+  return dfk_err_ok;
+}
+
+
+int dfk_http_headers_next(dfk_http_headers_it* it)
+{
+  if (!it) {
+    return dfk_err_badarg;
+  }
+  if (dfk_avltree_it_end(&it->_.it)) {
+    return dfk_err_eof;
+  }
+  dfk_avltree_it_next(&it->_.it);
+  it->value.field = ((dfk__http_header_t*) it->_.it.value)->name;
+  it->value.value = ((dfk__http_header_t*) it->_.it.value)->value;
+  return dfk_err_ok;
+}
+
+
+int dfk_http_headers_end(dfk_http_headers_it* it)
+{
+  if (!it) {
+    return dfk_err_badarg;
+  }
+  return dfk_avltree_it_end(&it->_.it);
 }
 
 

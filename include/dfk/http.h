@@ -170,11 +170,32 @@ typedef struct dfk_http_resp_t {
 } dfk_http_resp_t;
 
 
+typedef struct dfk_http_headers_it {
+  struct {
+    dfk_avltree_it_t it;
+  } _;
+  struct {
+    dfk_buf_t field;
+    dfk_buf_t value;
+  } value;
+} dfk_http_headers_it;
+
+
+typedef dfk_http_headers_it dfk_http_args_it;
+
+
 ssize_t dfk_http_read(dfk_http_req_t* req, const char* buf, size_t size);
 ssize_t dfk_http_readv(dfk_http_req_t* req, dfk_iovec_t* iov, size_t niov);
-dfk_buf_t dfk_http_get(dfk_http_req_t* req, const char* name, size_t namesize);
-dfk_buf_t dfk_http_getarg(dfk_http_req_t* req, const char* name, size_t namesize);
 
+dfk_buf_t dfk_http_get(dfk_http_req_t* req, const char* name, size_t namesize);
+int dfk_http_headers_begin(dfk_http_req_t* req, dfk_http_headers_it* it);
+int dfk_http_headers_next(dfk_http_headers_it* it);
+int dfk_http_headers_end(dfk_http_headers_it* it);
+
+dfk_buf_t dfk_http_getarg(dfk_http_req_t* req, const char* name, size_t namesize);
+int dfk_http_args_begin(dfk_http_req_t* req, dfk_http_args_it* it);
+int dfk_http_args_next(dfk_http_args_it* it);
+int dfk_http_args_end(dfk_http_args_it* it);
 
 ssize_t dfk_http_write(dfk_http_resp_t* resp, char* buf, size_t nbytes);
 ssize_t dfk_http_writev(dfk_http_resp_t* resp, dfk_iovec_t* iov, size_t niov);
