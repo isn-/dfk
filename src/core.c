@@ -36,6 +36,10 @@
 #include <signal.h>
 #endif
 
+#ifdef DFK_THREADS
+#include <pthread.h>
+#endif
+
 #ifdef DFK_VALGRIND
 #include <valgrind/valgrind.h>
 #endif
@@ -54,8 +58,11 @@ static void dfk__default_log(dfk_t* dfk, int channel, const char* msg)
     case dfk_log_debug: memcpy(strchannel, "debug", 5); break;
     default: snprintf(strchannel, sizeof(strchannel), "%5d", channel);
   }
-  /* At most 512 bytes will printed at once */
-  printf("[%.5s] %.503s\n", strchannel, msg);
+#ifdef DFK_THREADS
+  printf("[%.5s] %d %s\n", strchannel, (int) pthread_self(), msg);
+#else
+  printf("[%.5s] %s\n", strchannel, msg);
+#endif
   fflush(stdout);
 }
 #endif /* DFK_DEBUG */
