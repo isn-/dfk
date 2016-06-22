@@ -190,6 +190,10 @@ typedef struct dfk_http_t {
     dfk_http_handler handler;
   } _;
   dfk_t* dfk;
+  union {
+    void* data;
+    void (*func)(void);
+  } user;
 } dfk_http_t;
 
 

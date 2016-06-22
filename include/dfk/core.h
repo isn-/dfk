@@ -168,7 +168,10 @@ typedef struct dfk_t {
     uv_async_t stop;
   } _;
 
-  void* userdata;
+  union {
+    void* data;
+    void (*func)(void);
+  } user;
 
   void* (*malloc) (struct dfk_t*, size_t);
   void (*free) (struct dfk_t*, void*);
@@ -201,7 +204,10 @@ typedef struct dfk_coro_t {
 #endif
   } _;
   dfk_t* dfk;
-  void* userdata;
+  union {
+    void* data;
+    void (*func)(void);
+  } user;
 } dfk_coro_t;
 
 

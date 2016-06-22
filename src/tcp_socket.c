@@ -78,7 +78,6 @@ int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk)
   sock->_.socket.data = sock;
   sock->_.arg.func = NULL;
   sock->_.flags = TCP_SOCKET_SPARE;
-  sock->userdata = NULL;
   sock->dfk = dfk;
   return dfk_err_ok;
 }

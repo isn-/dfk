@@ -179,7 +179,7 @@ TEST(core, default_memory_functions)
 
 static void* bad_malloc(dfk_t* dfk, size_t nbytes)
 {
-  int* nfail = (int*) dfk->userdata;
+  int* nfail = (int*) dfk->user.data;
   if (!*nfail) {
     return NULL;
   }
@@ -195,7 +195,7 @@ TEST(core, bad_malloc)
     dfk_t dfk;
     size_t nfail = i;
     EXPECT_OK(dfk_init(&dfk));
-    dfk.userdata = &nfail;
+    dfk.user.data = &nfail;
     dfk.malloc = bad_malloc;
     EXPECT(dfk_work(&dfk) == dfk_err_nomem);
     EXPECT_OK(dfk_free(&dfk));

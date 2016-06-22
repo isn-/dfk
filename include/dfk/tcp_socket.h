@@ -55,7 +55,10 @@ typedef struct dfk_tcp_socket_t {
     } arg;
     int32_t flags;
   } _;
-  void* userdata;
+  union {
+    void* data;
+    void (*func)(void);
+  } user;
   dfk_t* dfk;
 } dfk_tcp_socket_t;
 
