@@ -181,7 +181,8 @@ ssize_t dfk_http_writev(dfk_http_resp_t* resp, dfk_iovec_t* iov, size_t niov);
 int dfk_http_set(dfk_http_resp_t* resp, const char* name, size_t namesize, const char* value, size_t valuesize);
 
 
-typedef int (*dfk_http_handler)(dfk_t*, dfk_http_req_t*, dfk_http_resp_t*);
+struct dfk_http_t;
+typedef int (*dfk_http_handler)(struct dfk_http_t*, dfk_http_req_t*, dfk_http_resp_t*);
 
 
 typedef struct dfk_http_t {

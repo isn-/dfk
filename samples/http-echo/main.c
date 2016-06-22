@@ -36,9 +36,9 @@ typedef struct args_t {
 } args_t;
 
 
-static int echo(dfk_t* dfk, dfk_http_req_t* req, dfk_http_resp_t* resp)
+static int echo(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
 {
-  DFK_UNUSED(dfk);
+  DFK_UNUSED(http);
   DFK_UNUSED(req);
   resp->code = DFK_HTTP_OK;
   return 0;

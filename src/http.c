@@ -367,7 +367,7 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
   assert(pdata.done);
   {
     char respbuf[128] = {0};
-    int hres = http->_.handler(http->dfk, &req, &resp);
+    int hres = http->_.handler(http, &req, &resp);
     dfk_http_status_e status = ((hres == dfk_err_ok)
       ? resp.code
       : DFK_HTTP_INTERNAL_SERVER_ERROR);
