@@ -6,7 +6,8 @@ set(ut_sources
   test_list.c
   test_avltree.c
   test_arena.c
-  test_tcp_socket.c)
+  test_tcp_socket.c
+  test_http.c)
 
 set(ut_init_c "${CMAKE_CURRENT_BINARY_DIR}/ut_init.c")
 set(ut_init_h "${CMAKE_CURRENT_BINARY_DIR}/ut_init.h")
@@ -19,7 +20,9 @@ add_executable(ut-dfk
   naivetp/naivetp.c
   main.c)
 
-target_link_libraries(ut-dfk dfk)
+target_link_libraries(ut-dfk
+  dfk
+  ${CURL_LIBRARIES})
 
 file(WRITE ${ut_init_h}
 "/*
