@@ -61,6 +61,8 @@ void _ut_##group##_##name(void)
 void _ut_##group##_##name(fixture_name##_t*); \
 void ut_##group##_##name(void) \
 { \
+  (void) fixture_name##_setup; \
+  (void) fixture_name##_teardown; \
   (void) _ut_##group##_##name; \
   ut_disable(DFK_STRINGIFY(group), DFK_STRINGIFY(name)); \
 } \
