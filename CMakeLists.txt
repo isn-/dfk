@@ -82,6 +82,10 @@ endif()
 find_package(http-parser REQUIRED)
 include_directories(${HTTP_PARSER_INCLUDE_DIR})
 
+if(DFK_BUILD_UNIT_TESTS)
+  find_package(CURL REQUIRED)
+endif()
+
 if(DFK_COVERAGE AND NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   message(FATAL_ERROR "Code coverage can be computed only for Debug builds\nDisable DFK_ENABLE_COVERAGE or change build type to Debug")
 endif()
