@@ -125,7 +125,7 @@ static void dfk__tcp_socket_on_connect(uv_connect_t* p, int status)
   } else {
     arg->err = dfk_err_ok;
   }
-  DFK_SCHEDULE(sock->dfk, arg->yieldback);
+  DFK_IO_RESUME(sock->dfk, arg->yieldback);
 }
 
 
@@ -313,10 +313,10 @@ static void dfk__tcp_socket_on_close(uv_handle_t* p)
   DFK_INFO(sock->dfk, "{%p} is now closed", (void*) sock);
   if (STATE(sock) & TCP_SOCKET_LISTENING) {
     dfk_tcp_socket_listen_obj_t* obj = (dfk_tcp_socket_listen_obj_t*) sock->_.arg.obj;
-    DFK_SCHEDULE(sock->dfk, obj->close_yieldback);
-    DFK_SCHEDULE(sock->dfk, obj->yieldback);
+    DFK_IO_RESUME(sock->dfk, obj->close_yieldback);
+    DFK_IO_RESUME(sock->dfk, obj->yieldback);
   } else {
-    DFK_SCHEDULE(sock->dfk, (dfk_coro_t*) sock->_.arg.obj);
+    DFK_IO_RESUME(sock->dfk, (dfk_coro_t*) sock->_.arg.obj);
   }
 }
 
@@ -387,7 +387,7 @@ static void dfk__tcp_socket_on_read(uv_stream_t* p, ssize_t nread, const uv_buf_
       sock->dfk->sys_errno = err;
     }
   }
-  DFK_SCHEDULE(sock->dfk, arg->yieldback);
+  DFK_IO_RESUME(sock->dfk, arg->yieldback);
 }
 
 static void dfk__tcp_socket_on_alloc(uv_handle_t* p, size_t hint, uv_buf_t* buf)
@@ -513,7 +513,7 @@ static void dfk__tcp_socket_on_write(uv_write_t* request, int status)
     arg->err = dfk_err_ok;
   }
 
-  DFK_SCHEDULE(sock->dfk, arg->yieldback);
+  DFK_IO_RESUME(sock->dfk, arg->yieldback);
 }
 
 
