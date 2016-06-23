@@ -99,6 +99,11 @@ typedef enum dfk_error_e {
   dfk_err_eof,
 
   /**
+   * Resource is already acquired.
+   */
+  dfk_err_busy,
+
+  /**
    * Memory allocation function returned NULL
    */
   dfk_err_nomem,
