@@ -156,6 +156,23 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
   DFK_CALL((dfk), dfk_yield(DFK_THIS_CORO((dfk)), (dfk)->_.scheduler)); \
 }
 
+#define DFK_YIELD_RVOID(dfk) \
+{ \
+  DFK_CALL_RVOID((dfk), dfk_yield(DFK_THIS_CORO((dfk)), (dfk)->_.scheduler)); \
+}
+
+#define DFK_POSTPONE(dfk) \
+{ \
+  dfk_list_append(&(dfk)->_.pending_coros, (dfk_list_hook_t*) DFK_THIS_CORO((dfk))); \
+  DFK_YIELD((dfk)); \
+}
+
+#define DFK_POSTPONE_RVOID(dfk) \
+{ \
+  dfk_list_append(&(dfk)->_.pending_coros, (dfk_list_hook_t*) DFK_THIS_CORO((dfk))); \
+  DFK_YIELD_RVOID((dfk)); \
+}
+
 #define DFK_IO(dfk) \
 { \
   dfk_coro_t* self = DFK_THIS_CORO((dfk)); \
