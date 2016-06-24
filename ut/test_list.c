@@ -63,7 +63,6 @@ static void myint_fixture_setup(myint_fixture_t* f)
     myint_init(f->values + i, 10 + i);
   }
   dfk_list_init(&f->l);
-
 }
 
 
