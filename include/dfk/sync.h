@@ -1,10 +1,9 @@
 /**
- * @file dfk.h
- * @brief Dfk - HTTP backend in C
+ * @file dfk/sync.h
+ * Synchronization primitives
  *
- * @author Stanislav Ivochkin
  * @copyright
- * Copyright (c) 2015, 2016, Stanislav Ivochkin. All Rights Reserved.
+ * Copyright (c) 2016, Stanislav Ivochkin. All Rights Reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
@@ -28,20 +27,37 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-
 #pragma once
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include <dfk/config.h>
 #include <dfk/core.h>
-#include <dfk/sync.h>
-#include <dfk/tcp_socket.h>
-#include <dfk/http.h>
+#include <dfk/internal/list.h>
 
-#ifdef __cplusplus
-}
-#endif
+typedef struct dfk_mutex_t {
+  struct {
+    dfk_list_t waitqueue;
+    dfk_coro_t* owner;
+  } _;
+  dfk_t* dfk;
+} dfk_mutex_t;
+
+int dfk_mutex_init(dfk_mutex_t* mutex, dfk_t* dfk);
+int dfk_mutex_free(dfk_mutex_t* mutex);
+int dfk_mutex_lock(dfk_mutex_t* mutex);
+int dfk_mutex_unlock(dfk_mutex_t* mutex);
+int dfk_mutex_trylock(dfk_mutex_t* mutex);
+
+
+typedef struct dfk_cond_t {
+  struct {
+    dfk_list_t waitqueue;
+  } _;
+  dfk_t* dfk;
+} dfk_cond_t;
+
+int dfk_cond_init(dfk_cond_t* cond, dfk_t* dfk);
+int dfk_cond_free(dfk_cond_t* cond);
+int dfk_cond_wait(dfk_cond_t* cond, dfk_mutex_t* mutex);
+int dfk_cond_signal(dfk_cond_t* cond);
+int dfk_cond_broadcast(dfk_cond_t* cond);
 

@@ -6,6 +6,7 @@ set(ut_sources
   test_list.c
   test_avltree.c
   test_arena.c
+  test_sync.c
   test_tcp_socket.c
   test_http.c)
 

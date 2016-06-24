@@ -119,6 +119,7 @@ add_library(dfk
   src/list.c
   src/avltree.c
   src/arena.c
+  src/sync.c
   src/tcp_socket.c
   src/http.c)
 
