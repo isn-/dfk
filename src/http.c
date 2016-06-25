@@ -316,6 +316,12 @@ static int dfk__http_on_chunk_complete(http_parser* parser)
 }
 
 
+typedef struct dfk__mutex_list_t {
+  dfk_list_hook_t hook;
+  dfk_mutex_t mutex;
+} dfk__mutex_list_t;
+
+
 static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
 {
   dfk_http_t* http = (dfk_http_t*) p;
@@ -326,6 +332,12 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
   dfk_arena_t arena;
   char buf[DFK_HTTP_HEADERS_BUFFER] = {0};
   dfk__http_parser_data_t pdata;
+  dfk__mutex_list_t ml;
+
+  dfk_list_hook_init(&ml.hook);
+  DFK_CALL_RVOID(http->dfk, dfk_mutex_init(&ml.mutex, http->dfk));
+  DFK_CALL_RVOID(http->dfk, dfk_mutex_lock(&ml.mutex));
+  dfk_list_append(&http->_.connections, &ml.hook);
 
   assert(http);
   dfk_arena_init(&arena, http->dfk);
@@ -389,6 +401,8 @@ connection_broken:
   dfk_arena_free(&arena);
 
   DFK_CALL_RVOID(http->dfk, dfk_tcp_socket_close(sock));
+  dfk_list_erase(&http->_.connections, &ml.hook);
+  DFK_CALL_RVOID(http->dfk, dfk_mutex_unlock(&ml.mutex));
 }
 
 dfk_buf_t dfk_http_get(dfk_http_req_t* req, const char* name, size_t namesize)
@@ -452,7 +466,30 @@ int dfk_http_init(dfk_http_t* http, dfk_t* dfk)
   }
   DFK_DBG(http->dfk, "{%p}", (void*) http);
   http->dfk = dfk;
+  dfk_list_init(&http->_.connections);
   return dfk_tcp_socket_init(&http->_.listensock, dfk);
+}
+
+
+int dfk_http_stop(dfk_http_t* http)
+{
+  if (!http) {
+    return dfk_err_badarg;
+  }
+  DFK_DBG(http->dfk, "{%p}", (void*) http);
+  DFK_CALL(http->dfk, dfk_tcp_socket_close(&http->_.listensock));
+  {
+    dfk_list_hook_t* i = http->_.connections.head;
+    while (i) {
+      dfk__mutex_list_t* it = (dfk__mutex_list_t*) i;
+      DFK_DBG(http->dfk, "{%p} waiting for {%p} to terminate", (void*) http, (void*) i);
+      DFK_CALL(http->dfk, dfk_mutex_lock(&it->mutex));
+      DFK_CALL(http->dfk, dfk_mutex_unlock(&it->mutex));
+      DFK_CALL(http->dfk, dfk_mutex_free(&it->mutex));
+      i = http->_.connections.head;
+    }
+  }
+  return dfk_err_ok;
 }
 
 
@@ -461,6 +498,7 @@ int dfk_http_free(dfk_http_t* http)
   if (!http) {
     return dfk_err_badarg;
   }
+  dfk_list_free(&http->_.connections);
   return dfk_tcp_socket_free(&http->_.listensock);
 }
 
@@ -475,6 +513,7 @@ int dfk_http_serve(dfk_http_t* http,
   }
   DFK_DBG(http->dfk, "{%p} serving at %s:%u", (void*) http, endpoint, port);
   http->_.handler = handler;
+  dfk_list_append(&http->dfk->_.http_servers, (dfk_list_hook_t*) http);
   return dfk_tcp_socket_listen(&http->_.listensock, endpoint, port, dfk__http, http, 0);
 }
 

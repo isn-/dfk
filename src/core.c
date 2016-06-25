@@ -135,10 +135,46 @@ int dfk_free(dfk_t* dfk)
 }
 
 
+static void dfk__terminator_cb(uv_handle_t* h, void* arg)
+{
+  dfk_t* dfk = (dfk_t*) arg;
+  DFK_DBG(dfk, "{%p} close handle {%p}", (void*) dfk, (void*) h);
+  uv_close(h, NULL);
+}
+
+
+static void dfk__terminator(dfk_coro_t* coro, void* p)
+{
+  dfk_t* dfk = coro->dfk;
+  DFK_UNUSED(p);
+  DFK_UNUSED(coro);
+  {
+    dfk_list_hook_t* i = dfk->_.http_servers.head;
+    DFK_DBG(dfk, "{%p} stop http servers", (void*) dfk);
+    dfk_list_clear(&dfk->_.http_servers);
+    while (i) {
+      dfk_http_stop((dfk_http_t*) i);
+      i = i->next;
+    }
+  }
+  DFK_DBG(dfk, "{%p} close other event handles", (void*) dfk);
+  uv_walk(dfk->_.uvloop, dfk__terminator_cb, dfk);
+}
+
+
 static void dfk__stop(uv_async_t* h)
 {
   dfk_t* dfk = (dfk_t*) h->data;
   DFK_DBG(dfk, "{%p}", (void*) dfk);
+  uv_close((uv_handle_t*) h, NULL);
+  {
+    dfk_coro_t* c = dfk_run(dfk, dfk__terminator, NULL, 0);
+    if (!c) {
+      DFK_ERROR(dfk, "{%p} dfk_run returned %d (%s)", (void*) dfk,
+          dfk->dfk_errno, dfk_strerr(dfk, dfk->dfk_errno));
+    }
+    DFK_CALL_RVOID(dfk, dfk_coro_name(c, "terminator"));
+  }
 }
 
 

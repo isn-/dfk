@@ -167,6 +167,8 @@ typedef struct dfk_t {
     dfk_list_t terminated_coros;
     struct dfk_coro_t* current;
 
+    dfk_list_t http_servers;
+
     struct dfk_coro_t* scheduler;
     struct dfk_coro_t* eventloop;
     uv_loop_t* uvloop;

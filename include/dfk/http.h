@@ -208,8 +208,10 @@ typedef int (*dfk_http_handler)(struct dfk_http_t*, dfk_http_req_t*, dfk_http_re
 
 typedef struct dfk_http_t {
   struct {
+    dfk_list_hook_t hook;
     dfk_tcp_socket_t listensock;
     dfk_http_handler handler;
+    dfk_list_t connections;
   } _;
   dfk_t* dfk;
   union {
@@ -220,6 +222,7 @@ typedef struct dfk_http_t {
 
 
 int dfk_http_init(dfk_http_t* http, dfk_t* dfk);
+int dfk_http_stop(dfk_http_t* http);
 int dfk_http_free(dfk_http_t* http);
 int dfk_http_serve(dfk_http_t* http,
     const char* endpoint,
