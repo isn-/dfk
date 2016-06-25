@@ -25,6 +25,7 @@
  */
 
 
+#include <assert.h>
 #include <dfk.h>
 #include <dfk/internal.h>
 #include "ut.h"
@@ -136,19 +137,18 @@ static void ut_try_lock(dfk_coro_t* coro, void* arg)
   ut_try_lock_data* d = (ut_try_lock_data*) arg;
   if (d->ncoro == 0) {
     ASSERT_OK(dfk_mutex_init(d->mutex, coro->dfk));
-  }
-
-  if (d->ncoro == 1) {
+    ASSERT_OK(dfk_mutex_trylock(d->mutex));
+    DFK_POSTPONE_RVOID(coro->dfk);
+    ASSERT_OK(dfk_mutex_unlock(d->mutex));
+  } else {
+    assert(d->ncoro == 1);
     ASSERT(dfk_mutex_trylock(d->mutex) == dfk_err_busy);
-  }
-  dfk_mutex_lock(d->mutex);
-  DFK_POSTPONE_RVOID(coro->dfk);
-  dfk_mutex_unlock(d->mutex);
-
-  if (d->ncoro == 1) {
+    ASSERT_OK(dfk_mutex_lock(d->mutex));
+    ASSERT_OK(dfk_mutex_unlock(d->mutex));
     ASSERT_OK(dfk_mutex_free(d->mutex));
   }
 }
+
 
 TEST_F(sync_fixture, mutex, try_lock)
 {
@@ -159,6 +159,30 @@ TEST_F(sync_fixture, mutex, try_lock)
   };
   ASSERT(dfk_run(&fixture->dfk, ut_try_lock, &data[0], 0));
   ASSERT(dfk_run(&fixture->dfk, ut_try_lock, &data[1], 0));
+  ASSERT_OK(dfk_work(&fixture->dfk));
+}
+
+
+static void ut_errors(dfk_coro_t* coro, void* arg)
+{
+  dfk_mutex_t mutex;
+  DFK_UNUSED(arg);
+  ASSERT(dfk_mutex_init(NULL, NULL) == dfk_err_badarg);
+  ASSERT(dfk_mutex_init(NULL, coro->dfk) == dfk_err_badarg);
+  ASSERT(dfk_mutex_init(&mutex, NULL) == dfk_err_badarg);
+  ASSERT_OK(dfk_mutex_init(&mutex, coro->dfk));
+  ASSERT(dfk_mutex_free(NULL) == dfk_err_badarg);
+  ASSERT_OK(dfk_mutex_lock(&mutex));
+  ASSERT(dfk_mutex_free(&mutex) == dfk_err_busy);
+  ASSERT_OK(dfk_mutex_unlock(&mutex));
+  ASSERT(dfk_mutex_lock(NULL) == dfk_err_badarg);
+  ASSERT(dfk_mutex_unlock(NULL) == dfk_err_badarg);
+}
+
+
+TEST_F(sync_fixture, mutex, errors)
+{
+  ASSERT(dfk_run(&fixture->dfk, ut_errors, NULL, 0));
   ASSERT_OK(dfk_work(&fixture->dfk));
 }
 
