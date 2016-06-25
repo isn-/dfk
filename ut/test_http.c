@@ -115,6 +115,44 @@ static void http_fixture_teardown(http_fixture_t* f)
 }
 
 
+static int ut_errors_handler(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+{
+  DFK_UNUSED(http);
+  DFK_UNUSED(req);
+  resp->code = 200;
+  return 0;
+}
+
+
+static void ut_errors(dfk_coro_t* coro, void* arg)
+{
+  dfk_http_t http;
+  DFK_UNUSED(arg);
+  ASSERT(dfk_http_init(NULL, NULL) == dfk_err_badarg);
+  ASSERT(dfk_http_init(&http, NULL) == dfk_err_badarg);
+  ASSERT(dfk_http_init(NULL, coro->dfk) == dfk_err_badarg);
+  ASSERT_OK(dfk_http_init(&http, coro->dfk));
+  ASSERT(dfk_http_free(NULL) == dfk_err_badarg);
+  ASSERT(dfk_http_stop(NULL) == dfk_err_badarg);
+  ASSERT(dfk_http_serve(NULL, NULL, 0, NULL) == dfk_err_badarg);
+  ASSERT(dfk_http_serve(&http, NULL, 0, NULL) == dfk_err_badarg);
+  ASSERT(dfk_http_serve(NULL, "127.0.0.1", 0, NULL) == dfk_err_badarg);
+  ASSERT(dfk_http_serve(NULL, NULL, 0, ut_errors_handler) == dfk_err_badarg);
+  ASSERT(dfk_http_serve(&http, "127.0.0.1", 10000, NULL) == dfk_err_badarg);
+  ASSERT_OK(dfk_http_free(&http));
+}
+
+
+TEST(http, errors)
+{
+  dfk_t dfk;
+  ASSERT_OK(dfk_init(&dfk));
+  ASSERT(dfk_run(&dfk, ut_errors, NULL, 0));
+  ASSERT_OK(dfk_work(&dfk));
+  ASSERT_OK(dfk_free(&dfk));
+}
+
+
 TEST_F(http_fixture, http, get_no_url_no_content)
 {
   CURLcode res;
