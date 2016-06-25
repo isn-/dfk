@@ -125,6 +125,7 @@ static void dfk__http_parser_data_init(dfk__http_parser_data_t* pdata, dfk_t* df
 {
   pdata->dfk = dfk;
   pdata->req = req;
+  pdata->cheader = NULL;
   pdata->done = 0;
 }
 
