@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <pthread.h>
+#include <time.h>
 #include <curl/curl.h>
 #include <dfk.h>
 #include <dfk/internal.h>
@@ -46,6 +47,7 @@ static int http_fixture_dyn_handler(dfk_http_t* http, dfk_http_req_t* req, dfk_h
   if (fixture->handler) {
     return fixture->handler(http, req, resp);
   } else {
+    resp->code = 200;
     return 0;
   }
 }
@@ -73,11 +75,35 @@ static void* http_fixture_server_start(void* p)
 static void http_fixture_setup(http_fixture_t* f)
 {
   f->curl = curl_easy_init();
+  curl_easy_setopt(f->curl, CURLOPT_VERBOSE, 1L);
   EXPECT(f->curl);
   dfk_init(&f->dfk);
   f->http.user.data = f;
   f->handler = NULL;
   pthread_create(&f->dfkthread, NULL, &http_fixture_server_start, f);
+  {
+    int server_ready = 0;
+    int nattempt;
+    for (nattempt = 0; !server_ready && nattempt < 10; ++nattempt) {
+      {
+        struct timespec req, rem;
+        memset(&req, 0, sizeof(req));
+        memset(&rem, 0, sizeof(rem));
+        req.tv_nsec = nattempt * nattempt * 1000000;
+        nanosleep(&req, &rem);
+      }
+      CURL* testcurl = curl_easy_init();
+      CURLcode res;
+      long http_code = 0;
+      curl_easy_setopt(testcurl, CURLOPT_URL, "http://127.0.0.1:10000/");
+      res = curl_easy_perform(testcurl);
+      curl_easy_getinfo(testcurl, CURLINFO_RESPONSE_CODE, &http_code);
+      if (res == CURLE_OK && http_code == 200) {
+        server_ready = 1;
+      }
+      curl_easy_cleanup(testcurl);
+    }
+  }
 }
 
 
