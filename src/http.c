@@ -465,7 +465,7 @@ int dfk_http_init(dfk_http_t* http, dfk_t* dfk)
   if (!http || !dfk) {
     return dfk_err_badarg;
   }
-  DFK_DBG(http->dfk, "{%p}", (void*) http);
+  DFK_DBG(dfk, "{%p}", (void*) http);
   http->dfk = dfk;
   dfk_list_init(&http->_.connections);
   return dfk_tcp_socket_init(&http->_.listensock, dfk);
