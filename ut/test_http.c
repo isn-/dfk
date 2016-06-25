@@ -89,7 +89,7 @@ static void http_fixture_teardown(http_fixture_t* f)
 }
 
 
-DISABLED_TEST_F(http_fixture, http, get_no_url_no_content)
+TEST_F(http_fixture, http, get_no_url_no_content)
 {
   CURLcode res;
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
