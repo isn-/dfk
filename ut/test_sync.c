@@ -347,13 +347,56 @@ static void ut_cond_signal_single_wait_coro1(dfk_coro_t* coro, void* arg)
 
 TEST_F(sync_fixture, cond, signal_single_wait)
 {
-  dfk_cond_t cv;
   dfk_mutex_t mutex;
+  dfk_cond_t cv;
   ut_cond_ssw arg = {&mutex, &cv};
   ASSERT(dfk_run(&fixture->dfk, ut_cond_signal_single_wait_coro0, &arg, 0));
   ASSERT(dfk_run(&fixture->dfk, ut_cond_signal_single_wait_coro1, &arg, 0));
   ASSERT_OK(dfk_work(&fixture->dfk));
 }
+
+
+static void ut_cond_wait_unlock_mutex_coro0(dfk_coro_t* coro, void* arg)
+{
+  ut_cond_ssw* d = (ut_cond_ssw*) arg;
+  ASSERT_OK(dfk_mutex_init(d->mutex, coro->dfk));
+  ASSERT_OK(dfk_cond_init(d->cv, coro->dfk));
+  ASSERT_OK(dfk_mutex_lock(d->mutex));
+  ASSERT_OK(dfk_cond_wait(d->cv, d->mutex));
+  ASSERT_OK(dfk_mutex_unlock(d->mutex));
+  ASSERT_OK(dfk_cond_free(d->cv));
+  ASSERT_OK(dfk_mutex_free(d->mutex));
+}
+
+
+static void ut_cond_wait_unlock_mutex_coro1(dfk_coro_t* coro, void* arg)
+{
+  ut_cond_ssw* d = (ut_cond_ssw*) arg;
+  DFK_UNUSED(coro);
+  ASSERT_OK(dfk_mutex_lock(d->mutex));
+  ASSERT_OK(dfk_mutex_unlock(d->mutex));
+}
+
+
+static void ut_cond_wait_unlock_mutex_coro2(dfk_coro_t* coro, void* arg)
+{
+  ut_cond_ssw* d = (ut_cond_ssw*) arg;
+  DFK_UNUSED(coro);
+  ASSERT_OK(dfk_cond_signal(d->cv));
+}
+
+
+TEST_F(sync_fixture, cond, wait_unlock_mutex)
+{
+  dfk_mutex_t mutex;
+  dfk_cond_t cv;
+  ut_cond_ssw arg = {&mutex, &cv};
+  ASSERT(dfk_run(&fixture->dfk, ut_cond_wait_unlock_mutex_coro0, &arg, 0));
+  ASSERT(dfk_run(&fixture->dfk, ut_cond_wait_unlock_mutex_coro1, &arg, 0));
+  ASSERT(dfk_run(&fixture->dfk, ut_cond_wait_unlock_mutex_coro2, &arg, 0));
+  ASSERT_OK(dfk_work(&fixture->dfk));
+}
+
 
 
 typedef struct ut_cond_smw {
