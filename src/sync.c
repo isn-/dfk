@@ -208,9 +208,10 @@ int dfk_cond_broadcast(dfk_cond_t* cond)
     dfk_list_hook_t* i = cond->_.waitqueue.head;
     dfk_list_clear(&cond->_.waitqueue);
     while (i) {
+      dfk_list_hook_t* next = i->next;
       DFK_DBG(cond->dfk, "{%p} wake up {%p}", (void*) cond, (void*) i);
       DFK_RESUME(cond->dfk, (dfk_coro_t*) i);
-      i = i->next;
+      i = next;
     }
   }
   return dfk_err_ok;
