@@ -67,12 +67,12 @@ int dfk_mutex_lock(dfk_mutex_t* mutex)
   DFK_DBG(mutex->dfk, "{%p} lock attempt by {%p}",
       (void*) mutex, (void*) DFK_THIS_CORO(mutex->dfk));
   if (!mutex->_.owner) {
-    DFK_DBG(mutex->dfk, "{%p} is spare, acquire", (void*) mutex);
+    DFK_DBG(mutex->dfk, "{%p} is spare, acquire lock", (void*) mutex);
     mutex->_.owner = DFK_THIS_CORO(mutex->dfk);
     return dfk_err_ok;
   } else {
     if (mutex->_.owner == DFK_THIS_CORO(mutex->dfk)) {
-      DFK_DBG(mutex->dfk, "{%p} is lock by the caller, recursive lock", (void*) mutex);
+      DFK_DBG(mutex->dfk, "{%p} is locked by the caller, recursive lock", (void*) mutex);
       return dfk_err_ok;
     } else {
       DFK_DBG(mutex->dfk, "{%p} is already locked by {%p}, waiting for unlock",
@@ -113,14 +113,19 @@ int dfk_mutex_trylock(dfk_mutex_t* mutex)
   if (!mutex) {
     return dfk_err_badarg;
   }
+  DFK_DBG(mutex->dfk, "{%p} trylock attempt by {%p}",
+      (void*) mutex, (void*) DFK_THIS_CORO(mutex->dfk));
   if (mutex->_.owner) {
     if (mutex->_.owner == DFK_THIS_CORO(mutex->dfk)) {
-      /* allow recursive lock */
+      DFK_DBG(mutex->dfk, "{%p} is locked by the caller, recursive lock", (void*) mutex);
       return dfk_err_ok;
     } else {
+      DFK_DBG(mutex->dfk, "{%p} is already locked by {%p}, dfk_err_busy",
+          (void*) mutex, (void*) mutex->_.owner);
       return dfk_err_busy;
     }
   }
+  DFK_DBG(mutex->dfk, "{%p} is spare, acquire lock", (void*) mutex);
   assert(!mutex->_.owner);
   assert(!dfk_list_size(&mutex->_.waitqueue));
   mutex->_.owner = DFK_THIS_CORO(mutex->dfk);
@@ -133,6 +138,7 @@ int dfk_cond_init(dfk_cond_t* cond, dfk_t* dfk)
   if (!cond || !dfk) {
     return dfk_err_badarg;
   }
+  DFK_DBG(dfk, "{%p}", (void*) cond);
   dfk_list_init(&cond->_.waitqueue);
   cond->dfk = dfk;
   return dfk_err_ok;
@@ -144,7 +150,9 @@ int dfk_cond_free(dfk_cond_t* cond)
   if (!cond) {
     return dfk_err_badarg;
   }
+  DFK_DBG(cond->dfk, "{%p}", (void*) cond);
   if (dfk_list_size(&cond->_.waitqueue)) {
+    DFK_ERROR(cond->dfk, "{%p} waitqueue is non-empty, dfk_err_busy", (void*) cond);
     return dfk_err_busy;
   }
   dfk_list_free(&cond->_.waitqueue);
@@ -177,9 +185,13 @@ int dfk_cond_signal(dfk_cond_t* cond)
   if (!cond) {
     return dfk_err_badarg;
   }
+  DFK_DBG(cond->dfk, "{%p} coroutines waiting: %lu",
+      (void*) cond, (unsigned long) dfk_list_size(&cond->_.waitqueue));
   if (dfk_list_size(&cond->_.waitqueue)) {
-    DFK_RESUME(cond->dfk, (dfk_coro_t*) cond->_.waitqueue.head);
+    dfk_coro_t* coro = (dfk_coro_t*) cond->_.waitqueue.head;
+    DFK_DBG(cond->dfk, "{%p} wake up {%p}", (void*) cond, (void*) coro);
     dfk_list_pop_front(&cond->_.waitqueue);
+    DFK_RESUME(cond->dfk, coro);
   }
   return dfk_err_ok;
 }
@@ -190,10 +202,13 @@ int dfk_cond_broadcast(dfk_cond_t* cond)
   if (!cond) {
     return dfk_err_badarg;
   }
+  DFK_DBG(cond->dfk, "{%p} coroutines waiting: %lu",
+      (void*) cond, (unsigned long) dfk_list_size(&cond->_.waitqueue));
   {
     dfk_list_hook_t* i = cond->_.waitqueue.head;
     dfk_list_clear(&cond->_.waitqueue);
     while (i) {
+      DFK_DBG(cond->dfk, "{%p} wake up {%p}", (void*) cond, (void*) i);
       DFK_RESUME(cond->dfk, (dfk_coro_t*) i);
       i = i->next;
     }
