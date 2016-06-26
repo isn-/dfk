@@ -165,13 +165,17 @@ int dfk_cond_wait(dfk_cond_t* cond, dfk_mutex_t* mutex)
   if (!cond || !mutex) {
     return dfk_err_badarg;
   }
+  DFK_DBG(cond->dfk, "{%p}", (void*) cond);
   assert(cond->dfk == mutex->dfk);
   assert(mutex->_.owner);
   assert(mutex->_.owner == DFK_THIS_CORO(cond->dfk));
   if (dfk_list_size(&mutex->_.waitqueue)) {
+    DFK_DBG(mutex->dfk, "{%p} is unlocked, resume {%p}", (void*) mutex, (void*) mutex->_.waitqueue.head);
     mutex->_.owner = (dfk_coro_t*) mutex->_.waitqueue.head;
     dfk_list_pop_front(&mutex->_.waitqueue);
+    DFK_RESUME(mutex->dfk, mutex->_.owner);
   } else {
+    DFK_DBG(mutex->dfk, "{%p} is unlocked, no coroutine is waiting for lock", (void*) mutex);
     mutex->_.owner = NULL;
   }
   dfk_list_append(&cond->_.waitqueue, (dfk_list_hook_t*) DFK_THIS_CORO(cond->dfk));
