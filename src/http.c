@@ -456,7 +456,7 @@ int dfk_http_headers_end(dfk_http_headers_it* it)
   if (!it) {
     return dfk_err_badarg;
   }
-  return dfk_avltree_it_end(&it->_.it);
+  return dfk_avltree_it_end(&it->_.it) ? dfk_err_eof : dfk_err_ok;
 }
 
 
