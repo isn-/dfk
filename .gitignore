@@ -42,3 +42,6 @@ cpm_packages/*
 # Misc
 *.log
 sandbox/*
+
+# Doxygen generated documentation
+doc/html
