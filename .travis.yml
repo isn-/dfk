@@ -1,40 +1,55 @@
 language: c
 os:
-  - linux
-  - osx
+- linux
+- osx
 compiler:
-  - clang
-  - gcc
+- clang
+- gcc
 env:
+  matrix:
   - CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Release"
   - CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DDFK_DEBUG=ON"
+  global:
+    secure: OG5p2vPXMu7OS9EgoCE+6c1VuG4LiyHEo+QlfzYJPiMEc4n3ZRCkIR6BJTqXEuTLxUBHEaq04qsLJlnWJzZcPBGPRHSd8tGvAOPqj3YoWf/4xRigFTqo9tYAEqABE6jakTA7EmItbnQ0zY4diXDRhQRr+PAK9vlrwsne/7U1ICoxRBCwju3s0wd3jE+PU98bfT8ZBVHPjyraNL/JsnGggSmziuBiyOGhriWdUilIrL1TosktCgWA+S9D+UCFaTXwruYhSx5OmlGg0lukk1F9JHr3HT1jRv2hi1bNP1vkBH8JIXS1dUMyqyfcbs4nycnqWzovpMCp4VTpEG+UGqJGtjl3W484tv9GogOng9K/HzpgiQr91b12e3wN9XtIfGTDw+OjOKRCggJOlqAGhdsA3wuNZvs92ahOKBFR1a64YMTXKZLqOSZPY1Ti36zXqxJuc48TFRPROLJT43EmBhZItv+mFn1fuVS1HPNPvNeOtfEMtXvTX41QxtZ0O8UyL9uZsbwO8oI8Dy21CbG9G3ugAT6EsZG5bUmZLzF2sa2hn84zZodWi0QjdASBndvJ7BKl6O4x1ftrRJseB08pIu/QP+z6HbOg+9D/rY4qKD2jZk6w9PDgm6fNNi6OVGidsAKJd2XTh2YTFIhASP32KzqmX0RayaeKFI2n3TWzbhv7gv8=
 addons:
   apt:
     packages:
-      - lcov
-      - valgrind
+    - lcov
+    - valgrind
 matrix:
   include:
-    - os: linux
-      compiler: gcc
-      env: CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=-DNDEBUG -DDFK_COVERAGE=ON" UPLOAD_COVERAGE=YES
-    - os: linux
-      compiler: gcc
-      env: CMAKE_ARGS="-DDFK_BUILD_TYPE=Debug -DDFK_DEBUG=ON -DDFK_VALGRIND=ON"
-    - os: linux
-      compiler: gcc
-      env: CMAKE_ARGS="-DDFK_NAMED_COROUTINES=OFF"
+  - os: linux
+    compiler: gcc
+    env: UPLOAD_COVERAGE=YES CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=-DNDEBUG
+      -DDFK_COVERAGE=ON"
+  - os: linux
+    compiler: gcc
+    env: UPLOAD_DOCS=YES CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DDFK_DEBUG=ON"
+    addons:
+      apt:
+        packages:
+        - doxygen
+        - graphviz
+  - os: linux
+    compiler: gcc
+    env: CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DDFK_DEBUG=ON -DDFK_VALGRIND=ON"
+  - os: linux
+    compiler: gcc
+    env: CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DDFK_DEBUG=ON -DDFK_NAMED_COROUTINES=OFF"
 script:
-  - ./scripts/bootstrap.sh
-  - mkdir build
-  - cd build
-  - cmake $CMAKE_ARGS ..
-  - VERBOSE=1 cmake --build . -- -j
-  - cmake --build . --target test
-  - cat Testing/Temporary/LastTest.log
+- bash scripts/bootstrap.sh > bootstrap.stdout
+- mkdir build
+- pushd build
+- cmake $CMAKE_ARGS ..
+- VERBOSE=1 cmake --build . -- -j
+- cmake --build . --target test
+- popd
 after_success:
-  - cd ..
-  - if [[ "$UPLOAD_COVERAGE" == "YES" ]]; then ./scripts/coverage.sh; fi
+- if [[ "$UPLOAD_COVERAGE" == "YES" ]]; then bash scripts/coverage.sh; fi
+- if [[ "$UPLOAD_DOCS" == "YES" ]]; then bash scripts/docs.sh; fi
+after_failure:
+- cat bootstrap.stdout
+- cat Testing/Temporary/LastTest.log
 notifications:
   email:
   - isn@extrn.org
