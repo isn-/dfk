@@ -66,5 +66,5 @@ dfk_avltree_hook_t* dfk_avltree_lookup(dfk_avltree_t* tree, void* e, dfk_avltree
 void dfk_avltree_it_init(dfk_avltree_t* tree, dfk_avltree_it_t* it);
 void dfk_avltree_it_free(dfk_avltree_it_t* it);
 void dfk_avltree_it_next(dfk_avltree_it_t* it);
-int dfk_avltree_it_end(dfk_avltree_it_t* it);
+int dfk_avltree_it_valid(dfk_avltree_it_t* it);
 

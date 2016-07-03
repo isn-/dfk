@@ -190,7 +190,7 @@ ssize_t dfk_http_readv(dfk_http_req_t* req, dfk_iovec_t* iov, size_t niov);
 dfk_buf_t dfk_http_get(dfk_http_req_t* req, const char* name, size_t namesize);
 int dfk_http_headers_begin(dfk_http_req_t* req, dfk_http_headers_it* it);
 int dfk_http_headers_next(dfk_http_headers_it* it);
-int dfk_http_headers_end(dfk_http_headers_it* it);
+int dfk_http_headers_valid(dfk_http_headers_it* it);
 
 dfk_buf_t dfk_http_getarg(dfk_http_req_t* req, const char* name, size_t namesize);
 int dfk_http_args_begin(dfk_http_req_t* req, dfk_http_args_it* it);

@@ -515,9 +515,9 @@ void dfk_avltree_it_next(dfk_avltree_it_t* it)
 }
 
 
-int dfk_avltree_it_end(dfk_avltree_it_t* it)
+int dfk_avltree_it_valid(dfk_avltree_it_t* it)
 {
   assert(it);
-  return it->value == NULL;
+  return it->value != NULL;
 }
 
