@@ -51,6 +51,7 @@ static void dfk_main(dfk_coro_t* coro, void* p)
   args_t* args = (args_t*) p;
   DFK_CALL_RVOID(coro->dfk, dfk_http_init(&srv, coro->dfk));
   DFK_CALL_RVOID(coro->dfk, dfk_http_serve(&srv, args->argv[1], atoi(args->argv[2]), echo));
+  DFK_CALL_RVOID(coro->dfk, dfk_http_free(&srv));
 }
 
 
