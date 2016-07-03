@@ -28,7 +28,6 @@ matrix:
     addons:
       apt:
         packages:
-        - doxygen
         - graphviz
   - os: linux
     compiler: gcc
