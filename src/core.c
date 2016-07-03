@@ -225,8 +225,18 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg, size_
     }
     if (argsize) {
       memcpy(stack_base, arg, argsize);
+      coro->_.arg = stack_base;
       stack_base += argsize;
       stack_size -= argsize;
+    } else {
+      coro->_.arg = arg;
+    }
+    if ((ptrdiff_t) stack_base % DFK_STACK_ALIGNMENT) {
+      size_t padding = DFK_STACK_ALIGNMENT - ((ptrdiff_t) stack_base % DFK_STACK_ALIGNMENT);
+      DFK_DBG(dfk, "stack pointer %p is not align to %d byte border, adjust by %lu bytes",
+          (void*) stack_base, DFK_STACK_ALIGNMENT, (unsigned long) padding);
+      stack_base += padding;
+      stack_size -= padding;
     }
 #ifdef DFK_VALGRIND
     coro->_.stack_id = VALGRIND_STACK_REGISTER(stack_base, stack_base + stack_size);
@@ -234,11 +244,6 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg, size_
     coro->dfk = dfk;
     dfk_list_hook_init(&coro->_.hook);
     coro->_.ep = ep;
-    if (argsize) {
-      coro->_.arg = stack_base - argsize;
-    } else {
-      coro->_.arg = arg;
-    }
 #ifdef DFK_NAMED_COROUTINES
     snprintf(coro->_.name, sizeof(coro->_.name), "%p", (void*) coro);
 #endif
