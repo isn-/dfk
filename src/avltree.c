@@ -160,7 +160,7 @@ void dfk_avltree_hook_init(dfk_avltree_hook_t* hook)
   hook->right = NULL;
   hook->parent = NULL;
   hook->bal = 0;
-#ifdef DFK_DEBUG
+#if DFK_DEBUG
   hook->tree = NULL;
 #endif
 }
@@ -173,7 +173,7 @@ void dfk_avltree_hook_free(dfk_avltree_hook_t* hook)
   hook->right = NULL;
   hook->parent = NULL;
   hook->bal = 0;
-#ifdef DFK_DEBUG
+#if DFK_DEBUG
   hook->tree = NULL;
 #endif
 }

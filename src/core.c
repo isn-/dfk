@@ -32,21 +32,21 @@
 #include <dfk.h>
 #include <dfk/internal.h>
 
-#ifdef DFK_IGNORE_SIGPIPE
+#if DFK_IGNORE_SIGPIPE
 #include <signal.h>
 #endif
 
-#ifdef DFK_THREADS
+#if DFK_THREADS
 #include <pthread.h>
 #endif
 
-#ifdef DFK_VALGRIND
+#if DFK_VALGRIND
 #include <valgrind/valgrind.h>
 #endif
 
 struct coro_context init;
 
-#ifdef DFK_DEBUG
+#if DFK_DEBUG
 static void dfk__default_log(dfk_t* dfk, int channel, const char* msg)
 {
   char strchannel[5] = {0};
@@ -58,7 +58,7 @@ static void dfk__default_log(dfk_t* dfk, int channel, const char* msg)
     case dfk_log_debug: memcpy(strchannel, "debug", 5); break;
     default: snprintf(strchannel, sizeof(strchannel), "%5d", channel);
   }
-#ifdef DFK_THREADS
+#if DFK_THREADS
   printf("[%.5s] %u %s\n", strchannel, (unsigned int) pthread_self(), msg);
 #else
   printf("[%.5s] %s\n", strchannel, msg);
@@ -110,7 +110,7 @@ int dfk_init(dfk_t* dfk)
   dfk->malloc = dfk__default_malloc;
   dfk->free = dfk__default_free;
   dfk->realloc = dfk__default_realloc;
-#ifdef DFK_DEBUG
+#if DFK_DEBUG
   dfk->log = dfk__default_log;
 #else
   dfk->log = NULL;
@@ -239,13 +239,13 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg, size_
       stack_base += padding;
       stack_size -= padding;
     }
-#ifdef DFK_VALGRIND
+#if DFK_VALGRIND
     coro->_.stack_id = VALGRIND_STACK_REGISTER(stack_base, stack_base + stack_size);
 #endif
     coro->dfk = dfk;
     dfk_list_hook_init(&coro->_.hook);
     coro->_.ep = ep;
-#ifdef DFK_NAMED_COROUTINES
+#if DFK_NAMED_COROUTINES
     snprintf(coro->_.name, sizeof(coro->_.name), "%p", (void*) coro);
 #endif
     DFK_INFO(dfk, "stack %p (%lu bytes) = {%p}",
@@ -263,7 +263,7 @@ int dfk_coro_name(dfk_coro_t* coro, const char* fmt, ...)
     return dfk_err_badarg;
   }
   {
-#ifdef DFK_NAMED_COROUTINES
+#if DFK_NAMED_COROUTINES
     va_list args;
     va_start(args, fmt);
     snprintf(coro->_.name, sizeof(coro->_.name), fmt, args);
@@ -281,7 +281,7 @@ int dfk_coro_name(dfk_coro_t* coro, const char* fmt, ...)
 static void dfk__coro_free(dfk_coro_t* coro)
 {
   assert(coro);
-#ifdef DFK_VALGRIND
+#if DFK_VALGRIND
   VALGRIND_STACK_DEREGISTER(coro->_.stack_id);
 #endif
   DFK_FREE(coro->dfk, coro);
@@ -387,7 +387,7 @@ int dfk_yield(dfk_coro_t* from, dfk_coro_t* to)
   if (!from && !to) {
     return dfk_err_badarg;
   }
-#ifdef DFK_NAMED_COROUTINES
+#if DFK_NAMED_COROUTINES
   DFK_DBG((from ? from : to)->dfk, "context switch {%s} -> {%s}",
       from ? from->_.name : "(nil)", to ? to->_.name : "(nil)");
 #else
@@ -406,7 +406,7 @@ int dfk_work(dfk_t* dfk)
   }
   DFK_INFO(dfk, "start work cycle {%p}", (void*) dfk);
 
-#ifdef DFK_IGNORE_SIGPIPE
+#if DFK_IGNORE_SIGPIPE
   (void) signal(SIGPIPE, SIG_IGN);
 #endif
 

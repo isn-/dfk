@@ -203,10 +203,10 @@ typedef struct dfk_coro_t {
     struct coro_context ctx;
     void (*ep)(struct dfk_coro_t*, void*);
     void* arg;
-#ifdef DFK_NAMED_COROUTINES
+#if DFK_NAMED_COROUTINES
     char name[DFK_COROUTINE_NAME_LENGTH];
 #endif
-#ifdef DFK_VALGRIND
+#if DFK_VALGRIND
     int stack_id;
 #endif
   } _;

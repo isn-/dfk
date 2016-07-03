@@ -71,7 +71,7 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
 #define DFK_WARNING(dfk, ...) DFK_LOG(dfk, dfk_log_warning, __VA_ARGS__)
 #define DFK_INFO(dfk, ...) DFK_LOG(dfk, dfk_log_info, __VA_ARGS__)
 
-#ifdef DFK_DEBUG
+#if DFK_DEBUG
 #define DFK_DBG(dfk, ...) DFK_LOG(dfk, dfk_log_debug, __VA_ARGS__)
 #else
 #define DFK_DBG(dfk, ...) DFK_UNUSED(dfk)
