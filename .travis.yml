@@ -36,6 +36,7 @@ matrix:
     compiler: gcc
     env: CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DDFK_DEBUG=ON -DDFK_NAMED_COROUTINES=OFF"
 script:
+- git fetch --unshallow
 - bash scripts/bootstrap.sh > bootstrap.stdout
 - mkdir build
 - pushd build

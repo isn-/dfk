@@ -28,9 +28,6 @@ if [ "$TRAVIS" == "true" ]; then
   tar xzvf doxygen-1.8.11.linux.bin.tar.gz
   DOXYGEN="$(pwd)/doxygen-1.8.11/bin/doxygen"
 
-  # fetch all commits and tags to make git describe working
-  git fetch --unshallow
-
   build
 
   git config --global user.email "travis@extrn.org"
