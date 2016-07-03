@@ -33,10 +33,6 @@ digraph "DFK Library Roadmap - Current" {
     trie -> router;
     re -> router;
 
-  bug [label="#21\nAwkward SIGSEGV in pthread"];
-  // Occur only in valgrind builds,
-  // Build examples: https://travis-ci.org/isn-/dfk/builds/140336836
-
   dfk010 [label="dfk-0.1.0" shape=oval];
     http_server -> dfk010
 
