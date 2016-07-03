@@ -445,8 +445,10 @@ int dfk_http_headers_next(dfk_http_headers_it* it)
     return dfk_err_eof;
   }
   dfk_avltree_it_next(&it->_.it);
-  it->value.field = ((dfk__http_header_t*) it->_.it.value)->name;
-  it->value.value = ((dfk__http_header_t*) it->_.it.value)->value;
+  if (dfk_avltree_it_valid(&it->_.it)) {
+    it->value.field = ((dfk__http_header_t*) it->_.it.value)->name;
+    it->value.value = ((dfk__http_header_t*) it->_.it.value)->value;
+  }
   return dfk_err_ok;
 }
 
