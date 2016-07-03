@@ -103,6 +103,7 @@ int dfk_init(dfk_t* dfk)
   dfk_list_init(&dfk->_.pending_coros);
   dfk_list_init(&dfk->_.iowait_coros);
   dfk_list_init(&dfk->_.terminated_coros);
+  dfk_list_init(&dfk->_.http_servers);
   dfk->_.current = NULL;
   dfk->_.scheduler = NULL;
   dfk->_.eventloop = NULL;
