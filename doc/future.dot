@@ -1,0 +1,18 @@
+digraph "DFK Library Roadmap - Future" {
+  node [shape=box];
+  ratio="compress";
+
+  udp_socket [label="#2\nUDP socket"];
+
+  beacon [label="#13\nBeaconing"];
+    udp_socket -> beacon;
+
+  ws [label="#9\nWebSocket server"];
+
+  python [label="#11\nPython Glue"];
+
+  lua [label="#12\nLua Glue"];
+
+  static [label="#14\nHTTP static server"];
+
+}

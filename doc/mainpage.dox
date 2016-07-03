@@ -2,4 +2,6 @@
   @mainpage Welcome to dfk library documentation!
   @section Roadmap
   @dotfile roadmap.dot
+  @section Future plans
+  @dotfile future.dot
 */

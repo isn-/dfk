@@ -1,8 +1,6 @@
-digraph "DFK Library Roadmap" {
+digraph "DFK Library Roadmap - Current" {
   node [shape=box];
-
-  tcp_socket [label="#1\nTCP socket" fillcolor=green style=filled];
-  udp_socket [label="#2\nUDP socket"];
+  ratio="compress";
 
   http_parser [label="#3\nJoyent HTTP Parser"];
 
@@ -17,18 +15,8 @@ digraph "DFK Library Roadmap" {
 
   libpq [label="#7\nlibpq library wrapper"];
 
-  ws [label="#9\nWebSocket server"];
-
   jwt [label="#10\nJWT middleware"];
     http_server -> jwt;
-
-  python [label="#11\nPython Glue"];
-  lua [label="#12\nLua Glue"];
-
-  beacon [label="#13\nBeaconing"];
-    udp_socket -> beacon;
-
-  static [label="#14\nHTTP static server"];
 
   mt [label="#16\nMultithreading"];
 
@@ -61,13 +49,4 @@ digraph "DFK Library Roadmap" {
 
   dfk030 [label="dfk-0.3.0" shape=oval];
     mt -> dfk030;
-
-  future [label="Future" shape=oval];
-    dfk030 -> future [style=dotted];
-
-  future -> udp_socket;
-  future -> ws;
-  future -> python;
-  future -> lua;
-  future -> static;
 }
