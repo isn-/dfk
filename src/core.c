@@ -59,7 +59,7 @@ static void dfk__default_log(dfk_t* dfk, int channel, const char* msg)
     default: snprintf(strchannel, sizeof(strchannel), "%5d", channel);
   }
 #ifdef DFK_THREADS
-  printf("[%.5s] %d %s\n", strchannel, (int) pthread_self(), msg);
+  printf("[%.5s] %u %s\n", strchannel, (unsigned int) pthread_self(), msg);
 #else
   printf("[%.5s] %s\n", strchannel, msg);
 #endif
