@@ -45,3 +45,6 @@ sandbox/*
 
 # Doxygen generated documentation
 doc/html
+
+# Test coverage
+doc/coverage
