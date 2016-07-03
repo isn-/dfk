@@ -1,8 +1,19 @@
 #!/usr/bin/env bash
 
 function build {
+  cleanup="no"
+  if [ -f build/dfk/config.h ]; then
+    if [ ! -f include/dfk/config.h ]; then
+      cleanup="yes"
+      cp build/dfk/config.h include/dfk/
+    fi
+  fi
   VERSION=$(git describe --tags  --long)
   ( cat Doxyfile ; echo "PROJECT_NUMBER=$VERSION" ) | doxygen -
+
+  if [ "$cleanup" == "yes" ]; then
+    rm include/dfk/config.h
+  fi
 }
 
 if [ "$TRAVIS" == "true" ]; then
