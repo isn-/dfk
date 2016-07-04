@@ -67,14 +67,14 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
   (dfk)->log((dfk), channel, msg);\
 }
 
-#define DFK_ERROR(dfk, ...) DFK_LOG(dfk, dfk_log_error, __VA_ARGS__)
-#define DFK_WARNING(dfk, ...) DFK_LOG(dfk, dfk_log_warning, __VA_ARGS__)
-#define DFK_INFO(dfk, ...) DFK_LOG(dfk, dfk_log_info, __VA_ARGS__)
+#define DFK_ERROR(dfk, ...) DFK_LOG((dfk), dfk_log_error, __VA_ARGS__)
+#define DFK_WARNING(dfk, ...) DFK_LOG((dfk), dfk_log_warning, __VA_ARGS__)
+#define DFK_INFO(dfk, ...) DFK_LOG((dfk), dfk_log_info, __VA_ARGS__)
 
 #if DFK_DEBUG
-#define DFK_DBG(dfk, ...) DFK_LOG(dfk, dfk_log_debug, __VA_ARGS__)
+#define DFK_DBG(dfk, ...) DFK_LOG((dfk), dfk_log_debug, __VA_ARGS__)
 #else
-#define DFK_DBG(dfk, ...) DFK_UNUSED(dfk)
+#define DFK_DBG(dfk, ...) DFK_UNUSED((dfk))
 #endif
 
 #define DFK_STRINGIFY(D) DFK_STR__(D)
