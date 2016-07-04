@@ -414,7 +414,7 @@ dfk_buf_t dfk_http_get(dfk_http_req_t* req, const char* name, size_t namesize)
   {
     dfk_buf_t e = (dfk_buf_t) {(char*) name, namesize};
     dfk__http_header_t* h = (dfk__http_header_t*)
-      dfk_avltree_lookup(&req->_.headers, &e, NULL);
+      dfk_avltree_lookup(&req->_.headers, &e, dfk__http_header_lookup_cmp);
     if (h) {
       return h->value;
     } else {
