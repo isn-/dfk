@@ -234,13 +234,42 @@ static int ut_iterate_headers(dfk_http_t* http, dfk_http_req_t* req, dfk_http_re
 }
 
 
-
 TEST_F(http_fixture, http, iterate_headers)
 {
   CURLcode res;
   fixture->handler = ut_iterate_headers;
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   curl_easy_setopt(fixture->curl, CURLOPT_POST, 1);
+  res = curl_easy_perform(fixture->curl);
+  EXPECT(res == CURLE_OK);
+}
+
+
+static int ut_request_errors(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+{
+  DFK_UNUSED(http);
+  DFK_UNUSED(req);
+  EXPECT(dfk_http_get(NULL, "foo", 3).data == NULL);
+  EXPECT(dfk_http_get(NULL, "foo", 3).size == 0);
+  EXPECT(dfk_http_get(req, NULL, 3).data == NULL);
+  EXPECT(dfk_http_get(req, NULL, 3).size == 0);
+  EXPECT(dfk_http_get(req, "foo", 0).data == NULL);
+  EXPECT(dfk_http_get(req, "foo", 0).size == 0);
+  dfk_http_headers_it it;
+  EXPECT(dfk_http_headers_begin(NULL, &it) == dfk_err_badarg);
+  EXPECT(dfk_http_headers_begin(req, NULL) == dfk_err_badarg);
+  EXPECT(dfk_http_headers_next(NULL) == dfk_err_badarg);
+  EXPECT(dfk_http_headers_valid(NULL) == dfk_err_badarg);
+  resp->code = 200;
+  return 0;
+}
+
+
+TEST_F(http_fixture, http, request_errors)
+{
+  CURLcode res;
+  fixture->handler = ut_request_errors;
+  curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   res = curl_easy_perform(fixture->curl);
   EXPECT(res == CURLE_OK);
 }
