@@ -91,11 +91,11 @@ if (!(expr)) { \
 
 #define ASSERT_BUFSTREQ_RET(buf, str, ret) \
 { \
-  ASSERT_RET((buf).size == sizeof((str)) - 1, (ret)); \
-  ASSERT_RET(!strncmp((buf).data, (str), sizeof((str)) - 1), (ret)); \
+  ASSERT_RET((buf).size == strlen((str)), (ret)); \
+  ASSERT_RET(!strncmp((buf).data, (str), strlen((str))), (ret)); \
 }
 #define ASSERT_BUFSTREQ(buf, str) \
 { \
-  ASSERT((buf).size == sizeof((str)) - 1); \
-  ASSERT(!strncmp((buf).data, (str), sizeof((str)) - 1)); \
+  ASSERT((buf).size == strlen((str))); \
+  ASSERT(!strncmp((buf).data, (str), strlen((str)))); \
 }

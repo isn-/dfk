@@ -26,6 +26,7 @@
 
 #include <stdlib.h>
 #include <pthread.h>
+#include <assert.h>
 #include <time.h>
 #include <curl/curl.h>
 #include <dfk.h>
@@ -186,6 +187,60 @@ TEST_F(http_fixture, http, parse_common_headers)
   fixture->handler = ut_parse_common_headers;
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   curl_easy_setopt(fixture->curl, CURLOPT_NOBODY, 1);
+  res = curl_easy_perform(fixture->curl);
+  EXPECT(res == CURLE_OK);
+}
+
+
+static int ut_iterate_headers(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+{
+  DFK_UNUSED(http);
+  ASSERT_RET(req->method == DFK_HTTP_POST, 0);
+  ASSERT_BUFSTREQ_RET(req->url, "/", 0);
+  ASSERT_BUFSTREQ_RET(req->user_agent, "dfk-libcurl", 0);
+  ASSERT_BUFSTREQ_RET(req->host, "127.0.0.1:10000", 0);
+  ASSERT_BUFSTREQ_RET(req->accept, "*/*", 0);
+  ASSERT_BUFSTREQ_RET(req->content_type, "application/x-www-form-urlencoded", 0);
+  ASSERT_RET(req->content_length == 0, 0);
+  {
+    char* expected_fields[] = {
+      "User-Agent",
+      "Host",
+      "Expect",
+      "Content-Type",
+      "Accept"
+    };
+    char* expected_values[] = {
+      "dfk-libcurl",
+      "127.0.0.1:10000",
+      "100-continue",
+      "application/x-www-form-urlencoded",
+      "*/*"
+    };
+    dfk_http_headers_it it;
+    size_t i = 0;
+    assert(DFK_SIZE(expected_fields) == DFK_SIZE(expected_values));
+    dfk_http_headers_begin(req, &it);
+    while (dfk_http_headers_valid(&it) == dfk_err_ok) {
+      ASSERT_BUFSTREQ_RET(it.value.field, expected_fields[i], 0);
+      ASSERT_BUFSTREQ_RET(it.value.value, expected_values[i], 0);
+      dfk_http_headers_next(&it);
+      ++i;
+    }
+    ASSERT_RET(i == DFK_SIZE(expected_fields), 0);
+  }
+  resp->code = 200;
+  return 0;
+}
+
+
+
+TEST_F(http_fixture, http, iterate_headers)
+{
+  CURLcode res;
+  fixture->handler = ut_iterate_headers;
+  curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
+  curl_easy_setopt(fixture->curl, CURLOPT_POST, 1);
   res = curl_easy_perform(fixture->curl);
   EXPECT(res == CURLE_OK);
 }
