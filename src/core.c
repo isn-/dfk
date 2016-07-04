@@ -478,6 +478,9 @@ const char* dfk_strerr(dfk_t* dfk, int err)
     case dfk_err_not_implemented: {
       return "Functionality is not implemented yet";
     }
+    case dfk_err_overflow: {
+      return "Floating point, or integer overflow error.";
+    }
     default: {
       return "Unknown error";
     }

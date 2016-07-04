@@ -144,6 +144,11 @@ typedef enum dfk_error_e {
    */
   dfk_err_not_implemented,
 
+  /**
+   * Floating point, or integer overflow error.
+   */
+  dfk_err_overflow,
+
   _dfk_err_total
 } dfk_error_e;
 
