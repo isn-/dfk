@@ -155,6 +155,7 @@ typedef struct dfk_http_req_t {
   dfk_buf_t url;
   dfk_buf_t user_agent;
   dfk_buf_t host;
+  dfk_buf_t accept;
   dfk_buf_t content_type;
   uint64_t content_length;
 } dfk_http_req_t;

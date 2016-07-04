@@ -25,9 +25,18 @@
  */
 
 #include <assert.h>
+#include <ctype.h>
+#include <stdlib.h>
 #include <http_parser.h>
 #include <dfk.h>
 #include <dfk/internal.h>
+
+
+#define DFK_HTTP_USER_AGENT "User-Agent"
+#define DFK_HTTP_HOST "Host"
+#define DFK_HTTP_ACCEPT "Accept"
+#define DFK_HTTP_CONTENT_TYPE "Content-Type"
+#define DFK_HTTP_CONTENT_LENGTH "Content-Length"
 
 
 typedef struct dfk__http_header_t {
@@ -317,6 +326,37 @@ static int dfk__http_on_chunk_complete(http_parser* parser)
 }
 
 
+static int dfk__http_try_atoll(dfk_buf_t buf, long long* out)
+{
+  /**
+   * null-terminated copy of buf, for calling atoll
+   * that accept C strings only.
+   */
+  char ntcopy[22];
+  assert(out);
+
+  /**
+   * @todo Invent something more fast for atoi. SSE? Duff's device?
+   */
+  if (buf.size >= sizeof(ntcopy)) {
+    return dfk_err_overflow;
+  }
+  if (buf.data[0] != '-' && !isdigit(buf.data[0])) {
+    return dfk_err_badarg;
+  }
+  for (size_t i = 1; i < buf.size; ++i) {
+    if (!isdigit(buf.data[i])) {
+      return dfk_err_badarg;
+    }
+  }
+
+  memcpy(ntcopy, buf.data, buf.size);
+  ntcopy[buf.size] = 0;
+  *out = atoll(ntcopy);
+  return dfk_err_ok;
+}
+
+
 typedef struct dfk__mutex_list_t {
   dfk_list_hook_t hook;
   dfk_mutex_t mutex;
@@ -382,6 +422,25 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
       (int) req.url.size, req.url.data,
       req.version.major,
       req.version.minor);
+
+  DFK_DBG(http->dfk, "{%p} populate common headers", (void*) http);
+  req.user_agent = dfk_http_get(&req, DFK_HTTP_USER_AGENT, sizeof(DFK_HTTP_USER_AGENT) - 1);
+  req.host = dfk_http_get(&req, DFK_HTTP_HOST, sizeof(DFK_HTTP_HOST) - 1);
+  req.accept = dfk_http_get(&req, DFK_HTTP_ACCEPT, sizeof(DFK_HTTP_ACCEPT) - 1);
+  req.content_type = dfk_http_get(&req, DFK_HTTP_CONTENT_TYPE, sizeof(DFK_HTTP_CONTENT_TYPE) - 1);
+  {
+    dfk_buf_t content_length = dfk_http_get(&req, DFK_HTTP_CONTENT_LENGTH, sizeof(DFK_HTTP_CONTENT_LENGTH) - 1);
+    if (content_length.size) {
+      long long intval;
+      int res = dfk__http_try_atoll(content_length, &intval);
+      if (res != dfk_err_ok) {
+        DFK_WARNING(http->dfk, "{%p} malformed value for \"" DFK_HTTP_CONTENT_LENGTH "\" header: %.*s",
+            (void*) http, (int) content_length.size, content_length.data);
+      } else {
+        req.content_length = (size_t) intval;
+      }
+    }
+  }
 
   assert(pdata.done);
   {
