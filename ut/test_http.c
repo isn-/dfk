@@ -32,6 +32,7 @@
 #include <dfk/internal.h>
 #include "ut.h"
 
+
 typedef struct http_fixture_t {
   CURL* curl;
   dfk_t dfk;
@@ -76,6 +77,7 @@ static void http_fixture_setup(http_fixture_t* f)
 {
   f->curl = curl_easy_init();
   curl_easy_setopt(f->curl, CURLOPT_VERBOSE, 1L);
+  curl_easy_setopt(f->curl, CURLOPT_USERAGENT, "dfk-libcurl");
   EXPECT(f->curl);
   dfk_init(&f->dfk);
   f->http.user.data = f;
@@ -157,6 +159,33 @@ TEST_F(http_fixture, http, get_no_url_no_content)
 {
   CURLcode res;
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
+  res = curl_easy_perform(fixture->curl);
+  EXPECT(res == CURLE_OK);
+}
+
+
+static int ut_parse_common_headers(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+{
+  DFK_UNUSED(http);
+  ASSERT_RET(req->method == DFK_HTTP_HEAD, 0);
+  ASSERT_BUFSTREQ_RET(req->url, "/", 0);
+  ASSERT_BUFSTREQ_RET(req->user_agent, "dfk-libcurl", 0);
+  ASSERT_BUFSTREQ_RET(req->host, "127.0.0.1:10000", 0);
+  ASSERT_BUFSTREQ_RET(req->accept, "*/*", 0);
+  ASSERT_RET(!req->content_type.data, 0);
+  ASSERT_RET(!req->content_type.size, 0);
+  ASSERT_RET(req->content_length == 0, 0);
+  resp->code = 200;
+  return 0;
+}
+
+
+TEST_F(http_fixture, http, parse_common_headers)
+{
+  CURLcode res;
+  fixture->handler = ut_parse_common_headers;
+  curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
+  curl_easy_setopt(fixture->curl, CURLOPT_NOBODY, 1);
   res = curl_easy_perform(fixture->curl);
   EXPECT(res == CURLE_OK);
 }
