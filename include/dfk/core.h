@@ -135,7 +135,7 @@ typedef enum dfk_error_e {
    * Unexpected behaviour, e.g. unreachable code executed
    *
    * Please submit a bug report if API returns this error code.
-   * https://github.com/isn-/dfk/issues/new
+   * https://github.com/ivochkin/dfk/issues/new
    */
   dfk_err_panic,
 

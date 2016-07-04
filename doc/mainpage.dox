@@ -1,6 +1,7 @@
 /**
   @mainpage Welcome to dfk library documentation!
   @section Roadmap
+  Work-in-progress features are highlighted with yellow.
   @dotfile roadmap.dot
   @section plans Future plans
   @dotfile future.dot

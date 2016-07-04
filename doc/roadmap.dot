@@ -2,9 +2,9 @@ digraph "DFK Library Roadmap - Current" {
   node [shape=box];
   ratio="compress";
 
-  http_parser [label="#3\nJoyent HTTP Parser"];
+  http_parser [label="#3\nJoyent HTTP Parser" style=filled fillcolor="#F5F553"];
 
-  http_server [label="#4\nHTTP server"];
+  http_server [label="#4\nHTTP server" style=filled fillcolor="#F5F553"];
     http_parser -> http_server
     htbl -> http_server
     avltree -> http_server
@@ -26,7 +26,7 @@ digraph "DFK Library Roadmap - Current" {
 
   htbl [label="#19\nHash table - dfk_htbl"];
 
-  avltree [label="#20\nAVL tree - dfk_avltree"];
+  avltree [label="#20\nAVL tree - dfk_avltree" style=filled fillcolor="#F5F553"];
 
   router [label="#15\nHTTP router"];
     http_server -> router;
