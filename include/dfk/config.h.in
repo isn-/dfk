@@ -49,6 +49,7 @@
 #cmakedefine01 DFK_HAVE_UCONTEXT_H
 #cmakedefine01 DFK_HAVE_SETJMP_H
 #cmakedefine01 DFK_HAVE_TIME_H
+#cmakedefine01 DFK_HAVE_CTYPE_H
 #cmakedefine01 DFK_HAVE_SIGALTSTACK
 #cmakedefine01 DFK_HAVE_NANOSLEEP
 #cmakedefine01 DFK_HAVE_FFLUSH
