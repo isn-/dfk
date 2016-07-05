@@ -244,16 +244,6 @@ static int dfk__http_on_url(http_parser* parser, const char* at, size_t size)
 }
 
 
-static int dfk__http_on_status(http_parser* parser, const char* at, size_t size)
-{
-  dfk__http_parser_data_t* p = (dfk__http_parser_data_t*) parser->data;
-  DFK_DBG(p->dfk, "{%p}", (void*) p->req);
-  DFK_UNUSED(at);
-  DFK_UNUSED(size);
-  return 0;
-}
-
-
 static int dfk__http_on_header_field(http_parser* parser, const char* at, size_t size)
 {
   dfk__http_parser_data_t* p = (dfk__http_parser_data_t*) parser->data;
@@ -361,7 +351,7 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
   http_parser_settings_init(&parser_settings);
   parser_settings.on_message_begin = dfk__http_on_message_begin;
   parser_settings.on_url = dfk__http_on_url;
-  parser_settings.on_status = dfk__http_on_status;
+  parser_settings.on_status = NULL; /* on_status is response-only */
   parser_settings.on_header_field = dfk__http_on_header_field;
   parser_settings.on_header_value = dfk__http_on_header_value;
   parser_settings.on_headers_complete = dfk__http_on_headers_complete;
