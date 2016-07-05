@@ -116,16 +116,19 @@ if(NOT APPLE AND "${DFK_EVENT_LOOP}" STREQUAL LIBUV)
   add_definitions(-D_GNU_SOURCE)
 endif()
 
-add_library(dfk
-  src/core.c
+add_library(dfkinternal STATIC
   src/list.c
   src/avltree.c
-  src/arena.c
+  src/arena.c)
+
+add_library(dfk
+  src/core.c
   src/sync.c
   src/tcp_socket.c
   src/http.c)
 
 target_link_libraries(dfk
+  dfkinternal
   coro
   ${LIBUV_LIBRARIES}
   ${HTTP_PARSER_LIBRARIES})

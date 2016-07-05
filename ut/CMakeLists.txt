@@ -23,6 +23,7 @@ add_executable(ut-dfk
 
 target_link_libraries(ut-dfk
   dfk
+  dfkinternal
   ${CURL_LIBRARIES})
 
 file(WRITE ${ut_init_h}
