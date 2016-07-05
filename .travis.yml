@@ -11,17 +11,16 @@ env:
   - CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DDFK_DEBUG=ON"
   global:
   - secure: 4D9mPCwIXFFwsBjNlH9GnjCGNcYYKH91nNL1C4mEMWGLehKxGPgW5TjQY4EEC0UiK0q+53GiKbCuiGYpS63JXGHmKDOgmRyAXITZSAeXIQn2X6UIhRkuBZufx1W2LL44TyblPLhJSs3IdEWSlrM4QKM5AsIHwfd14VsTFQKuF3W97S/Er56zRQXLyBwKlMVCNc3BZ8qde3s2VxyDVPoUuKG5PgHr+7t56mC2loHOXhdVfeJxuQEB0jPXHnAS7GI1ucy552qGZNn06IM89Mn+a7eMvvB9iMo5fw0THvGxUmoMGuKQfPSJH+F3syDaVGrpK5syg16SIrqWjeeye8a6UfsG76UXQtzREhiA2dT6Xm4ZXXqP4n8pM/1Uuo+p6xVBBRj/Ov38g4aOMiD4X8OvxDpeFzTqFwxS/ta2wvGbgTHEIxPwokQ5j50dVqZqo6EcoC2rVWDrq/NKu7So5gXQVwGguQcwzMKfNRZOrRpwH2PhBH/KfdLI3qOyKW/adYT0z4au9ozlY57OdXa6dIHEaY3Qak4cpg6gbTBVSTLkc2BR+2SUyEjQha39ci39hlrpvbsbvjNa9Lu7xoiCT85ceTzG/07jbv/UNptjVDoFDXly3dDI0pXy14SI8FFfevRPAlcIWr+bR8lNWd0A0H3r++5z2esk6X7BgrO3TY9M2gU=
-addons:
-  apt:
-    packages:
-    - lcov
-    - valgrind
 matrix:
   include:
   - os: linux
     compiler: gcc
     env: UPLOAD_COVERAGE=YES CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=-DNDEBUG
       -DDFK_COVERAGE=ON"
+    addons:
+      apt:
+        packages:
+        - lcov
   - os: linux
     compiler: gcc
     env: UPLOAD_DOCS=YES CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug"
@@ -32,6 +31,10 @@ matrix:
   - os: linux
     compiler: gcc
     env: CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DDFK_DEBUG=ON -DDFK_VALGRIND=ON"
+    addons:
+      apt:
+        packages:
+        - valgrind
   - os: linux
     compiler: gcc
     env: CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DDFK_DEBUG=ON -DDFK_NAMED_COROUTINES=OFF"
