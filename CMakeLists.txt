@@ -119,7 +119,8 @@ endif()
 add_library(dfkinternal STATIC
   src/list.c
   src/avltree.c
-  src/arena.c)
+  src/arena.c
+  src/misc.c)
 
 add_library(dfk
   src/core.c
