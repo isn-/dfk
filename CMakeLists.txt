@@ -117,10 +117,10 @@ if(NOT APPLE AND "${DFK_EVENT_LOOP}" STREQUAL LIBUV)
 endif()
 
 add_library(dfkinternal STATIC
-  src/list.c
-  src/avltree.c
-  src/arena.c
-  src/misc.c)
+  src/internal/list.c
+  src/internal/avltree.c
+  src/internal/arena.c
+  src/internal/misc.c)
 
 add_library(dfk
   src/core.c

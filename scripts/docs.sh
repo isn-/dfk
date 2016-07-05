@@ -41,6 +41,8 @@ if [ "$TRAVIS" == "true" ]; then
   git push --force --quiet "https://$GITHUB_TOKEN@github.com/$TRAVIS_REPO_SLUG.git" master:gh-pages  > /dev/null 2>&1
   popd
   exit 0
+else
+  build
+  echo
+  echo Open $(pwd)/doc/html/index.html in your browser for the generated documentation
 fi
-
-build
