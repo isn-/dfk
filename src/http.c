@@ -400,7 +400,7 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
     dfk_buf_t content_length = dfk_http_get(&req, DFK_HTTP_CONTENT_LENGTH, sizeof(DFK_HTTP_CONTENT_LENGTH) - 1);
     if (content_length.size) {
       long long intval;
-      int res = dfk_safe_atoll(content_length, &intval);
+      int res = dfk_strtoll(content_length, NULL, 10, &intval);
       if (res != dfk_err_ok) {
         DFK_WARNING(http->dfk, "{%p} malformed value for \"" DFK_HTTP_CONTENT_LENGTH "\" header: %.*s",
             (void*) http, (int) content_length.size, content_length.data);
