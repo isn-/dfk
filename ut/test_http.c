@@ -186,7 +186,7 @@ TEST_F(http_fixture, http, parse_common_headers)
   CURLcode res;
   fixture->handler = ut_parse_common_headers;
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
-  curl_easy_setopt(fixture->curl, CURLOPT_NOBODY, 1);
+  curl_easy_setopt(fixture->curl, CURLOPT_NOBODY, 1L);
   res = curl_easy_perform(fixture->curl);
   EXPECT(res == CURLE_OK);
 }
@@ -239,7 +239,7 @@ TEST_F(http_fixture, http, iterate_headers)
   CURLcode res;
   fixture->handler = ut_iterate_headers;
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
-  curl_easy_setopt(fixture->curl, CURLOPT_POST, 1);
+  curl_easy_setopt(fixture->curl, CURLOPT_POST, 1L);
   res = curl_easy_perform(fixture->curl);
   EXPECT(res == CURLE_OK);
 }
@@ -255,11 +255,21 @@ static int ut_request_errors(dfk_http_t* http, dfk_http_req_t* req, dfk_http_res
   EXPECT(dfk_http_get(req, NULL, 3).size == 0);
   EXPECT(dfk_http_get(req, "foo", 0).data == NULL);
   EXPECT(dfk_http_get(req, "foo", 0).size == 0);
-  dfk_http_headers_it it;
-  EXPECT(dfk_http_headers_begin(NULL, &it) == dfk_err_badarg);
-  EXPECT(dfk_http_headers_begin(req, NULL) == dfk_err_badarg);
-  EXPECT(dfk_http_headers_next(NULL) == dfk_err_badarg);
-  EXPECT(dfk_http_headers_valid(NULL) == dfk_err_badarg);
+  {
+    dfk_http_headers_it it;
+    EXPECT(dfk_http_headers_begin(NULL, &it) == dfk_err_badarg);
+    EXPECT(dfk_http_headers_begin(req, NULL) == dfk_err_badarg);
+    EXPECT(dfk_http_headers_next(NULL) == dfk_err_badarg);
+    EXPECT(dfk_http_headers_valid(NULL) == dfk_err_badarg);
+  }
+  {
+    dfk_http_headers_it it;
+    EXPECT_OK(dfk_http_headers_begin(req, &it));
+    while (dfk_http_headers_valid(&it) == dfk_err_ok) {
+      EXPECT_OK(dfk_http_headers_next(&it));
+    }
+    EXPECT(dfk_http_headers_next(&it) == dfk_err_eof);
+  }
   resp->code = 200;
   return 0;
 }
@@ -271,6 +281,60 @@ TEST_F(http_fixture, http, request_errors)
   fixture->handler = ut_request_errors;
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   res = curl_easy_perform(fixture->curl);
+  EXPECT(res == CURLE_OK);
+}
+
+
+typedef struct ut_curl_postdata_t {
+  dfk_buf_t buf;
+  size_t nread;
+} ut_curl_postdata_t;
+
+
+static void ut_curl_postdata_init(ut_curl_postdata_t* pd)
+{
+  assert(pd);
+  pd->nread = 0;
+  pd->buf = (dfk_buf_t) {NULL, 0};
+}
+
+
+static size_t ut_read_callback(void* buffer, size_t size, size_t nitems, void* ud)
+{
+  ut_curl_postdata_t* pd = (ut_curl_postdata_t*) ud;
+  if (size * nitems < 1) {
+    return 0;
+  }
+
+  assert(pd->nread <= pd->buf.size);
+  size_t toread = DFK_MIN(size * nitems, pd->buf.size - pd->nread);
+
+  memcpy(buffer, pd->buf.data + pd->nread, toread);
+  return toread;
+}
+
+
+static int ut_content_length(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+{
+  DFK_UNUSED(http);
+  ASSERT_RET(req->content_length == 9, 0);
+  resp->code = 200;
+  return 0;
+}
+
+
+TEST_F(http_fixture, http, content_length)
+{
+  fixture->handler = ut_content_length;
+  ut_curl_postdata_t pd;
+  ut_curl_postdata_init(&pd);
+  pd.buf = (dfk_buf_t) {"some data", 9};
+  curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
+  curl_easy_setopt(fixture->curl, CURLOPT_POST, 1L);
+  curl_easy_setopt(fixture->curl, CURLOPT_READFUNCTION, ut_read_callback);
+  curl_easy_setopt(fixture->curl, CURLOPT_READDATA, &pd);
+  curl_easy_setopt(fixture->curl, CURLOPT_POSTFIELDSIZE, pd.buf.size);
+  CURLcode res = curl_easy_perform(fixture->curl);
   EXPECT(res == CURLE_OK);
 }
 
