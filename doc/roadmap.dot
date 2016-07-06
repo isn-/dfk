@@ -2,39 +2,46 @@ digraph "DFK Library Roadmap - Current" {
   node [shape=box];
   ratio="compress";
 
-  http_parser [label="#3\nJoyent HTTP Parser" style=filled fillcolor="#F5F553"];
+  http_parser [label="http\nJoyent HTTP Parser" style=filled fillcolor="#F5F553"];
 
-  http_server [label="#4\nHTTP server" style=filled fillcolor="#F5F553"];
+  http_server [label="http\nHTTP basic server" style=filled fillcolor="#F5F553"];
     http_parser -> http_server
     htbl -> http_server
     avltree -> http_server
 
-  curl [label="#5\ncurl library wrapper"];
+  keepalive [label="http\nKeepalive support"];
+    http_server -> keepalive;
 
-  redis [label="#6\nhiredis library wrapper"];
+  curl [label="curl\ncurl library wrapper"];
 
-  libpq [label="#7\nlibpq library wrapper"];
+  redis [label="redis\nhiredis library wrapper"];
 
-  jwt [label="#10\nJWT middleware"];
+  libpq [label="pq\nlibpq library wrapper"];
+
+  jwt [label="jwt\nJWT middleware"];
     http_server -> jwt;
 
-  mt [label="#16\nMultithreading"];
+  mt [label="core\nMultithreading"];
 
-  trie [label="#17\nTrie - dfk_trie"];
+  trie [label="trie\nTrie data structure"];
 
-  re [label="#18\nRegular expressions engine - dfk_re"];
+  re [label="re\nRegular expressions engine"];
 
-  htbl [label="#19\nHash table - dfk_htbl"];
+  htbl [label="htbl\nHash table data structure"];
 
-  avltree [label="#20\nAVL tree - dfk_avltree" style=filled fillcolor="#F5F553"];
+  avltree [label="avltree\nAVL search tree data structure" style=filled fillcolor="#F5F553"];
 
-  router [label="#15\nHTTP router"];
+  router [label="http\nHTTP router"];
     http_server -> router;
     trie -> router;
     re -> router;
 
+  sleep [label="core\nFunction dfk_sleep"];
+    sleep -> dfk010;
+
   dfk010 [label="dfk-0.1.0" shape=oval];
-    http_server -> dfk010
+    http_server -> dfk010;
+    keepalive -> dfk010;
 
   dfk020 [label="dfk-0.2.0" shape=oval];
     jwt -> dfk020;
