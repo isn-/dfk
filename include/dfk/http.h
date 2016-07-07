@@ -34,6 +34,12 @@
 #include <dfk/internal/avltree.h>
 
 
+/**
+ * @addtogroup http http
+ * @{
+ */
+
+
 typedef enum dfk_http_method_e {
   DFK_HTTP_DELETE = 0,
   DFK_HTTP_GET = 1,
@@ -140,18 +146,28 @@ typedef enum dfk_http_status_e {
 } dfk_http_status_e;
 
 
+/**
+ * HTTP Request type
+ */
 typedef struct dfk_http_req_t {
-  struct {
-    dfk_arena_t* arena;
-    dfk_tcp_socket_t* sock;
-    dfk_avltree_t headers; /* contains dfk_http_header_t */
-    dfk_avltree_t arguments; /* contains dfk_http_argument_t */
-    dfk_buf_t bodypart;
-  } _;
-  struct {
-    unsigned short major;
-    unsigned short minor;
-  } version;
+  /** @private */
+  dfk_arena_t* _arena;
+  /** @private */
+  dfk_tcp_socket_t* _sock;
+  /** @private */
+  dfk_avltree_t _headers; /* contains dfk_http_header_t */
+  /** @private */
+  dfk_avltree_t _arguments; /* contains dfk_http_argument_t */
+  /** @private */
+  dfk_buf_t _bodypart;
+  /** @private */
+  size_t _body_bytes_nread;
+  /** @private */
+  int _headers_done;
+
+  unsigned short major_version;
+  unsigned short minor_version;
+
   dfk_http_method_e method;
   dfk_buf_t url;
   dfk_buf_t user_agent;
@@ -186,7 +202,7 @@ typedef struct dfk_http_headers_it {
 typedef dfk_http_headers_it dfk_http_args_it;
 
 
-ssize_t dfk_http_read(dfk_http_req_t* req, const char* buf, size_t size);
+ssize_t dfk_http_read(dfk_http_req_t* req, char* buf, size_t size);
 ssize_t dfk_http_readv(dfk_http_req_t* req, dfk_iovec_t* iov, size_t niov);
 
 dfk_buf_t dfk_http_get(dfk_http_req_t* req, const char* name, size_t namesize);
@@ -220,6 +236,11 @@ typedef struct dfk_http_t {
     void* data;
     void (*func)(void);
   } user;
+  /**
+   * Maximum number of requests for a single keepalive connection
+   * @note default: 100
+   */
+  size_t keepalive_requests;
 } dfk_http_t;
 
 
@@ -230,4 +251,6 @@ int dfk_http_serve(dfk_http_t* http,
     const char* endpoint,
     uint16_t port,
     dfk_http_handler handler);
+
+/** @} */
 

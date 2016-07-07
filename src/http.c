@@ -84,11 +84,13 @@ static void dfk__http_req_init(dfk_http_req_t* req, dfk_arena_t* arena, dfk_tcp_
   assert(req);
   assert(arena);
   assert(sock);
-  req->_.arena = arena;
-  req->_.sock = sock;
-  dfk_avltree_init(&req->_.headers, dfk__http_header_cmp);
-  dfk_avltree_init(&req->_.arguments, dfk__http_header_cmp);
-  req->_.bodypart = (dfk_buf_t) {NULL, 0};
+  req->_arena = arena;
+  req->_sock = sock;
+  dfk_avltree_init(&req->_headers, dfk__http_header_cmp);
+  dfk_avltree_init(&req->_arguments, dfk__http_header_cmp);
+  req->_bodypart = (dfk_buf_t) {NULL, 0};
+  req->_body_bytes_nread = 0;
+  req->_headers_done = 0;
   req->url = (dfk_buf_t) {NULL, 0};
   req->user_agent = (dfk_buf_t) {NULL, 0};
   req->host = (dfk_buf_t) {NULL, 0};
@@ -99,8 +101,8 @@ static void dfk__http_req_init(dfk_http_req_t* req, dfk_arena_t* arena, dfk_tcp_
 
 static void dfk__http_req_free(dfk_http_req_t* req)
 {
-  dfk_avltree_free(&req->_.arguments);
-  dfk_avltree_free(&req->_.headers);
+  dfk_avltree_free(&req->_arguments);
+  dfk_avltree_free(&req->_headers);
 }
 
 
@@ -126,16 +128,16 @@ typedef struct dfk__http_parser_data_t {
   dfk_t* dfk;
   dfk_http_req_t* req;
   dfk__http_header_t* cheader; /* current header */
-  int done;
+  int keepalive;
 } dfk__http_parser_data_t;
 
 
-static void dfk__http_parser_data_init(dfk__http_parser_data_t* pdata, dfk_t* dfk, dfk_http_req_t* req)
+static void dfk__http_parser_data_init(dfk__http_parser_data_t* pdata, dfk_t* dfk)
 {
   pdata->dfk = dfk;
-  pdata->req = req;
+  pdata->req = NULL;
   pdata->cheader = NULL;
-  pdata->done = 0;
+  pdata->keepalive = 1;
 }
 
 
@@ -250,9 +252,9 @@ static int dfk__http_on_header_field(http_parser* parser, const char* at, size_t
   DFK_DBG(p->dfk, "{%p} %.*s", (void*) p->req, (int) size, at);
   if (!p->cheader || p->cheader->value.data) {
     if (p->cheader) {
-      dfk_avltree_insert(&p->req->_.headers, (dfk_avltree_hook_t*) p->cheader);
+      dfk_avltree_insert(&p->req->_headers, (dfk_avltree_hook_t*) p->cheader);
     }
-    p->cheader = dfk_arena_alloc(p->req->_.arena, sizeof(dfk__http_header_t));
+    p->cheader = dfk_arena_alloc(p->req->_arena, sizeof(dfk__http_header_t));
     dfk__http_header_init(p->cheader);
   }
   dfk__buf_append(&p->cheader->name, at, size);
@@ -274,9 +276,11 @@ static int dfk__http_on_headers_complete(http_parser* parser)
   dfk__http_parser_data_t* p = (dfk__http_parser_data_t*) parser->data;
   DFK_DBG(p->dfk, "{%p}", (void*) p->req);
   if (p->cheader) {
-    dfk_avltree_insert(&p->req->_.headers, (dfk_avltree_hook_t*) p->cheader);
+    dfk_avltree_insert(&p->req->_headers, (dfk_avltree_hook_t*) p->cheader);
     p->cheader = NULL;
   }
+  p->req->_headers_done = 1;
+  p->keepalive = http_should_keep_alive(parser);
   return 0;
 }
 
@@ -284,9 +288,8 @@ static int dfk__http_on_headers_complete(http_parser* parser)
 static int dfk__http_on_body(http_parser* parser, const char* at, size_t size)
 {
   dfk__http_parser_data_t* p = (dfk__http_parser_data_t*) parser->data;
-  DFK_DBG(p->dfk, "{%p}", (void*) p->req);
-  DFK_UNUSED(at);
-  DFK_UNUSED(size);
+  DFK_DBG(p->dfk, "{%p} %llu bytes", (void*) p->req, (unsigned long long) size);
+  dfk__buf_append(&p->req->_bodypart, at, size);
   return 0;
 }
 
@@ -295,7 +298,6 @@ static int dfk__http_on_message_complete(http_parser* parser)
 {
   dfk__http_parser_data_t* p = (dfk__http_parser_data_t*) parser->data;
   DFK_DBG(p->dfk, "{%p}", (void*) p->req);
-  p->done = 1;
   return 0;
 }
 
@@ -316,38 +318,46 @@ static int dfk__http_on_chunk_complete(http_parser* parser)
 }
 
 
-typedef struct dfk__mutex_list_t {
+typedef struct dfk__mutex_list_item_t {
   dfk_list_hook_t hook;
   dfk_mutex_t mutex;
-} dfk__mutex_list_t;
+} dfk__mutex_list_item_t;
 
 
 static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
 {
   dfk_http_t* http = (dfk_http_t*) p;
-  http_parser parser;
-  http_parser_settings parser_settings;
-  dfk_http_req_t req;
-  dfk_http_resp_t resp;
-  dfk_arena_t arena;
   char buf[DFK_HTTP_HEADERS_BUFFER] = {0};
-  dfk__http_parser_data_t pdata;
-  dfk__mutex_list_t ml;
 
+  /*
+   * dfk_list_hook_t + dfk_mutex_t to be placed into dfk_http_t._.connections
+   * list. When dfk_http_stop is called, it waits for all current requests
+   * to be processed gracefully by locking each mutex. The mutex is inserted
+   * into the dfk_http_t._.connections list in a locked state and is released
+   * only when connection is closed indicating that no wait is required for
+   * this connection.
+   */
+  dfk__mutex_list_item_t ml;
   dfk_list_hook_init(&ml.hook);
   DFK_CALL_RVOID(http->dfk, dfk_mutex_init(&ml.mutex, http->dfk));
   DFK_CALL_RVOID(http->dfk, dfk_mutex_lock(&ml.mutex));
   dfk_list_append(&http->_.connections, &ml.hook);
 
   assert(http);
-  dfk_arena_init(&arena, http->dfk);
-  dfk__http_req_init(&req, &arena, sock);
-  dfk__http_resp_init(&resp, &arena, sock);
-  dfk__http_parser_data_init(&pdata, coro->dfk, &req);
 
+  /* Arena for per-connection data */
+  dfk_arena_t arena;
+  dfk_arena_init(&arena, http->dfk);
+
+  /* A pointer to pdata is passed to http_parser callbacks */
+  dfk__http_parser_data_t pdata;
+  dfk__http_parser_data_init(&pdata, coro->dfk);
+
+  /* Initialize http_parser instance */
+  http_parser parser;
+  http_parser_settings parser_settings;
   http_parser_init(&parser, HTTP_REQUEST);
   parser.data = &pdata;
-
   http_parser_settings_init(&parser_settings);
   parser_settings.on_message_begin = dfk__http_on_message_begin;
   parser_settings.on_url = dfk__http_on_url;
@@ -360,63 +370,96 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
   parser_settings.on_chunk_header = dfk__http_on_chunk_header;
   parser_settings.on_chunk_complete = dfk__http_on_chunk_complete;
 
-  while (!pdata.done) {
-    ssize_t nread = dfk_tcp_socket_read(sock, buf, sizeof(buf));
-    if (nread < 0) {
-      goto connection_broken;
+  /* Requests processed within this connection */
+  size_t nrequests = 0;
+
+  while (pdata.keepalive) {
+    dfk_http_req_t req;
+    dfk_http_resp_t resp;
+    dfk__http_req_init(&req, &arena, sock);
+    dfk__http_resp_init(&resp, &arena, sock);
+
+    pdata.req = &req;
+
+    /* Read headers first */
+    while (!req._headers_done) {
+      ssize_t nread = dfk_tcp_socket_read(sock, buf, sizeof(buf));
+      if (nread < 0) {
+        pdata.keepalive = 0;
+        goto connection_broken;
+      }
+      DFK_DBG(http->dfk, "{%p} execute parser", (void*) http);
+      http_parser_execute(&parser, &parser_settings, buf, nread);
+      DFK_DBG(http->dfk, "{%p} parser step done", (void*) http);
     }
-    DFK_DBG(http->dfk, "{%p} execute parser", (void*) http);
-    http_parser_execute(&parser, &parser_settings, buf, nread);
-    DFK_DBG(http->dfk, "{%p} parser step done", (void*) http);
-  }
 
-  req.version.major = parser.http_major;
-  req.version.minor = parser.http_minor;
-  req.method = parser.method;
-
-  DFK_DBG(http->dfk, "{%p} request parsing done, "
-      "%s %.*s HTTP/%hu.%hu",
-      (void*) http,
-      http_method_str((enum http_method) req.method),
-      (int) req.url.size, req.url.data,
-      req.version.major,
-      req.version.minor);
-
-  DFK_DBG(http->dfk, "{%p} populate common headers", (void*) http);
-  req.user_agent = dfk_http_get(&req, DFK_HTTP_USER_AGENT, sizeof(DFK_HTTP_USER_AGENT) - 1);
-  req.host = dfk_http_get(&req, DFK_HTTP_HOST, sizeof(DFK_HTTP_HOST) - 1);
-  req.accept = dfk_http_get(&req, DFK_HTTP_ACCEPT, sizeof(DFK_HTTP_ACCEPT) - 1);
-  req.content_type = dfk_http_get(&req, DFK_HTTP_CONTENT_TYPE, sizeof(DFK_HTTP_CONTENT_TYPE) - 1);
-  {
-    dfk_buf_t content_length = dfk_http_get(&req, DFK_HTTP_CONTENT_LENGTH, sizeof(DFK_HTTP_CONTENT_LENGTH) - 1);
-    if (content_length.size) {
-      long long intval;
-      int res = dfk_strtoll(content_length, NULL, 10, &intval);
-      if (res != dfk_err_ok) {
-        DFK_WARNING(http->dfk, "{%p} malformed value for \"" DFK_HTTP_CONTENT_LENGTH "\" header: %.*s",
-            (void*) http, (int) content_length.size, content_length.data);
-      } else {
-        req.content_length = (size_t) intval;
+    /* Request pre-processing */
+    DFK_DBG(http->dfk, "{%p} populate common headers", (void*) http);
+    req.major_version = parser.http_major;
+    req.minor_version = parser.http_minor;
+    req.method = parser.method;
+    req.user_agent = dfk_http_get(&req, DFK_HTTP_USER_AGENT, sizeof(DFK_HTTP_USER_AGENT) - 1);
+    req.host = dfk_http_get(&req, DFK_HTTP_HOST, sizeof(DFK_HTTP_HOST) - 1);
+    req.accept = dfk_http_get(&req, DFK_HTTP_ACCEPT, sizeof(DFK_HTTP_ACCEPT) - 1);
+    req.content_type = dfk_http_get(&req, DFK_HTTP_CONTENT_TYPE, sizeof(DFK_HTTP_CONTENT_TYPE) - 1);
+    {
+      /* Parse and set content_length member */
+      dfk_buf_t content_length = dfk_http_get(&req, DFK_HTTP_CONTENT_LENGTH, sizeof(DFK_HTTP_CONTENT_LENGTH) - 1);
+      if (content_length.size) {
+        long long intval;
+        int res = dfk_strtoll(content_length, NULL, 10, &intval);
+        if (res != dfk_err_ok) {
+          DFK_WARNING(http->dfk, "{%p} malformed value for \"" DFK_HTTP_CONTENT_LENGTH "\" header: %.*s",
+              (void*) http, (int) content_length.size, content_length.data);
+        } else {
+          req.content_length = (size_t) intval;
+        }
       }
     }
-  }
 
-  assert(pdata.done);
-  {
-    char respbuf[128] = {0};
-    int hres = http->_.handler(http, &req, &resp);
-    dfk_http_status_e status = ((hres == dfk_err_ok)
-      ? resp.code
-      : DFK_HTTP_INTERNAL_SERVER_ERROR);
-    int size  = snprintf(respbuf, sizeof(respbuf), "HTTP/1.0 %3d %s\r\n",
-        status, dfk__http_reason_phrase(status));
-    dfk_tcp_socket_write(sock, respbuf, size);
-  }
+    DFK_DBG(http->dfk, "{%p} request parsing done, "
+        "%s %.*s HTTP/%hu.%hu \"%.*s\"",
+        (void*) http,
+        http_method_str((enum http_method) req.method),
+        (int) req.url.size, req.url.data,
+        req.major_version,
+        req.minor_version,
+        (int) req.user_agent.size, req.user_agent.data);
+
+    assert(req._headers_done);
+    {
+      char respbuf[128] = {0};
+      int hres = http->_.handler(http, &req, &resp);
+      dfk_http_status_e status = ((hres == dfk_err_ok)
+        ? resp.code
+        : DFK_HTTP_INTERNAL_SERVER_ERROR);
+      int size  = snprintf(respbuf, sizeof(respbuf), "HTTP/1.0 %3d %s\r\n",
+          status, dfk__http_reason_phrase(status));
+      dfk_tcp_socket_write(sock, respbuf, size);
+    }
+
+    if (nrequests + 1 >= http->keepalive_requests) {
+      DFK_INFO(http->dfk, "{%p} maximum number of keepalive requests (%llu) "
+               "for connection {%p} has reached, close connection",
+               (void*) http, (unsigned long long) http->keepalive_requests,
+               (void*) sock);
+      pdata.keepalive = 0;
+    }
+
+    /*
+     * @todo Check for Connection: close response header here,
+     * if presented, set pdata.keepalive = 0
+     */
+    pdata.keepalive = 0;
+
+    ++nrequests;
 
 connection_broken:
+    dfk__http_resp_free(&resp);
+    dfk__http_req_free(&req);
+  }
+
   dfk__http_parser_data_free(&pdata);
-  dfk__http_resp_free(&resp);
-  dfk__http_req_free(&req);
   dfk_arena_free(&arena);
 
   DFK_CALL_RVOID(http->dfk, dfk_tcp_socket_close(sock));
@@ -432,7 +475,7 @@ dfk_buf_t dfk_http_get(dfk_http_req_t* req, const char* name, size_t namesize)
   {
     dfk_buf_t e = (dfk_buf_t) {(char*) name, namesize};
     dfk__http_header_t* h = (dfk__http_header_t*)
-      dfk_avltree_lookup(&req->_.headers, &e, dfk__http_header_lookup_cmp);
+      dfk_avltree_lookup(&req->_headers, &e, dfk__http_header_lookup_cmp);
     if (h) {
       return h->value;
     } else {
@@ -447,7 +490,7 @@ int dfk_http_headers_begin(dfk_http_req_t* req, dfk_http_headers_it* it)
   if (!req || !it) {
     return dfk_err_badarg;
   }
-  dfk_avltree_it_init(&req->_.headers, &it->_.it);
+  dfk_avltree_it_init(&req->_headers, &it->_.it);
   it->value.field = ((dfk__http_header_t*) it->_.it.value)->name;
   it->value.value = ((dfk__http_header_t*) it->_.it.value)->value;
   return dfk_err_ok;
@@ -480,6 +523,36 @@ int dfk_http_headers_valid(dfk_http_headers_it* it)
 }
 
 
+ssize_t dfk_http_read(dfk_http_req_t* req, char* buf, size_t size)
+{
+  if (!req || (!buf && size)) {
+    return dfk_err_badarg;
+  }
+
+  if (!req->content_length) {
+    return dfk_err_eof;
+  }
+
+  if (req->_body_bytes_nread < req->_bodypart.size) {
+    size_t tocopy = DFK_MIN(size, req->_bodypart.size - req->_body_bytes_nread);
+    memcpy(buf, req->_bodypart.data, tocopy);
+    req->_body_bytes_nread += tocopy;
+    return tocopy;
+  }
+  size_t toread = DFK_MIN(size, req->content_length - req->_body_bytes_nread);
+  return dfk_tcp_socket_read(req->_sock, buf, toread);
+}
+
+
+ssize_t dfk_http_readv(dfk_http_req_t* req, dfk_iovec_t* iov, size_t niov)
+{
+  if (!req || (!iov && niov)) {
+    return dfk_err_badarg;
+  }
+  return dfk_http_read(req, iov[0].data, iov[0].size);
+}
+
+
 int dfk_http_init(dfk_http_t* http, dfk_t* dfk)
 {
   if (!http || !dfk) {
@@ -487,6 +560,7 @@ int dfk_http_init(dfk_http_t* http, dfk_t* dfk)
   }
   DFK_DBG(dfk, "{%p}", (void*) http);
   http->dfk = dfk;
+  http->keepalive_requests = 100;
   dfk_list_init(&http->_.connections);
   return dfk_tcp_socket_init(&http->_.listensock, dfk);
 }
@@ -502,7 +576,7 @@ int dfk_http_stop(dfk_http_t* http)
   {
     dfk_list_hook_t* i = http->_.connections.head;
     while (i) {
-      dfk__mutex_list_t* it = (dfk__mutex_list_t*) i;
+      dfk__mutex_list_item_t* it = (dfk__mutex_list_item_t*) i;
       DFK_DBG(http->dfk, "{%p} waiting for {%p} to terminate", (void*) http, (void*) i);
       DFK_CALL(http->dfk, dfk_mutex_lock(&it->mutex));
       DFK_CALL(http->dfk, dfk_mutex_unlock(&it->mutex));

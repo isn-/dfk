@@ -35,6 +35,9 @@
 #include "ut.h"
 
 
+#define MiB (1024 * 1024)
+
+
 typedef struct http_fixture_t {
   CURL* curl;
   dfk_t dfk;
@@ -288,6 +291,7 @@ TEST_F(http_fixture, http, request_errors)
 
 typedef struct ut_curl_postdata_t {
   dfk_buf_t buf;
+  size_t nrepeat;
   size_t nread;
 } ut_curl_postdata_t;
 
@@ -295,23 +299,43 @@ typedef struct ut_curl_postdata_t {
 static void ut_curl_postdata_init(ut_curl_postdata_t* pd)
 {
   assert(pd);
-  pd->nread = 0;
   pd->buf = (dfk_buf_t) {NULL, 0};
+  pd->nrepeat = 1;
+  pd->nread = 0;
 }
 
 
 static size_t ut_read_callback(void* buffer, size_t size, size_t nitems, void* ud)
 {
-  ut_curl_postdata_t* pd = (ut_curl_postdata_t*) ud;
   if (size * nitems < 1) {
     return 0;
   }
 
-  assert(pd->nread <= pd->buf.size);
-  size_t toread = DFK_MIN(size * nitems, pd->buf.size - pd->nread);
+  ut_curl_postdata_t* pd = (ut_curl_postdata_t*) ud;
+  char* out = buffer;
 
-  memcpy(buffer, pd->buf.data + pd->nread, toread);
-  return toread;
+  assert(pd->nread <= pd->nrepeat * pd->buf.size);
+  size_t toread = DFK_MIN(size * nitems, pd->nrepeat * pd->buf.size - pd->nread);
+  size_t res = toread;
+  {
+    size_t padsize = (pd->buf.size - toread % pd->buf.size) % pd->buf.size;
+    memcpy(out, pd->buf.data + pd->nread % pd->buf.size, padsize);
+    toread -= padsize;
+    out += padsize;
+  }
+
+  while (toread >= pd->buf.size) {
+    memcpy(out, pd->buf.data, pd->buf.size);
+    toread -= pd->buf.size;
+    out += pd->buf.size;
+  }
+
+  if (toread) {
+    assert(toread < pd->buf.size);
+    memcpy(out, pd->buf.data, toread);
+  }
+  pd->nread += res;
+  return res;
 }
 
 
@@ -339,3 +363,71 @@ TEST_F(http_fixture, http, content_length)
   EXPECT(res == CURLE_OK);
 }
 
+
+static int ut_post_9_bytes(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+{
+  DFK_UNUSED(http);
+  ASSERT_RET(req->content_length == 9, 0);
+  char buf[9] = {0};
+  size_t nread = dfk_http_read(req, buf, req->content_length);
+  ASSERT_RET(nread == req->content_length, 0);
+  ASSERT_RET(memcmp(buf, "some data", 9) == 0, 0);
+  resp->code = 200;
+  return 0;
+}
+
+
+TEST_F(http_fixture, http, post_9_bytes)
+{
+  fixture->handler = ut_post_9_bytes;
+  ut_curl_postdata_t pd;
+  ut_curl_postdata_init(&pd);
+  pd.buf = (dfk_buf_t) {"some data", 9};
+  curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
+  curl_easy_setopt(fixture->curl, CURLOPT_POST, 1L);
+  curl_easy_setopt(fixture->curl, CURLOPT_READFUNCTION, ut_read_callback);
+  curl_easy_setopt(fixture->curl, CURLOPT_READDATA, &pd);
+  curl_easy_setopt(fixture->curl, CURLOPT_POSTFIELDSIZE, pd.buf.size);
+  CURLcode res = curl_easy_perform(fixture->curl);
+  EXPECT(res == CURLE_OK);
+}
+
+
+static int ut_post_100_mb(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+{
+  DFK_UNUSED(http);
+  ASSERT_RET(req->content_length == 100 * MiB, 0);
+  size_t bufsize = MiB;
+  char* buf = DFK_MALLOC(http->dfk, bufsize);
+  assert(buf);
+  size_t totalread = 0;
+  while (totalread != 100 * MiB) {
+    size_t nread = dfk_http_read(req, buf, bufsize);
+    ASSERT_RET(nread > 0, 0);
+    totalread += nread;
+  }
+  DFK_FREE(http->dfk, buf);
+  resp->code = 200;
+  return 0;
+}
+
+
+TEST_F(http_fixture, http, post_100_mb)
+{
+  fixture->handler = ut_post_100_mb;
+  ut_curl_postdata_t pd;
+  ut_curl_postdata_init(&pd);
+  pd.buf = (dfk_buf_t) {"somedata", 8};
+  pd.nrepeat = 100 * MiB / pd.buf.size;
+  curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
+  curl_easy_setopt(fixture->curl, CURLOPT_POST, 1L);
+  curl_easy_setopt(fixture->curl, CURLOPT_READFUNCTION, ut_read_callback);
+  curl_easy_setopt(fixture->curl, CURLOPT_READDATA, &pd);
+  curl_easy_setopt(fixture->curl, CURLOPT_POSTFIELDSIZE, 100 * MiB);
+  struct curl_slist *chunk = NULL;
+  chunk = curl_slist_append(chunk, "Expect:");
+  ASSERT(curl_easy_setopt(fixture->curl, CURLOPT_HTTPHEADER, chunk) == CURLE_OK);
+  CURLcode res = curl_easy_perform(fixture->curl);
+  curl_slist_free_all(chunk);
+  EXPECT(res == CURLE_OK);
+}
