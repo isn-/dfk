@@ -25,7 +25,7 @@ set(DFK_BUILD_AUTO_TESTS TRUE CACHE BOOL "Build auto tests.")
 set(DFK_BUILD_SAMPLES TRUE CACHE BOOL "Build code samples.")
 
 set(DFK_PAGE_SIZE ${page_size} CACHE STRING "Memory page size of target platform.")
-set(DFK_TCP_BACKLOG 128 CACHE STRING "Default TCP backlog size")
+set(DFK_TCP_BACKLOG 128 CACHE STRING "Default TCP backlog size.")
 set(DFK_COROUTINE ASM CACHE STRING "Coroutine implementation, options are: ASM.")
 set(DFK_NAMED_COROUTINES TRUE CACHE BOOL "Enable user-provided names for coroutines.")
 set(DFK_COROUTINE_NAME_LENGTH 32 CACHE STRING "Maximum size of coroutine name, including zero termination byte.")

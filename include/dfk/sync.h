@@ -34,6 +34,15 @@
 #include <dfk/core.h>
 #include <dfk/internal/list.h>
 
+
+
+/**
+ * @defgroup sync sync
+ * Synchronization primitives
+ * @addtogroup sync
+ * @{
+ */
+
 typedef struct dfk_mutex_t {
   struct {
     dfk_list_t waitqueue;
@@ -61,4 +70,6 @@ int dfk_cond_free(dfk_cond_t* cond);
 int dfk_cond_wait(dfk_cond_t* cond, dfk_mutex_t* mutex);
 int dfk_cond_signal(dfk_cond_t* cond);
 int dfk_cond_broadcast(dfk_cond_t* cond);
+
+/** @} */
 

@@ -33,6 +33,9 @@
 #define DFK_VERSION_MINOR @DFK_VERSION_MINOR@
 #define DFK_VERSION_PATCH @DFK_VERSION_PATCH@
 
+/**
+ * Defined to 1 if header file "assert.h" is presented in build environment
+ */
 #cmakedefine01 DFK_HAVE_ASSERT_H
 #cmakedefine01 DFK_HAVE_STDDEF_H
 #cmakedefine01 DFK_HAVE_STDINT_H
@@ -55,20 +58,36 @@
 #cmakedefine01 DFK_HAVE_NANOSLEEP
 #cmakedefine01 DFK_HAVE_FFLUSH
 
+/** Memory page size of target platform */
 #define DFK_PAGE_SIZE @DFK_PAGE_SIZE@
+/** Default TCP backlog size */
 #define DFK_TCP_BACKLOG @DFK_TCP_BACKLOG@
+/** Coroutine implementation */
 #define DFK_COROUTINE "@DFK_COROUTINE@"
+/** Enable user-provided names for coroutines */
 #cmakedefine01 DFK_NAMED_COROUTINES
+/** Maximum size of coroutine name, including zero termination byte */
 #define DFK_COROUTINE_NAME_LENGTH @DFK_COROUTINE_NAME_LENGTH@
+/** Stack growth strategy */
 #define DFK_STACK "@DFK_STACK@"
+/** Default stack size, in bytes */
 #define DFK_STACK_SIZE @DFK_STACK_SIZE@
+/** Stack alignment, in bytes */
 #define DFK_STACK_ALIGNMENT @DFK_STACK_ALIGNMENT@
+/** Event loop implementation */
 #define DFK_EVENT_LOOP "@DFK_EVENT_LOOP@"
+/** Emit debug log messages */
 #cmakedefine01 DFK_DEBUG
+/** Enable multithreading support */
 #cmakedefine01 DFK_THREADS
+/** Collect gcov coverage statistics */
 #cmakedefine01 DFK_COVERAGE
+/** In addition to regular mode, run unit tests under valgrind */
 #cmakedefine01 DFK_VALGRIND
+/** Buffer for HTTP headers, stack-allocated */
 #define DFK_HTTP_HEADERS_BUFFER @DFK_HTTP_HEADERS_BUFFER@
+/** Ignore SIGPIPE when entering dfk loop */
 #cmakedefine01 DFK_IGNORE_SIGPIPE
+/** Size of arena's segment, in bytes */
 #define DFK_ARENA_SEGMENT_SIZE @DFK_ARENA_SEGMENT_SIZE@
 

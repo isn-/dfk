@@ -2,7 +2,7 @@ digraph "DFK Library Roadmap - Future" {
   node [shape=box];
   ratio="compress";
 
-  udp_socket [label="udp_socket\nUDP socket"];
+  udp_socket [label="net\nUDP socket"];
 
   beacon [label="beacon\nBeaconing - service discovery"];
     udp_socket -> beacon;
