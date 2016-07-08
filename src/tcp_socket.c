@@ -56,8 +56,8 @@
 #define TCP_SOCKET_CLOSING ((int) 1 << 6)
 #define TCP_SOCKET_CLOSED ((int) 1 << 7)
 
-#define STATE(sock) ((sock)->_.flags & 0xFF)
-#define TO_STATE(sock, state) ((sock)->_.flags = ((sock)->_.flags & 0xFFFFFF00) | (state))
+#define STATE(sock) ((sock)->_flags & 0xFF)
+#define TO_STATE(sock, state) ((sock)->_flags = ((sock)->_flags & 0xFFFFFF00) | (state))
 
 /* Accepted socket has an accociated coroutine and hence
  * requires explicit coroutine join upon closing
@@ -66,7 +66,7 @@
 #define TCP_SOCKET_IS_LISTENING ((int) 1 << 9)
 #define TCP_SOCKET_DETACHED ((int) 1 << 10)
 
-#define FLAG(sock, flag) (((sock)->_.flags & 0xFFFFFF00) & (flag))
+#define FLAG(sock, flag) (((sock)->_flags & 0xFFFFFF00) & (flag))
 
 
 int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk)
@@ -75,10 +75,10 @@ int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk)
     return dfk_err_badarg;
   }
   DFK_DBG(dfk, "{%p}", (void*) sock);
-  DFK_SYSCALL(dfk, uv_tcp_init(dfk->_.uvloop, &sock->_.socket));
-  sock->_.socket.data = sock;
-  sock->_.arg.func = NULL;
-  sock->_.flags = TCP_SOCKET_SPARE;
+  DFK_SYSCALL(dfk, uv_tcp_init(dfk->_uvloop, &sock->_socket));
+  sock->_socket.data = sock;
+  sock->_arg.func = NULL;
+  sock->_flags = TCP_SOCKET_SPARE;
   sock->dfk = dfk;
   return dfk_err_ok;
 }
@@ -118,7 +118,7 @@ static void dfk__tcp_socket_on_connect(uv_connect_t* p, int status)
   DFK_DBG(sock->dfk, "{%p} connected with status %d (%s)",
       (void*) sock, status, status ? "error" : "no error");
 
-  arg = (dfk_tcp_socket_connect_async_arg_t*) sock->_.arg.data;
+  arg = (dfk_tcp_socket_connect_async_arg_t*) sock->_arg.data;
   assert(arg);
   if (status != 0) {
     sock->dfk->sys_errno = status;
@@ -156,20 +156,20 @@ int dfk_tcp_socket_connect(
 
     arg.err = dfk_err_ok;
     arg.yieldback = DFK_THIS_CORO(sock->dfk);
-    assert(sock->_.arg.data == NULL);
-    sock->_.arg.data = &arg;
+    assert(sock->_arg.data == NULL);
+    sock->_arg.data = &arg;
     connect.data = sock;
 
     DFK_SYSCALL(sock->dfk, uv_tcp_connect(
         &connect,
-        &sock->_.socket,
+        &sock->_socket,
         (const struct sockaddr*) &dest,
         dfk__tcp_socket_on_connect));
 
     TO_STATE(sock, TCP_SOCKET_CONNECTING);
     DFK_IO(sock->dfk);
 
-    sock->_.arg.data = NULL;
+    sock->_arg.data = NULL;
     if (arg.err == dfk_err_ok) {
       TO_STATE(sock, TCP_SOCKET_CONNECTED);
     } else {
@@ -198,7 +198,7 @@ static void dfk__tcp_socket_accepted_main(dfk_coro_t* coro, void* p)
   assert(arg->stream);
 
   DFK_CALL_RVOID(coro->dfk, dfk_tcp_socket_init(&sock, coro->dfk));
-  DFK_SYSCALL_RVOID(coro->dfk, uv_accept(arg->stream, (uv_stream_t*) &sock._.socket));
+  DFK_SYSCALL_RVOID(coro->dfk, uv_accept(arg->stream, (uv_stream_t*) &sock._socket));
   TO_STATE(&sock, TCP_SOCKET_CONNECTED);
   DFK_INFO(coro->dfk, "{%p} connection accepted", (void*) &sock);
 
@@ -208,7 +208,7 @@ static void dfk__tcp_socket_accepted_main(dfk_coro_t* coro, void* p)
 
 /**
  * When socket is in LISTENING state, a pointer to
- * dfk_tcp_socket_listen_arg_t is stored in sock->_.arg
+ * dfk_tcp_socket_listen_arg_t is stored in sock->_arg
  */
 typedef struct dfk_tcp_socket_listen_obj_t {
   dfk_coro_t* yieldback;
@@ -227,7 +227,7 @@ static void dfk__tcp_socket_on_new_connection(uv_stream_t* p, int status)
   assert(p);
   sock = (dfk_tcp_socket_t*) p->data;
   assert(sock);
-  arg = (dfk_tcp_socket_listen_obj_t*) sock->_.arg.data;
+  arg = (dfk_tcp_socket_listen_obj_t*) sock->_arg.data;
   assert(arg);
 
   if (status != 0) {
@@ -272,16 +272,16 @@ int dfk_tcp_socket_listen(
     dfk_tcp_socket_listen_obj_t arg;
 
     DFK_SYSCALL(sock->dfk, uv_ip4_addr(endpoint, port, &bind));
-    DFK_SYSCALL(sock->dfk, uv_tcp_bind(&sock->_.socket, (struct sockaddr*) &bind, 0));
+    DFK_SYSCALL(sock->dfk, uv_tcp_bind(&sock->_socket, (struct sockaddr*) &bind, 0));
 
     if (backlog == 0) {
       backlog = DFK_TCP_BACKLOG;
     }
 
-    assert(!sock->_.arg.data);
+    assert(!sock->_arg.data);
 
     DFK_SYSCALL(sock->dfk, uv_listen(
-      (uv_stream_t*) &sock->_.socket,
+      (uv_stream_t*) &sock->_socket,
       backlog,
       dfk__tcp_socket_on_new_connection));
 
@@ -294,7 +294,7 @@ int dfk_tcp_socket_listen(
     arg.callback = callback;
     arg.cbarg = cbarg;
     arg.err = dfk_err_ok;
-    sock->_.arg.data = &arg;
+    sock->_arg.data = &arg;
 
     DFK_IO(sock->dfk);
     return arg.err;
@@ -313,11 +313,11 @@ static void dfk__tcp_socket_on_close(uv_handle_t* p)
   assert(STATE(sock) & TCP_SOCKET_CLOSING);
   DFK_INFO(sock->dfk, "{%p} is now closed", (void*) sock);
   if (STATE(sock) & TCP_SOCKET_LISTENING) {
-    dfk_tcp_socket_listen_obj_t* obj = (dfk_tcp_socket_listen_obj_t*) sock->_.arg.data;
+    dfk_tcp_socket_listen_obj_t* obj = (dfk_tcp_socket_listen_obj_t*) sock->_arg.data;
     DFK_IO_RESUME(sock->dfk, obj->close_yieldback);
     DFK_IO_RESUME(sock->dfk, obj->yieldback);
   } else {
-    DFK_IO_RESUME(sock->dfk, (dfk_coro_t*) sock->_.arg.data);
+    DFK_IO_RESUME(sock->dfk, (dfk_coro_t*) sock->_arg.data);
   }
 }
 
@@ -336,14 +336,14 @@ int dfk_tcp_socket_close(dfk_tcp_socket_t* sock)
 
   assert(sock->dfk);
   if (STATE(sock) & TCP_SOCKET_LISTENING) {
-    ((dfk_tcp_socket_listen_obj_t*) sock->_.arg.data)->close_yieldback =
+    ((dfk_tcp_socket_listen_obj_t*) sock->_arg.data)->close_yieldback =
       DFK_THIS_CORO(sock->dfk);
   } else {
-    sock->_.arg.data = DFK_THIS_CORO(sock->dfk);
+    sock->_arg.data = DFK_THIS_CORO(sock->dfk);
   }
-  sock->_.flags |= TCP_SOCKET_CLOSING;
+  sock->_flags |= TCP_SOCKET_CLOSING;
   DFK_INFO(sock->dfk, "{%p} start close", (void*) sock);
-  uv_close((uv_handle_t*) &sock->_.socket, dfk__tcp_socket_on_close);
+  uv_close((uv_handle_t*) &sock->_socket, dfk__tcp_socket_on_close);
   DFK_IO(sock->dfk);
   assert(STATE(sock) & TCP_SOCKET_CLOSING);
   TO_STATE(sock, TCP_SOCKET_CLOSED);
@@ -368,7 +368,7 @@ static void dfk__tcp_socket_on_read(uv_stream_t* p, ssize_t nread, const uv_buf_
   assert(p);
   sock = (dfk_tcp_socket_t*) p->data;
   assert(sock);
-  arg = (dfk_tcp_socket_read_async_arg_t*) sock->_.arg.data;
+  arg = (dfk_tcp_socket_read_async_arg_t*) sock->_arg.data;
   assert(arg);
   DFK_INFO(sock->dfk, "(%p) %ld bytes read", (void*) sock, (long) nread);
   if (nread == 0) {
@@ -400,7 +400,7 @@ static void dfk__tcp_socket_on_alloc(uv_handle_t* p, size_t hint, uv_buf_t* buf)
   assert(p);
   sock = (dfk_tcp_socket_t*) p->data;
   assert(sock);
-  arg = (dfk_tcp_socket_read_async_arg_t*) sock->_.arg.data;
+  arg = (dfk_tcp_socket_read_async_arg_t*) sock->_arg.data;
   assert(arg);
 
   DFK_DBG(sock->dfk, "(%p) %lu bytes requested", (void*) sock, (unsigned long) hint);
@@ -437,25 +437,25 @@ ssize_t dfk_tcp_socket_read(
 
     DFK_DBG(sock->dfk, "{%p} read upto %lu bytes to %p",
         (void*) sock, (unsigned long) nbytes, (void*) buf);
-    sock->_.flags |= TCP_SOCKET_READING;
+    sock->_flags |= TCP_SOCKET_READING;
 
-    assert(sock->_.arg.data == NULL);
+    assert(sock->_arg.data == NULL);
     arg.yieldback = DFK_THIS_CORO(sock->dfk);
     arg.nbytes = nbytes;
     arg.buf = buf;
     arg.err = dfk_err_ok;
-    sock->_.arg.data = &arg;
+    sock->_arg.data = &arg;
 
     DFK_SYSCALL(sock->dfk, uv_read_start(
-        (uv_stream_t*) &sock->_.socket,
+        (uv_stream_t*) &sock->_socket,
         dfk__tcp_socket_on_alloc,
         dfk__tcp_socket_on_read));
 
     DFK_IO(sock->dfk);
 
-    sock->_.arg.data = NULL;
+    sock->_arg.data = NULL;
     assert(STATE(sock) & TCP_SOCKET_READING);
-    sock->_.flags ^= TCP_SOCKET_READING;
+    sock->_flags ^= TCP_SOCKET_READING;
 
     DFK_INFO(sock->dfk, "(%p) read returned %d (%s), bytes read %lu",
         (void*) sock, arg.err, dfk_strerr(sock->dfk, arg.err),
@@ -501,9 +501,9 @@ static void dfk__tcp_socket_on_write(uv_write_t* request, int status)
   assert(request);
   sock = (dfk_tcp_socket_t*) request->data;
   assert(sock);
-  arg = (dfk_tcp_socket_write_async_arg_t*) sock->_.arg.data;
+  arg = (dfk_tcp_socket_write_async_arg_t*) sock->_arg.data;
   assert(arg);
-  sock->_.arg.data = NULL;
+  sock->_arg.data = NULL;
 
   DFK_DBG(sock->dfk, "(%p) write returned %d", (void*) sock, status);
 
@@ -570,26 +570,26 @@ ssize_t dfk_tcp_socket_writev(
       return dfk_err_ok;
     }
 
-    assert(sock->_.arg.data == NULL);
+    assert(sock->_arg.data == NULL);
     arg.yieldback = DFK_THIS_CORO(sock->dfk);
     arg.err = dfk_err_ok;
-    sock->_.arg.data = &arg;
+    sock->_arg.data = &arg;
     request.data = sock;
 
     DFK_SYSCALL(sock->dfk, uv_write(
         &request,
-        (uv_stream_t*) &sock->_.socket,
+        (uv_stream_t*) &sock->_socket,
         (uv_buf_t*) iov,
         niov,
         dfk__tcp_socket_on_write));
 
-    sock->_.flags |= TCP_SOCKET_WRITING;
+    sock->_flags |= TCP_SOCKET_WRITING;
 
     DFK_IO(sock->dfk);
 
-    sock->_.arg.data = NULL;
+    sock->_arg.data = NULL;
     assert(STATE(sock) & TCP_SOCKET_WRITING);
-    sock->_.flags ^= TCP_SOCKET_WRITING;
+    sock->_flags ^= TCP_SOCKET_WRITING;
 
     sock->dfk->dfk_errno = arg.err;
     return arg.err == dfk_err_ok ? (ssize_t) totalbytes : -1;

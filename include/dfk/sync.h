@@ -35,7 +35,6 @@
 #include <dfk/internal/list.h>
 
 
-
 /**
  * @defgroup sync sync
  * Synchronization primitives
@@ -44,10 +43,10 @@
  */
 
 typedef struct dfk_mutex_t {
-  struct {
-    dfk_list_t waitqueue;
-    dfk_coro_t* owner;
-  } _;
+  /** @private */
+  dfk_list_t _waitqueue;
+  /** @private */
+  dfk_coro_t* _owner;
   dfk_t* dfk;
 } dfk_mutex_t;
 
@@ -59,9 +58,8 @@ int dfk_mutex_trylock(dfk_mutex_t* mutex);
 
 
 typedef struct dfk_cond_t {
-  struct {
-    dfk_list_t waitqueue;
-  } _;
+  /** @private */
+  dfk_list_t _waitqueue;
   dfk_t* dfk;
 } dfk_cond_t;
 

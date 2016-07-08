@@ -226,8 +226,8 @@ static int ut_iterate_headers(dfk_http_t* http, dfk_http_req_t* req, dfk_http_re
     assert(DFK_SIZE(expected_fields) == DFK_SIZE(expected_values));
     dfk_http_headers_begin(req, &it);
     while (dfk_http_headers_valid(&it) == dfk_err_ok) {
-      ASSERT_BUFSTREQ_RET(it.value.field, expected_fields[i], 0);
-      ASSERT_BUFSTREQ_RET(it.value.value, expected_values[i], 0);
+      ASSERT_BUFSTREQ_RET(it.field, expected_fields[i], 0);
+      ASSERT_BUFSTREQ_RET(it.value, expected_values[i], 0);
       dfk_http_headers_next(&it);
       ++i;
     }

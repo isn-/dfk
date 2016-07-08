@@ -36,9 +36,6 @@
 #include <dfk/internal/list.h>
 
 /**
- * @file dfk/tcp_socket.h
- * TCP socket object and related functions
- *
  * @defgroup core core
  * @{
  */
@@ -179,19 +176,25 @@ typedef union dfk_userdata_t {
  * dfk library context
  */
 typedef struct dfk_t {
-  struct {
-    dfk_list_t pending_coros;
-    dfk_list_t iowait_coros;
-    dfk_list_t terminated_coros;
-    struct dfk_coro_t* current;
+  /**
+   * @privatesection
+   */
 
-    dfk_list_t http_servers;
+  dfk_list_t _pending_coros;
+  dfk_list_t _iowait_coros;
+  dfk_list_t _terminated_coros;
+  struct dfk_coro_t* _current;
 
-    struct dfk_coro_t* scheduler;
-    struct dfk_coro_t* eventloop;
-    uv_loop_t* uvloop;
-    uv_async_t stop;
-  } _;
+  dfk_list_t _http_servers;
+
+  struct dfk_coro_t* _scheduler;
+  struct dfk_coro_t* _eventloop;
+  uv_loop_t* _uvloop;
+  uv_async_t _stop;
+
+  /**
+   * @publicsection
+   */
 
   dfk_userdata_t user;
 
@@ -201,6 +204,11 @@ typedef struct dfk_t {
 
   void (*log)(struct dfk_t*, int, const char*);
 
+  /**
+   * Initial stack size for new coroutines
+   *
+   * @note default: #DFK_STACK_SIZE
+   */
   size_t default_stack_size;
 
   int sys_errno;
@@ -213,18 +221,25 @@ typedef struct dfk_t {
  * Coroutine context
  */
 typedef struct dfk_coro_t {
-  struct {
-    dfk_list_hook_t hook;
-    struct coro_context ctx;
-    void (*ep)(struct dfk_coro_t*, void*);
-    void* arg;
+  /**
+   * @privatesection
+   */
+
+  dfk_list_hook_t _hook;
+  struct coro_context _ctx;
+  void (*_ep)(struct dfk_coro_t*, void*);
+  void* _arg;
 #if DFK_NAMED_COROUTINES
-    char name[DFK_COROUTINE_NAME_LENGTH];
+  char _name[DFK_COROUTINE_NAME_LENGTH];
 #endif
 #if DFK_VALGRIND
-    int stack_id;
+  int _stack_id;
 #endif
-  } _;
+
+  /**
+   * @publicsection
+   */
+
   dfk_t* dfk;
   dfk_userdata_t user;
 } dfk_coro_t;

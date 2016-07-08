@@ -150,45 +150,45 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
   } \
 }
 
-#define DFK_THIS_CORO(dfk) (dfk)->_.current
+#define DFK_THIS_CORO(dfk) (dfk)->_current
 
 #define DFK_YIELD(dfk) \
 { \
-  DFK_CALL((dfk), dfk_yield(DFK_THIS_CORO((dfk)), (dfk)->_.scheduler)); \
+  DFK_CALL((dfk), dfk_yield(DFK_THIS_CORO((dfk)), (dfk)->_scheduler)); \
 }
 
 #define DFK_YIELD_RVOID(dfk) \
 { \
-  DFK_CALL_RVOID((dfk), dfk_yield(DFK_THIS_CORO((dfk)), (dfk)->_.scheduler)); \
+  DFK_CALL_RVOID((dfk), dfk_yield(DFK_THIS_CORO((dfk)), (dfk)->_scheduler)); \
 }
 
 #define DFK_POSTPONE(dfk) \
 { \
-  dfk_list_append(&(dfk)->_.pending_coros, (dfk_list_hook_t*) DFK_THIS_CORO((dfk))); \
+  dfk_list_append(&(dfk)->_pending_coros, (dfk_list_hook_t*) DFK_THIS_CORO((dfk))); \
   DFK_YIELD((dfk)); \
 }
 
 #define DFK_POSTPONE_RVOID(dfk) \
 { \
-  dfk_list_append(&(dfk)->_.pending_coros, (dfk_list_hook_t*) DFK_THIS_CORO((dfk))); \
+  dfk_list_append(&(dfk)->_pending_coros, (dfk_list_hook_t*) DFK_THIS_CORO((dfk))); \
   DFK_YIELD_RVOID((dfk)); \
 }
 
 #define DFK_IO(dfk) \
 { \
   dfk_coro_t* self = DFK_THIS_CORO((dfk)); \
-  dfk_list_append(&(dfk)->_.iowait_coros, (dfk_list_hook_t*) self); \
+  dfk_list_append(&(dfk)->_iowait_coros, (dfk_list_hook_t*) self); \
   DFK_YIELD((dfk)); \
 }
 
 #define DFK_RESUME(dfk, coro) \
 { \
-  dfk_list_append(&(dfk)->_.pending_coros, (dfk_list_hook_t*) (coro)); \
+  dfk_list_append(&(dfk)->_pending_coros, (dfk_list_hook_t*) (coro)); \
 }
 
 #define DFK_IO_RESUME(dfk, yieldback) \
 { \
-  dfk_list_erase(&(dfk)->_.iowait_coros, (dfk_list_hook_t*) (yieldback)); \
+  dfk_list_erase(&(dfk)->_iowait_coros, (dfk_list_hook_t*) (yieldback)); \
   DFK_RESUME((dfk), yieldback); \
 }
 

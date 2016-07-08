@@ -44,11 +44,18 @@
  * TCP socket object
  */
 typedef struct dfk_tcp_socket_t {
-  struct {
-    uv_tcp_t socket;
-    dfk_userdata_t arg;
-    int32_t flags;
-  } _;
+  /**
+   * @privatesection
+   */
+
+  uv_tcp_t _socket;
+  dfk_userdata_t _arg;
+  int32_t _flags;
+
+  /**
+   * @publicsection
+   */
+
   dfk_t* dfk;
   dfk_userdata_t user;
 } dfk_tcp_socket_t;

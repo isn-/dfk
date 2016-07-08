@@ -330,7 +330,7 @@ static void ut_cond_signal_single_wait_coro0(dfk_coro_t* coro, void* arg)
   ASSERT_OK(dfk_cond_init(d->cv, coro->dfk));
   ASSERT_OK(dfk_mutex_lock(d->mutex))
   ASSERT_OK(dfk_cond_wait(d->cv, d->mutex));
-  ASSERT(d->mutex->_.owner);
+  ASSERT(d->mutex->_owner);
   ASSERT_OK(dfk_mutex_unlock(d->mutex))
   ASSERT_OK(dfk_cond_free(d->cv));
   ASSERT_OK(dfk_mutex_free(d->mutex));
@@ -340,7 +340,7 @@ static void ut_cond_signal_single_wait_coro0(dfk_coro_t* coro, void* arg)
 static void ut_cond_signal_single_wait_coro1(dfk_coro_t* coro, void* arg)
 {
   ut_cond_ssw* d = (ut_cond_ssw*) arg;
-  ASSERT(d->mutex->_.owner == NULL);
+  ASSERT(d->mutex->_owner == NULL);
   ASSERT_OK(dfk_cond_signal(d->cv));
   DFK_UNUSED(coro);
 }
@@ -424,7 +424,7 @@ static void ut_cond_signal_multi_wait_coro0(dfk_coro_t* coro, void* arg)
   CHANGE_STATE(d->state, 0, 1);
   ASSERT_OK(dfk_cond_wait(d->cv, d->mutex));
   CHANGE_STATE(d->state, 3, 4);
-  ASSERT(d->mutex->_.owner == DFK_THIS_CORO(coro->dfk));
+  ASSERT(d->mutex->_owner == DFK_THIS_CORO(coro->dfk));
   ASSERT_OK(dfk_mutex_unlock(d->mutex))
 }
 
@@ -435,7 +435,7 @@ static void ut_cond_signal_multi_wait_coro1(dfk_coro_t* coro, void* arg)
   ASSERT_OK(dfk_mutex_lock(d->mutex));
   CHANGE_STATE(d->state, 1, 2);
   ASSERT_OK(dfk_cond_wait(d->cv, d->mutex));
-  ASSERT(d->mutex->_.owner == DFK_THIS_CORO(coro->dfk));
+  ASSERT(d->mutex->_owner == DFK_THIS_CORO(coro->dfk));
   CHANGE_STATE(d->state, 5, 6);
   ASSERT_OK(dfk_mutex_unlock(d->mutex))
   ASSERT_OK(dfk_cond_free(d->cv));
@@ -446,7 +446,7 @@ static void ut_cond_signal_multi_wait_coro1(dfk_coro_t* coro, void* arg)
 static void ut_cond_signal_multi_wait_coro2(dfk_coro_t* coro, void* arg)
 {
   ut_cond_smw* d = (ut_cond_smw*) arg;
-  ASSERT(d->mutex->_.owner == NULL);
+  ASSERT(d->mutex->_owner == NULL);
   ASSERT_OK(dfk_cond_signal(d->cv));
   CHANGE_STATE(d->state, 2, 3);
   DFK_POSTPONE_RVOID(coro->dfk);
@@ -488,7 +488,7 @@ static void ut_cond_broadcast_multi_wait_coro0(dfk_coro_t* coro, void* arg)
   CHANGE_STATE(d->state, 0, 1);
   ASSERT_OK(dfk_cond_wait(d->cv, d->mutex));
   CHANGE_STATE(d->state, 3, 4);
-  ASSERT(d->mutex->_.owner == DFK_THIS_CORO(coro->dfk));
+  ASSERT(d->mutex->_owner == DFK_THIS_CORO(coro->dfk));
   ASSERT_OK(dfk_mutex_unlock(d->mutex))
 }
 
@@ -499,7 +499,7 @@ static void ut_cond_broadcast_multi_wait_coro1(dfk_coro_t* coro, void* arg)
   ASSERT_OK(dfk_mutex_lock(d->mutex));
   CHANGE_STATE(d->state, 1, 2);
   ASSERT_OK(dfk_cond_wait(d->cv, d->mutex));
-  ASSERT(d->mutex->_.owner == DFK_THIS_CORO(coro->dfk));
+  ASSERT(d->mutex->_owner == DFK_THIS_CORO(coro->dfk));
   CHANGE_STATE(d->state, 4, 5);
   ASSERT_OK(dfk_mutex_unlock(d->mutex))
   ASSERT_OK(dfk_cond_free(d->cv));
@@ -511,7 +511,7 @@ static void ut_cond_broadcast_multi_wait_coro2(dfk_coro_t* coro, void* arg)
 {
   ut_cond_smw* d = (ut_cond_smw*) arg;
   DFK_UNUSED(coro);
-  ASSERT(d->mutex->_.owner == NULL);
+  ASSERT(d->mutex->_owner == NULL);
   ASSERT_OK(dfk_cond_broadcast(d->cv));
   CHANGE_STATE(d->state, 2, 3);
 }

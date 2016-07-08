@@ -147,23 +147,23 @@ typedef enum dfk_http_status_e {
 
 
 /**
- * HTTP Request type
+ * HTTP request type
  */
 typedef struct dfk_http_req_t {
-  /** @private */
+  /**
+   * @privatesection
+   */
   dfk_arena_t* _arena;
-  /** @private */
   dfk_tcp_socket_t* _sock;
-  /** @private */
   dfk_avltree_t _headers; /* contains dfk_http_header_t */
-  /** @private */
   dfk_avltree_t _arguments; /* contains dfk_http_argument_t */
-  /** @private */
   dfk_buf_t _bodypart;
-  /** @private */
   size_t _body_bytes_nread;
-  /** @private */
   int _headers_done;
+
+  /**
+   * @publicsection
+   */
 
   unsigned short major_version;
   unsigned short minor_version;
@@ -179,23 +179,26 @@ typedef struct dfk_http_req_t {
 
 
 typedef struct dfk_http_resp_t {
-  struct {
-    dfk_arena_t* arena;
-    dfk_tcp_socket_t* sock;
-    dfk_avltree_t headers;
-  } _;
+  /**
+   * @privatesection
+   */
+  dfk_arena_t* _arena;
+  dfk_tcp_socket_t* _sock;
+  dfk_avltree_t _headers;
+
+  /**
+   * @publicsection
+   */
+
   dfk_http_status_e code;
 } dfk_http_resp_t;
 
 
 typedef struct dfk_http_headers_it {
-  struct {
-    dfk_avltree_it_t it;
-  } _;
-  struct {
-    dfk_buf_t field;
-    dfk_buf_t value;
-  } value;
+  /** @private */
+  dfk_avltree_it_t _it;
+  dfk_buf_t field;
+  dfk_buf_t value;
 } dfk_http_headers_it;
 
 
@@ -225,14 +228,22 @@ typedef int (*dfk_http_handler)(struct dfk_http_t*, dfk_http_req_t*, dfk_http_re
 
 
 typedef struct dfk_http_t {
-  struct {
-    dfk_list_hook_t hook;
-    dfk_tcp_socket_t listensock;
-    dfk_http_handler handler;
-    dfk_list_t connections;
-  } _;
+  /**
+   * @privatesection
+   */
+
+  dfk_list_hook_t _hook;
+  dfk_tcp_socket_t _listensock;
+  dfk_http_handler _handler;
+  dfk_list_t _connections;
+
+  /**
+   * @publicsection
+   */
+
   dfk_t* dfk;
   dfk_userdata_t user;
+
   /**
    * Maximum number of requests for a single keepalive connection
    * @note default: 100
