@@ -164,6 +164,18 @@ typedef dfk_iovec_t dfk_buf_t;
 
 
 /**
+ * A struct to associate client data with library object.
+ *
+ * Compilers complain on casting function pointer to void*, so we
+ * use a separate union member when function pointer is required.
+ */
+typedef union dfk_userdata_t {
+  void* data;
+  void (*func)(void);
+} dfk_userdata_t;
+
+
+/**
  * dfk library context
  */
 typedef struct dfk_t {
@@ -181,10 +193,7 @@ typedef struct dfk_t {
     uv_async_t stop;
   } _;
 
-  union {
-    void* data;
-    void (*func)(void);
-  } user;
+  dfk_userdata_t user;
 
   void* (*malloc) (struct dfk_t*, size_t);
   void (*free) (struct dfk_t*, void*);
@@ -217,10 +226,7 @@ typedef struct dfk_coro_t {
 #endif
   } _;
   dfk_t* dfk;
-  union {
-    void* data;
-    void (*func)(void);
-  } user;
+  dfk_userdata_t user;
 } dfk_coro_t;
 
 

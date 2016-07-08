@@ -232,10 +232,7 @@ typedef struct dfk_http_t {
     dfk_list_t connections;
   } _;
   dfk_t* dfk;
-  union {
-    void* data;
-    void (*func)(void);
-  } user;
+  dfk_userdata_t user;
   /**
    * Maximum number of requests for a single keepalive connection
    * @note default: 100
