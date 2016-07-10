@@ -168,3 +168,21 @@ TEST_F(fixture, arena, alloc_mix)
   /* Valgrind should report no memory leak here */
 }
 
+
+TEST_F(fixture, arena, alloc_copy)
+{
+  char buf[] = "Hello, world";
+  void* p = dfk_arena_alloc_copy(&fixture->arena, buf, sizeof(buf));
+  ASSERT(p);
+  ASSERT(memcmp(p, buf, sizeof(buf)) == 0);
+}
+
+
+TEST_F(fixture, arena, alloc_copy_no_mem)
+{
+  char buf[] = "Hello, world";
+  fixture->dfk.malloc = out_of_memory;
+  void* p = dfk_arena_alloc_copy(&fixture->arena, buf, sizeof(buf));
+  ASSERT(!p);
+}
+

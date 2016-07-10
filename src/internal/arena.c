@@ -116,6 +116,18 @@ void* dfk_arena_alloc(dfk_arena_t* arena, size_t size)
   }
 }
 
+void* dfk_arena_alloc_copy(dfk_arena_t* arena, const char* data, size_t size)
+{
+  assert(arena);
+  assert(data);
+  assert(size);
+  void* allocated = dfk_arena_alloc(arena, size);
+  if (allocated) {
+    memcpy(allocated, data, size);
+  }
+  return allocated;
+}
+
 
 void* dfk_arena_alloc_ex(dfk_arena_t* arena, size_t size, dfk_arena_cleanup cleanup)
 {
