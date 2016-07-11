@@ -137,6 +137,7 @@ void dfk_avltree_init(dfk_avltree_t* tree, dfk_avltree_cmp cmp)
   assert(cmp);
   tree->cmp = cmp;
   tree->root = NULL;
+  tree->size = 0;
 }
 
 
@@ -354,6 +355,7 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* 
 
   if (tree->root == NULL) {
     tree->root = e;
+    tree->size = 1;
     return tree->root;
   }
 
@@ -440,6 +442,7 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* 
     }
   }
   DFK_AVLTREE_CHECK_INVARIANTS(tree);
+  tree->size += 1;
   return e;
 }
 
@@ -449,6 +452,13 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
   DFK_UNUSED(tree);
   DFK_UNUSED(e);
   DFK_AVLTREE_CHECK_INVARIANTS(tree);
+}
+
+
+size_t dfk_avltree_size(dfk_avltree_t* tree)
+{
+  assert(tree);
+  return tree->size;
 }
 
 

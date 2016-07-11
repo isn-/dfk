@@ -79,18 +79,21 @@ static int dfk__http_header_cmp(dfk_avltree_hook_t* l, dfk_avltree_hook_t* r)
 typedef dfk__http_header_t dfk_http_argument_t;
 
 
-static void dfk__http_req_init(dfk_http_req_t* req, dfk_arena_t* arena, dfk_tcp_socket_t* sock)
+static void dfk__http_req_init(dfk_http_req_t* req, dfk_t* dfk, dfk_arena_t* request_arena, dfk_arena_t* connection_arena, dfk_tcp_socket_t* sock)
 {
   assert(req);
-  assert(arena);
+  assert(request_arena);
+  assert(connection_arena);
   assert(sock);
-  req->_arena = arena;
+  req->_request_arena = request_arena;
+  req->_connection_arena = connection_arena;
   req->_sock = sock;
   dfk_avltree_init(&req->_headers, dfk__http_header_cmp);
   dfk_avltree_init(&req->_arguments, dfk__http_header_cmp);
   req->_bodypart = (dfk_buf_t) {NULL, 0};
   req->_body_bytes_nread = 0;
   req->_headers_done = 0;
+  req->dfk = dfk;
   req->url = (dfk_buf_t) {NULL, 0};
   req->user_agent = (dfk_buf_t) {NULL, 0};
   req->host = (dfk_buf_t) {NULL, 0};
@@ -106,14 +109,17 @@ static void dfk__http_req_free(dfk_http_req_t* req)
 }
 
 
-static void dfk__http_resp_init(dfk_http_resp_t* resp, dfk_arena_t* arena, dfk_tcp_socket_t* sock)
+static void dfk__http_resp_init(dfk_http_resp_t* resp, dfk_t* dfk, dfk_arena_t* request_arena, dfk_arena_t* connection_arena, dfk_tcp_socket_t* sock)
 {
   assert(resp);
-  assert(arena);
+  assert(request_arena);
+  assert(connection_arena);
   assert(sock);
-  resp->_arena = arena;
+  resp->_request_arena = request_arena;
+  resp->_connection_arena = connection_arena;
   resp->_sock = sock;
   dfk_avltree_init(&resp->_headers, dfk__http_header_cmp);
+  resp->dfk = dfk;
 }
 
 
@@ -254,7 +260,7 @@ static int dfk__http_on_header_field(http_parser* parser, const char* at, size_t
     if (p->cheader) {
       dfk_avltree_insert(&p->req->_headers, (dfk_avltree_hook_t*) p->cheader);
     }
-    p->cheader = dfk_arena_alloc(p->req->_arena, sizeof(dfk__http_header_t));
+    p->cheader = dfk_arena_alloc(p->req->_request_arena, sizeof(dfk__http_header_t));
     dfk__http_header_init(p->cheader);
   }
   dfk__buf_append(&p->cheader->name, at, size);
@@ -346,8 +352,8 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
   assert(http);
 
   /* Arena for per-connection data */
-  dfk_arena_t arena;
-  dfk_arena_init(&arena, http->dfk);
+  dfk_arena_t connection_arena;
+  dfk_arena_init(&connection_arena, http->dfk);
 
   /* A pointer to pdata is passed to http_parser callbacks */
   dfk__http_parser_data_t pdata;
@@ -374,10 +380,14 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
   size_t nrequests = 0;
 
   while (pdata.keepalive) {
+    dfk_arena_t request_arena;
+    dfk_arena_init(&request_arena, http->dfk);
+
     dfk_http_req_t req;
+    dfk__http_req_init(&req, http->dfk, &request_arena, &connection_arena, sock);
+
     dfk_http_resp_t resp;
-    dfk__http_req_init(&req, &arena, sock);
-    dfk__http_resp_init(&resp, &arena, sock);
+    dfk__http_resp_init(&resp, http->dfk, &request_arena, &connection_arena, sock);
 
     pdata.req = &req;
 
@@ -435,7 +445,28 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
         : DFK_HTTP_INTERNAL_SERVER_ERROR);
       int size  = snprintf(respbuf, sizeof(respbuf), "HTTP/1.0 %3d %s\r\n",
           status, dfk__http_reason_phrase(status));
-      dfk_tcp_socket_write(sock, respbuf, size);
+      size_t totalheaders = dfk_avltree_size(&resp._headers);
+      size_t niov = 4 * totalheaders + 1;
+      dfk_iovec_t* iov = dfk_arena_alloc(resp._request_arena, niov * sizeof(dfk_iovec_t));
+      if (!iov) {
+        status = DFK_HTTP_INTERNAL_SERVER_ERROR;
+        dfk_tcp_socket_write(sock, respbuf, size);
+        pdata.keepalive = 0;
+      } else {
+        size_t i = 0;
+        iov[i++] = (dfk_iovec_t) {respbuf, size};
+        dfk_avltree_it_t it;
+        dfk_avltree_it_init(&resp._headers, &it);
+        while (dfk_avltree_it_valid(&it)) {
+          dfk__http_header_t* h = (dfk__http_header_t*) it.value;
+          iov[i++] = h->name;
+          iov[i++] = (dfk_iovec_t) {": ", 2};
+          iov[i++] = h->value;
+          iov[i++] = (dfk_iovec_t) {"\r\n", 2};
+          dfk_avltree_it_next(&it);
+        }
+        dfk_tcp_socket_writev(sock, iov, niov);
+      }
     }
 
     if (nrequests + 1 >= http->keepalive_requests) {
@@ -457,10 +488,11 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
 connection_broken:
     dfk__http_resp_free(&resp);
     dfk__http_req_free(&req);
+    dfk_arena_free(&request_arena);
   }
 
   dfk__http_parser_data_free(&pdata);
-  dfk_arena_free(&arena);
+  dfk_arena_free(&connection_arena);
 
   DFK_CALL_RVOID(http->dfk, dfk_tcp_socket_close(sock));
   dfk_list_erase(&http->_connections, &ml.hook);
@@ -550,6 +582,67 @@ ssize_t dfk_http_readv(dfk_http_req_t* req, dfk_iovec_t* iov, size_t niov)
     return dfk_err_badarg;
   }
   return dfk_http_read(req, iov[0].data, iov[0].size);
+}
+
+
+int dfk_http_set(dfk_http_resp_t* resp, const char* name, size_t namesize, const char* value, size_t valuesize)
+{
+  if (!resp || (!name && namesize) || (!value && valuesize)) {
+    return dfk_err_badarg;
+  }
+  DFK_DBG(resp->dfk, "{%p} %.*s: %.*s", (void*) resp, (int) namesize, name, (int) valuesize, value);
+  dfk__http_header_t* header = dfk_arena_alloc(resp->_request_arena, sizeof(dfk__http_header_t));
+  if (!header) {
+    return dfk_err_nomem;
+  }
+  dfk__http_header_init(header);
+  header->name = (dfk_buf_t) {(char*) name, namesize};
+  header->value = (dfk_buf_t) {(char*) value, valuesize};
+  dfk_avltree_insert(&resp->_headers, (dfk_avltree_hook_t*) header);
+  return dfk_err_ok;
+}
+
+
+int dfk_http_set_copy(dfk_http_resp_t* resp, const char* name, size_t namesize, const char* value, size_t valuesize)
+{
+  if (!resp || (!name && namesize) || (!value && valuesize)) {
+    return dfk_err_badarg;
+  }
+  void* namecopy = dfk_arena_alloc_copy(resp->_request_arena, name, namesize);
+  if (!namecopy) {
+    return dfk_err_nomem;
+  }
+  void* valuecopy = dfk_arena_alloc_copy(resp->_request_arena, value, valuesize);
+  if (!valuecopy) {
+    return dfk_err_nomem;
+  }
+  return dfk_http_set(resp, namecopy, namesize, valuecopy, valuesize);
+}
+
+
+int dfk_http_set_copy_name(dfk_http_resp_t* resp, const char* name, size_t namesize, const char* value, size_t valuesize)
+{
+  if (!resp || (!name && namesize) || (!value && valuesize)) {
+    return dfk_err_badarg;
+  }
+  void* namecopy = dfk_arena_alloc_copy(resp->_request_arena, name, namesize);
+  if (!namecopy) {
+    return dfk_err_nomem;
+  }
+  return dfk_http_set(resp, namecopy, namesize, value, valuesize);
+}
+
+
+int dfk_http_set_copy_value(dfk_http_resp_t* resp, const char* name, size_t namesize, const char* value, size_t valuesize)
+{
+  if (!resp || (!name && namesize) || (!value && valuesize)) {
+    return dfk_err_badarg;
+  }
+  void* valuecopy = dfk_arena_alloc_copy(resp->_request_arena, value, valuesize);
+  if (!valuecopy) {
+    return dfk_err_nomem;
+  }
+  return dfk_http_set(resp, name, namesize, valuecopy, valuesize);
 }
 
 

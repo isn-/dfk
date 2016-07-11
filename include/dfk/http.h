@@ -153,7 +153,8 @@ typedef struct dfk_http_req_t {
   /**
    * @privatesection
    */
-  dfk_arena_t* _arena;
+  dfk_arena_t* _connection_arena;
+  dfk_arena_t* _request_arena;
   dfk_tcp_socket_t* _sock;
   dfk_avltree_t _headers; /* contains dfk_http_header_t */
   dfk_avltree_t _arguments; /* contains dfk_http_argument_t */
@@ -165,9 +166,10 @@ typedef struct dfk_http_req_t {
    * @publicsection
    */
 
+  dfk_t* dfk;
+
   unsigned short major_version;
   unsigned short minor_version;
-
   dfk_http_method_e method;
   dfk_buf_t url;
   dfk_buf_t user_agent;
@@ -182,7 +184,8 @@ typedef struct dfk_http_resp_t {
   /**
    * @privatesection
    */
-  dfk_arena_t* _arena;
+  dfk_arena_t* _connection_arena;
+  dfk_arena_t* _request_arena;
   dfk_tcp_socket_t* _sock;
   dfk_avltree_t _headers;
 
@@ -190,6 +193,7 @@ typedef struct dfk_http_resp_t {
    * @publicsection
    */
 
+  dfk_t* dfk;
   dfk_http_status_e code;
 } dfk_http_resp_t;
 
@@ -221,6 +225,9 @@ int dfk_http_args_end(dfk_http_args_it* it);
 ssize_t dfk_http_write(dfk_http_resp_t* resp, char* buf, size_t nbytes);
 ssize_t dfk_http_writev(dfk_http_resp_t* resp, dfk_iovec_t* iov, size_t niov);
 int dfk_http_set(dfk_http_resp_t* resp, const char* name, size_t namesize, const char* value, size_t valuesize);
+int dfk_http_set_copy(dfk_http_resp_t* resp, const char* name, size_t namesize, const char* value, size_t valuesize);
+int dfk_http_set_copy_name(dfk_http_resp_t* resp, const char* name, size_t namesize, const char* value, size_t valuesize);
+int dfk_http_set_copy_value(dfk_http_resp_t* resp, const char* name, size_t namesize, const char* value, size_t valuesize);
 
 
 struct dfk_http_t;

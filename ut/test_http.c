@@ -431,3 +431,43 @@ TEST_F(http_fixture, http, post_100_mb)
   curl_slist_free_all(chunk);
   EXPECT(res == CURLE_OK);
 }
+
+
+static int ut_output_headers(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+{
+  DFK_UNUSED(http);
+  DFK_UNUSED(req);
+  dfk_http_set(resp, "Server", 6, "rocks", 5);
+  dfk_http_set(resp, "Foo", 3, "bar", 3);
+  resp->code = 200;
+  return 0;
+}
+
+
+static size_t ut_output_headers_callback(char* buffer, size_t size, size_t nitems, void* userdata)
+{
+  int* counter = (int*) userdata;
+  ASSERT_RET(0 <= *counter && *counter <= 2, 0);
+  dfk_buf_t buf = {buffer, size * nitems};
+  if (*counter == 1) {
+    ASSERT_BUFSTREQ_RET(buf, "Server: rocks\r\n", 0);
+  } else if (*counter == 2) {
+    ASSERT_BUFSTREQ_RET(buf, "Foo: bar\r\n", 0);
+  }
+  (*counter)++;
+  return size * nitems;
+}
+
+
+TEST_F(http_fixture, http, output_headers)
+{
+  CURLcode res;
+  fixture->handler = ut_output_headers;
+  curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
+  curl_easy_setopt(fixture->curl, CURLOPT_HEADERFUNCTION, ut_output_headers_callback);
+  int counter = 0;
+  curl_easy_setopt(fixture->curl, CURLOPT_HEADERDATA, &counter);
+  res = curl_easy_perform(fixture->curl);
+  EXPECT(res == CURLE_OK);
+}
+
