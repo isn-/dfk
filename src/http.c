@@ -30,6 +30,7 @@
 #include <dfk.h>
 #include <dfk/internal.h>
 #include <dfk/internal/misc.h>
+#include <dfk/internal/http.h>
 
 
 #define DFK_HTTP_USER_AGENT "User-Agent"
@@ -79,7 +80,7 @@ static int dfk__http_header_cmp(dfk_avltree_hook_t* l, dfk_avltree_hook_t* r)
 typedef dfk__http_header_t dfk_http_argument_t;
 
 
-static void dfk__http_req_init(dfk_http_req_t* req, dfk_t* dfk, dfk_arena_t* request_arena, dfk_arena_t* connection_arena, dfk_tcp_socket_t* sock)
+void dfk__http_req_init(dfk_http_req_t* req, dfk_t* dfk, dfk_arena_t* request_arena, dfk_arena_t* connection_arena, dfk_tcp_socket_t* sock)
 {
   assert(req);
   assert(request_arena);
@@ -102,14 +103,14 @@ static void dfk__http_req_init(dfk_http_req_t* req, dfk_t* dfk, dfk_arena_t* req
 }
 
 
-static void dfk__http_req_free(dfk_http_req_t* req)
+void dfk__http_req_free(dfk_http_req_t* req)
 {
   dfk_avltree_free(&req->_arguments);
   dfk_avltree_free(&req->_headers);
 }
 
 
-static void dfk__http_resp_init(dfk_http_resp_t* resp, dfk_t* dfk, dfk_arena_t* request_arena, dfk_arena_t* connection_arena, dfk_tcp_socket_t* sock)
+void dfk__http_resp_init(dfk_http_resp_t* resp, dfk_t* dfk, dfk_arena_t* request_arena, dfk_arena_t* connection_arena, dfk_tcp_socket_t* sock)
 {
   assert(resp);
   assert(request_arena);
@@ -123,7 +124,7 @@ static void dfk__http_resp_init(dfk_http_resp_t* resp, dfk_t* dfk, dfk_arena_t* 
 }
 
 
-static void dfk__http_resp_free(dfk_http_resp_t* resp)
+void dfk__http_resp_free(dfk_http_resp_t* resp)
 {
   assert(resp);
   DFK_UNUSED(resp);
@@ -166,7 +167,7 @@ static void dfk__buf_append(dfk_buf_t* to, const char* data, size_t size)
 }
 
 
-static const char* dfk__http_reason_phrase(dfk_http_status_e status)
+const char* dfk__http_reason_phrase(dfk_http_status_e status)
 {
   switch (status) {
     case DFK_HTTP_CONTINUE: return "Continue";
@@ -561,11 +562,15 @@ ssize_t dfk_http_read(dfk_http_req_t* req, char* buf, size_t size)
     return dfk_err_badarg;
   }
 
+  DFK_DBG(req->dfk, "{%p} upto %llu bytes", (void*) req, (unsigned long long) size);
+
   if (!req->content_length) {
     return dfk_err_eof;
   }
 
   if (req->_body_bytes_nread < req->_bodypart.size) {
+    DFK_DBG(req->dfk, "{%p} body part of size %llu is cached, copy",
+            (void*) req, (unsigned long long) req->_bodypart.size);
     size_t tocopy = DFK_MIN(size, req->_bodypart.size - req->_body_bytes_nread);
     memcpy(buf, req->_bodypart.data, tocopy);
     req->_body_bytes_nread += tocopy;
@@ -581,6 +586,7 @@ ssize_t dfk_http_readv(dfk_http_req_t* req, dfk_iovec_t* iov, size_t niov)
   if (!req || (!iov && niov)) {
     return dfk_err_badarg;
   }
+  DFK_DBG(req->dfk, "{%p} into %llu blocks", (void*) req, (unsigned long long) niov);
   return dfk_http_read(req, iov[0].data, iov[0].size);
 }
 
@@ -608,6 +614,7 @@ int dfk_http_set_copy(dfk_http_resp_t* resp, const char* name, size_t namesize, 
   if (!resp || (!name && namesize) || (!value && valuesize)) {
     return dfk_err_badarg;
   }
+  DFK_DBG(resp->dfk, "{%p} %.*s: %.*s", (void*) resp, (int) namesize, name, (int) valuesize, value);
   void* namecopy = dfk_arena_alloc_copy(resp->_request_arena, name, namesize);
   if (!namecopy) {
     return dfk_err_nomem;
@@ -625,6 +632,7 @@ int dfk_http_set_copy_name(dfk_http_resp_t* resp, const char* name, size_t names
   if (!resp || (!name && namesize) || (!value && valuesize)) {
     return dfk_err_badarg;
   }
+  DFK_DBG(resp->dfk, "{%p} %.*s: %.*s", (void*) resp, (int) namesize, name, (int) valuesize, value);
   void* namecopy = dfk_arena_alloc_copy(resp->_request_arena, name, namesize);
   if (!namecopy) {
     return dfk_err_nomem;
@@ -638,6 +646,7 @@ int dfk_http_set_copy_value(dfk_http_resp_t* resp, const char* name, size_t name
   if (!resp || (!name && namesize) || (!value && valuesize)) {
     return dfk_err_badarg;
   }
+  DFK_DBG(resp->dfk, "{%p} %.*s: %.*s", (void*) resp, (int) namesize, name, (int) valuesize, value);
   void* valuecopy = dfk_arena_alloc_copy(resp->_request_arena, value, valuesize);
   if (!valuecopy) {
     return dfk_err_nomem;
@@ -686,6 +695,7 @@ int dfk_http_free(dfk_http_t* http)
   if (!http) {
     return dfk_err_badarg;
   }
+  DFK_DBG(http->dfk, "{%p}", (void*) http);
   dfk_list_free(&http->_connections);
   return dfk_tcp_socket_free(&http->_listensock);
 }
