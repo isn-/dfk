@@ -52,7 +52,7 @@ after_success:
 - if [[ "$UPLOAD_DOCS" == "YES" ]]; then bash scripts/docs.sh; fi
 after_failure:
 - cat bootstrap.stdout
-- cat Testing/Temporary/LastTest.log
+- cat build/Testing/Temporary/LastTest.log
 notifications:
   email:
   - isn@extrn.org
