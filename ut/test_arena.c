@@ -51,7 +51,6 @@ static void fixture_teardown(fixture_t* f)
 }
 
 
-
 static int intersect(char* p1, char* r1, char* p2, char* r2)
 {
   if (r1 > p1) {

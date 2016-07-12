@@ -29,7 +29,6 @@
  */
 
 #pragma once
-
 #include <dfk/config.h>
 #include <dfk/core.h>
 #include <dfk/internal/list.h>

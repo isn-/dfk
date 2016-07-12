@@ -28,6 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#pragma once
 #include <dfk/config.h>
 #include <dfk/tcp_socket.h>
 #include <dfk/internal/arena.h>
