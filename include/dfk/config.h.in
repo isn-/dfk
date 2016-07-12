@@ -92,4 +92,6 @@
 #cmakedefine01 DFK_IGNORE_SIGPIPE
 /** Size of arena's segment, in bytes */
 #define DFK_ARENA_SEGMENT_SIZE @DFK_ARENA_SEGMENT_SIZE@
+/** Size of sponge data structure initial size, in bytes. */
+#define DFK_SPONGE_INITIAL_SIZE @DFK_SPONGE_INITIAL_SIZE@
 

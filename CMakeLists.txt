@@ -41,6 +41,7 @@ set(DFK_VALGRIND FALSE CACHE BOOL "In addition to regular mode, run unit tests u
 set(DFK_HTTP_HEADERS_BUFFER 10240 CACHE STRING "Buffer for HTTP headers, stack-allocated.")
 set(DFK_IGNORE_SIGPIPE TRUE CACHE BOOL "Ignore SIGPIPE when entering dfk loop.")
 set(DFK_ARENA_SEGMENT_SIZE 40960 CACHE STRING "Size of arena's segment, in bytes.")
+set(DFK_SPONGE_INITIAL_SIZE 4096 CACHE STRING "Size of sponge data structure initial size, in bytes.")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -121,6 +122,7 @@ add_library(dfkinternal STATIC
   src/internal/list.c
   src/internal/avltree.c
   src/internal/arena.c
+  src/internal/sponge.c
   src/internal/misc.c)
 
 add_library(dfk
