@@ -78,6 +78,8 @@
 #define DFK_EVENT_LOOP "@DFK_EVENT_LOOP@"
 /** Emit debug log messages */
 #cmakedefine01 DFK_DEBUG
+/** Enable object mocking for unit testing */
+#cmakedefine01 DFK_MOCKS
 /** Enable multithreading support */
 #cmakedefine01 DFK_THREADS
 /** Collect gcov coverage statistics */

@@ -11,6 +11,7 @@ Compile-time options
 @li #DFK_STACK_ALIGNMENT
 @li #DFK_EVENT_LOOP
 @li #DFK_DEBUG
+@li #DFK_MOCKS
 @li #DFK_THREADS
 @li #DFK_COVERAGE
 @li #DFK_VALGRIND
