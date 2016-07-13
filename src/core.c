@@ -449,38 +449,39 @@ const char* dfk_strerr(dfk_t* dfk, int err)
 {
   switch(err) {
     case dfk_err_ok: {
-      return "No error";
+      return "dfk_err_ok(0): No error";
     }
     case dfk_err_eof: {
-      return "End of file (stream, iterator)";
+      return "dfk_err_eof(1): End of file (stream, iterator)";
     }
     case dfk_err_busy: {
-      return "Resource is already acquired";
+      return "dfk_err_busy(2): Resource is already acquired";
     }
     case dfk_err_nomem: {
-      return "Memory allocation function returned NULL";
+      return "dfk_err_nomem(3): Memory allocation function returned NULL";
     }
     case dfk_err_notfound: {
-      return "Object not found";
+      return "dfk_err_notfound(4): Object not found";
     }
     case dfk_err_badarg: {
-      return "Bad argument";
+      return "dfk_err_badarg(5): Bad argument";
     }
     case dfk_err_sys: {
       return dfk ? strerror(dfk->sys_errno) :
-        "System error, dfk_t object is NULL, can not access sys_errno";
+        "dfk_err_sys(6): System error, dfk_t object is NULL, "
+        "can not access sys_errno";
     }
     case dfk_err_inprog: {
-      return "The operation is already in progress";
+      return "dfk_err_inprog(7): The operation is already in progress";
     }
     case dfk_err_panic: {
-      return "Unexpected behaviour";
+      return "dfk_err_panic(8): Unexpected behaviour";
     }
     case dfk_err_not_implemented: {
-      return "Functionality is not implemented yet";
+      return "dfk_err_not_implemented(9): Functionality is not implemented yet";
     }
     case dfk_err_overflow: {
-      return "Floating point, or integer overflow error.";
+      return "dfk_err_overflow(10): Floating point, or integer overflow error.";
     }
     default: {
       return "Unknown error";
