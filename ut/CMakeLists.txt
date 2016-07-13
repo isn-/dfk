@@ -12,6 +12,11 @@ set(ut_sources
   test_tcp_socket.c
   test_http.c)
 
+if(DFK_MOCKS)
+  list(APPEND ut_sources
+    test_http_resp.c)
+endif()
+
 set(ut_init_c "${CMAKE_CURRENT_BINARY_DIR}/ut_init.c")
 set(ut_init_h "${CMAKE_CURRENT_BINARY_DIR}/ut_init.h")
 
