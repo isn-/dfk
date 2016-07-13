@@ -41,7 +41,8 @@ void dfk__http_req_free(dfk_http_req_t* req);
 void dfk__http_resp_init(dfk_http_resp_t* resp, dfk_t* dfk, dfk_arena_t* request_arena,
                          dfk_arena_t* connection_arena, dfk_tcp_socket_t* sock);
 void dfk__http_resp_free(dfk_http_resp_t* resp);
-void dfk__http_resp_flush_headers(dfk_http_resp_t* resp);
+int dfk__http_resp_flush_headers(dfk_http_resp_t* resp);
+int dfk__http_resp_flush(dfk_http_resp_t* resp);
 
 const char* dfk__http_reason_phrase(dfk_http_status_e status);
 

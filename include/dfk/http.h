@@ -33,6 +33,7 @@
 #include <dfk/tcp_socket.h>
 #include <dfk/internal/arena.h>
 #include <dfk/internal/avltree.h>
+#include <dfk/internal/sponge.h>
 
 
 /**
@@ -190,11 +191,18 @@ typedef struct dfk_http_resp_t {
   dfk_tcp_socket_t* _sock;
   dfk_avltree_t _headers;
 
+#if DFK_MOCKS
+  int _sock_mocked;
+  dfk_sponge_t* _sock_mock;
+#endif
+
   /**
    * @publicsection
    */
 
   dfk_t* dfk;
+  unsigned short major_version;
+  unsigned short minor_version;
   dfk_http_status_e code;
 } dfk_http_resp_t;
 

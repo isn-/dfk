@@ -121,6 +121,9 @@ void dfk__http_resp_init(dfk_http_resp_t* resp, dfk_t* dfk, dfk_arena_t* request
   resp->_sock = sock;
   dfk_avltree_init(&resp->_headers, dfk__http_header_cmp);
   resp->dfk = dfk;
+#if DFK_MOCKS
+  resp->_sock_mocked = 0;
+#endif
 }
 
 
@@ -437,37 +440,13 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
         req.minor_version,
         (int) req.user_agent.size, req.user_agent.data);
 
-    assert(req._headers_done);
-    {
-      char respbuf[128] = {0};
-      int hres = http->_handler(http, &req, &resp);
-      dfk_http_status_e status = ((hres == dfk_err_ok)
-        ? resp.code
-        : DFK_HTTP_INTERNAL_SERVER_ERROR);
-      int size  = snprintf(respbuf, sizeof(respbuf), "HTTP/1.0 %3d %s\r\n",
-          status, dfk__http_reason_phrase(status));
-      size_t totalheaders = dfk_avltree_size(&resp._headers);
-      size_t niov = 4 * totalheaders + 1;
-      dfk_iovec_t* iov = dfk_arena_alloc(resp._request_arena, niov * sizeof(dfk_iovec_t));
-      if (!iov) {
-        status = DFK_HTTP_INTERNAL_SERVER_ERROR;
-        dfk_tcp_socket_write(sock, respbuf, size);
-        pdata.keepalive = 0;
-      } else {
-        size_t i = 0;
-        iov[i++] = (dfk_iovec_t) {respbuf, size};
-        dfk_avltree_it_t it;
-        dfk_avltree_it_init(&resp._headers, &it);
-        while (dfk_avltree_it_valid(&it)) {
-          dfk__http_header_t* h = (dfk__http_header_t*) it.value;
-          iov[i++] = h->name;
-          iov[i++] = (dfk_iovec_t) {": ", 2};
-          iov[i++] = h->value;
-          iov[i++] = (dfk_iovec_t) {"\r\n", 2};
-          dfk_avltree_it_next(&it);
-        }
-        dfk_tcp_socket_writev(sock, iov, niov);
-      }
+    resp.major_version = req.major_version;
+    resp.minor_version = req.minor_version;
+
+    int hres = http->_handler(http, &req, &resp);
+    DFK_INFO(http->dfk, "{%p} http handler returned %d", (void*) http, hres);
+    if (hres != dfk_err_ok) {
+      resp.code = DFK_HTTP_INTERNAL_SERVER_ERROR;
     }
 
     if (nrequests + 1 >= http->keepalive_requests) {
@@ -483,6 +462,8 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
      * if presented, set pdata.keepalive = 0
      */
     pdata.keepalive = 0;
+
+    dfk__http_resp_flush(&resp);
 
     ++nrequests;
 
@@ -652,6 +633,63 @@ int dfk_http_set_copy_value(dfk_http_resp_t* resp, const char* name, size_t name
     return dfk_err_nomem;
   }
   return dfk_http_set(resp, name, namesize, valuecopy, valuesize);
+}
+
+
+int dfk__http_resp_flush_headers(dfk_http_resp_t* resp)
+{
+  assert(resp);
+  size_t totalheaders = dfk_avltree_size(&resp->_headers);
+  size_t niov = 4 * totalheaders + 1;
+  dfk_iovec_t* iov = dfk_arena_alloc(resp->_request_arena, niov * sizeof(dfk_iovec_t));
+  if (!iov) {
+    resp->code = DFK_HTTP_INTERNAL_SERVER_ERROR;
+  }
+  char sbuf[128] = {0};
+  int ssize = snprintf(sbuf, sizeof(sbuf), "HTTP/%d.%d %3d %s\r\n",
+                       resp->major_version, resp->minor_version, resp->code,
+                       dfk__http_reason_phrase(resp->code));
+  if (!iov) {
+#if DFK_MOCKS
+    if (resp->_sock_mocked) {
+      dfk_sponge_write(resp->_sock_mock, sbuf, ssize);
+    } else {
+      dfk_tcp_socket_write(resp->_sock, sbuf, ssize);
+    }
+#else
+    dfk_tcp_socket_write(resp->_sock, sbuf, ssize);
+#endif
+  } else {
+    size_t i = 0;
+    iov[i++] = (dfk_iovec_t) {sbuf, ssize};
+    dfk_avltree_it_t it;
+    dfk_avltree_it_init(&resp->_headers, &it);
+    while (dfk_avltree_it_valid(&it) && i < niov) {
+      dfk__http_header_t* h = (dfk__http_header_t*) it.value;
+      iov[i++] = h->name;
+      iov[i++] = (dfk_iovec_t) {": ", 2};
+      iov[i++] = h->value;
+      iov[i++] = (dfk_iovec_t) {"\r\n", 2};
+      dfk_avltree_it_next(&it);
+    }
+#if DFK_MOCKS
+    if (resp->_sock_mocked) {
+      dfk_sponge_writev(resp->_sock_mock, iov, niov);
+    } else {
+      dfk_tcp_socket_writev(resp->_sock, iov, niov);
+    }
+#else
+    dfk_tcp_socket_writev(resp->_sock, iov, niov);
+#endif
+  }
+  return dfk_err_ok;
+}
+
+
+int dfk__http_resp_flush(dfk_http_resp_t* resp)
+{
+  assert(resp);
+  return dfk__http_resp_flush_headers(resp);
 }
 
 
