@@ -28,7 +28,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <dfk.h>
-#include <dfk/internal.h>
 
 
 typedef struct args_t {
@@ -37,12 +36,20 @@ typedef struct args_t {
 } args_t;
 
 
+#define CALL_DFK_API(c) if ((c) != dfk_err_ok) { return -1; }
+
+
 static int echo(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
 {
-  DFK_UNUSED(http);
-  DFK_UNUSED(req);
+  dfk_http_headers_it it;
+  (void) http;
+  CALL_DFK_API(dfk_http_headers_begin(req, &it));
+  while (dfk_http_headers_valid(&it) == dfk_err_ok) {
+    CALL_DFK_API(dfk_http_set(resp, it.field.data, it.field.size, it.value.data, it.value.size));
+    CALL_DFK_API(dfk_http_headers_next(&it));
+  }
   resp->code = DFK_HTTP_OK;
-  return 0;
+  return dfk_err_ok;;
 }
 
 
@@ -50,9 +57,13 @@ static void dfk_main(dfk_coro_t* coro, void* p)
 {
   dfk_http_t srv;
   args_t* args = (args_t*) p;
-  DFK_CALL_RVOID(coro->dfk, dfk_http_init(&srv, coro->dfk));
-  DFK_CALL_RVOID(coro->dfk, dfk_http_serve(&srv, args->argv[1], atoi(args->argv[2]), echo));
-  DFK_CALL_RVOID(coro->dfk, dfk_http_free(&srv));
+  if (dfk_http_init(&srv, coro->dfk) != dfk_err_ok) {
+    return;
+  }
+  if (dfk_http_serve(&srv, args->argv[1], atoi(args->argv[2]), echo) != dfk_err_ok) {
+    return;
+  }
+  dfk_http_free(&srv);
 }
 
 
@@ -68,7 +79,7 @@ int main(int argc, char** argv)
   args.argv = argv;
   dfk_init(&dfk);
   (void) dfk_run(&dfk, dfk_main, &args, 0);
-  DFK_CALL(&dfk, dfk_work(&dfk));
+  CALL_DFK_API(dfk_work(&dfk));
   return dfk_free(&dfk);
 }
 
