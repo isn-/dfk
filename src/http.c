@@ -440,8 +440,8 @@ static void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
         req.minor_version,
         (int) req.user_agent.size, req.user_agent.data);
 
-    resp.major_version = req.major_version;
-    resp.minor_version = req.minor_version;
+    resp.major_version = 1;
+    resp.minor_version = 0;
 
     int hres = http->_handler(http, &req, &resp);
     DFK_INFO(http->dfk, "{%p} http handler returned %d", (void*) http, hres);
