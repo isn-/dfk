@@ -81,6 +81,7 @@ static void expect_resp(dfk_http_resp_t* resp, const char* expected)
   size_t expectedlen = strlen(expected);
   EXPECT(actuallen == expectedlen);
   EXPECT(!strncmp(actual, expected, expectedlen));
+  DFK_FREE(resp->dfk, actual);
 }
 
 
