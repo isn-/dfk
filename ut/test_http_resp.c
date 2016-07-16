@@ -168,15 +168,45 @@ TEST_F(fixture, http_resp, set_errors)
   EXPECT(dfk_http_set(NULL, "n", 1, "v", 1) == dfk_err_badarg);
   EXPECT(dfk_http_set(&fixture->resp, NULL, 1, "v", 1) == dfk_err_badarg);
   EXPECT(dfk_http_set(&fixture->resp, "n", 1, NULL, 1) == dfk_err_badarg);
+  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_ALWAYS, 0);
+  EXPECT(dfk_http_set(&fixture->resp, "n", 1, "v", 1) == dfk_err_nomem);
+  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_NEVER, 0);
+
   EXPECT(dfk_http_set_copy(NULL, "n", 1, "v", 1) == dfk_err_badarg);
   EXPECT(dfk_http_set_copy(&fixture->resp, NULL, 1, "v", 1) == dfk_err_badarg);
   EXPECT(dfk_http_set_copy(&fixture->resp, "n", 1, NULL, 1) == dfk_err_badarg);
+  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_ALWAYS, 0);
+  EXPECT(dfk_http_set_copy(&fixture->resp, "n", 1, "v", 1) == dfk_err_nomem);
+  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_NEVER, 0);
+
   EXPECT(dfk_http_set_copy_name(NULL, "n", 1, "v", 1) == dfk_err_badarg);
   EXPECT(dfk_http_set_copy_name(&fixture->resp, NULL, 1, "v", 1) == dfk_err_badarg);
   EXPECT(dfk_http_set_copy_name(&fixture->resp, "n", 1, NULL, 1) == dfk_err_badarg);
+  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_ALWAYS, 0);
+  EXPECT(dfk_http_set_copy_name(&fixture->resp, "n", 1, "v", 1) == dfk_err_nomem);
+  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_NEVER, 0);
+
   EXPECT(dfk_http_set_copy_value(NULL, "n", 1, "v", 1) == dfk_err_badarg);
   EXPECT(dfk_http_set_copy_value(&fixture->resp, NULL, 1, "v", 1) == dfk_err_badarg);
   EXPECT(dfk_http_set_copy_value(&fixture->resp, "n", 1, NULL, 1) == dfk_err_badarg);
+  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_ALWAYS, 0);
+  EXPECT(dfk_http_set_copy_value(&fixture->resp, "n", 1, "v", 1) == dfk_err_nomem);
+  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_NEVER, 0);
+}
+
+
+TEST_F(fixture, http_resp, set_tricky_out_of_memory)
+{
+  size_t nbytes = DFK_ARENA_SEGMENT_SIZE * 0.4;
+  char* buf = malloc(nbytes);
+  assert(buf);
+  memset(buf, 0, nbytes);
+  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_NTH_FAIL, 1);
+  EXPECT_OK(dfk_http_set_copy(&fixture->resp, buf, nbytes, buf, nbytes));
+  buf[0] = 1;
+  EXPECT(dfk_http_set_copy(&fixture->resp, buf, nbytes, buf, nbytes) == dfk_err_nomem);
+  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_NEVER, 0);
+  free(buf);
 }
 
 #endif /* DFK_MOCKS */
