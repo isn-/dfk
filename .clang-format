@@ -4,3 +4,4 @@ PointerAlignment: Left
 SpaceAfterCStyleCast: true
 BreakBeforeBraces: Linux
 IndentCaseLabels: true
+MaxEmptyLinesToKeep: 2
