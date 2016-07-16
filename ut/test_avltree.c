@@ -28,7 +28,7 @@
 #include <dfk.h>
 #include <dfk/internal.h>
 #include <dfk/internal/avltree.h>
-#include "ut.h"
+#include <ut.h>
 
 
 typedef struct node_t {
@@ -605,10 +605,10 @@ TEST(avltree, insert_empty)
   dfk_avltree_hook_init(&node.hook);
   node.value = 10;
   dfk_avltree_insert(&tree, (dfk_avltree_hook_t*) &node);
-  ASSERT(tree.root == (dfk_avltree_hook_t*) &node);
-  ASSERT(tree.root->bal == 0);
-  ASSERT(tree.root->left == NULL);
-  ASSERT(tree.root->right == NULL);
+  EXPECT(tree.root == (dfk_avltree_hook_t*) &node);
+  EXPECT(tree.root->bal == 0);
+  EXPECT(tree.root->left == NULL);
+  EXPECT(tree.root->right == NULL);
 }
 
 
@@ -700,7 +700,7 @@ TEST_F(tree_fixture, avltree, lookup)
     for (i = 0; i < DFK_SIZE(query); ++i) {
       dfk_avltree_hook_t* res = dfk_avltree_lookup(
           &fixture->in_tree, query + i, node_int_lookup_cmp);
-      ASSERT(res);
+      EXPECT(res);
       EXPECT(((node_t*) res)->value == query[i]);
     }
   }

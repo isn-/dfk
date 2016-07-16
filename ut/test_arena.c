@@ -28,7 +28,7 @@
 #include <dfk.h>
 #include <dfk/internal.h>
 #include <dfk/internal/arena.h>
-#include "ut.h"
+#include <ut.h>
 
 
 typedef struct fixture_t {
@@ -67,7 +67,7 @@ TEST_F(fixture, arena, alloc_first)
 {
   size_t i, count = 10;
   char* p = dfk_arena_alloc(&fixture->arena, count);
-  ASSERT(p);
+  EXPECT(p);
   for (i = 0; i < count; ++i) {
     p[i] = 0;
   }
@@ -147,7 +147,7 @@ TEST_F(fixture, arena, alloc_ex_one)
 {
   data_holder_t* dh = dfk_arena_alloc_ex(&fixture->arena,
       sizeof(void*), cleanup_data_holder);
-  ASSERT(dh);
+  EXPECT(dh);
   data_holder_init(&fixture->dfk, dh);
   /* Valgrind should report no memory leak here */
 }
@@ -172,8 +172,8 @@ TEST_F(fixture, arena, alloc_copy)
 {
   char buf[] = "Hello, world";
   void* p = dfk_arena_alloc_copy(&fixture->arena, buf, sizeof(buf));
-  ASSERT(p);
-  ASSERT(memcmp(p, buf, sizeof(buf)) == 0);
+  EXPECT(p);
+  EXPECT(memcmp(p, buf, sizeof(buf)) == 0);
 }
 
 
@@ -182,6 +182,6 @@ TEST_F(fixture, arena, alloc_copy_no_mem)
   char buf[] = "Hello, world";
   fixture->dfk.malloc = out_of_memory;
   void* p = dfk_arena_alloc_copy(&fixture->arena, buf, sizeof(buf));
-  ASSERT(!p);
+  EXPECT(!p);
 }
 

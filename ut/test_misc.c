@@ -28,16 +28,16 @@
 #include <dfk.h>
 #include <dfk/internal.h>
 #include <dfk/internal/misc.h>
-#include "ut.h"
+#include <ut.h>
 
 
 static void ut_check_strtoll(dfk_buf_t buf, long long expected_value, int expected_code)
 {
   long long val;
   int ret = dfk_strtoll(buf, NULL, 10, &val);
-  ASSERT(ret == expected_code);
+  EXPECT(ret == expected_code);
   if (ret == dfk_err_ok) {
-    ASSERT(val == expected_value);
+    EXPECT(val == expected_value);
   }
 }
 
@@ -79,8 +79,8 @@ TEST(misc, strtoll_partial)
   dfk_buf_t nbuf = {"1901-2016", 9};
   char* endptr;
   long long val;
-  ASSERT_OK(dfk_strtoll(nbuf, &endptr, 10, &val));
-  ASSERT(val == 1901);
-  ASSERT(endptr == nbuf.data + 4);
+  EXPECT_OK(dfk_strtoll(nbuf, &endptr, 10, &val));
+  EXPECT(val == 1901);
+  EXPECT(endptr == nbuf.data + 4);
 }
 

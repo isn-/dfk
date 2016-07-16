@@ -33,7 +33,7 @@
 #include <dfk.h>
 #include <dfk/internal.h>
 #include <dfk/internal/http.h>
-#include "ut.h"
+#include <ut.h>
 
 
 #define MiB (1024 * 1024)
@@ -136,28 +136,28 @@ static void ut_errors(dfk_coro_t* coro, void* arg)
 {
   dfk_http_t http;
   DFK_UNUSED(arg);
-  ASSERT(dfk_http_init(NULL, NULL) == dfk_err_badarg);
-  ASSERT(dfk_http_init(&http, NULL) == dfk_err_badarg);
-  ASSERT(dfk_http_init(NULL, coro->dfk) == dfk_err_badarg);
-  ASSERT_OK(dfk_http_init(&http, coro->dfk));
-  ASSERT(dfk_http_free(NULL) == dfk_err_badarg);
-  ASSERT(dfk_http_stop(NULL) == dfk_err_badarg);
-  ASSERT(dfk_http_serve(NULL, NULL, 0, NULL) == dfk_err_badarg);
-  ASSERT(dfk_http_serve(&http, NULL, 0, NULL) == dfk_err_badarg);
-  ASSERT(dfk_http_serve(NULL, "127.0.0.1", 0, NULL) == dfk_err_badarg);
-  ASSERT(dfk_http_serve(NULL, NULL, 0, ut_errors_handler) == dfk_err_badarg);
-  ASSERT(dfk_http_serve(&http, "127.0.0.1", 10000, NULL) == dfk_err_badarg);
-  ASSERT_OK(dfk_http_free(&http));
+  EXPECT(dfk_http_init(NULL, NULL) == dfk_err_badarg);
+  EXPECT(dfk_http_init(&http, NULL) == dfk_err_badarg);
+  EXPECT(dfk_http_init(NULL, coro->dfk) == dfk_err_badarg);
+  EXPECT_OK(dfk_http_init(&http, coro->dfk));
+  EXPECT(dfk_http_free(NULL) == dfk_err_badarg);
+  EXPECT(dfk_http_stop(NULL) == dfk_err_badarg);
+  EXPECT(dfk_http_serve(NULL, NULL, 0, NULL) == dfk_err_badarg);
+  EXPECT(dfk_http_serve(&http, NULL, 0, NULL) == dfk_err_badarg);
+  EXPECT(dfk_http_serve(NULL, "127.0.0.1", 0, NULL) == dfk_err_badarg);
+  EXPECT(dfk_http_serve(NULL, NULL, 0, ut_errors_handler) == dfk_err_badarg);
+  EXPECT(dfk_http_serve(&http, "127.0.0.1", 10000, NULL) == dfk_err_badarg);
+  EXPECT_OK(dfk_http_free(&http));
 }
 
 
 TEST(http, errors)
 {
   dfk_t dfk;
-  ASSERT_OK(dfk_init(&dfk));
-  ASSERT(dfk_run(&dfk, ut_errors, NULL, 0));
-  ASSERT_OK(dfk_work(&dfk));
-  ASSERT_OK(dfk_free(&dfk));
+  EXPECT_OK(dfk_init(&dfk));
+  EXPECT(dfk_run(&dfk, ut_errors, NULL, 0));
+  EXPECT_OK(dfk_work(&dfk));
+  EXPECT_OK(dfk_free(&dfk));
 }
 
 
@@ -223,14 +223,14 @@ TEST_F(http_fixture, http, get_no_url_no_content)
 static int ut_parse_common_headers(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
 {
   DFK_UNUSED(http);
-  ASSERT_RET(req->method == DFK_HTTP_HEAD, 0);
-  ASSERT_BUFSTREQ_RET(req->url, "/", 0);
-  ASSERT_BUFSTREQ_RET(req->user_agent, "dfk-libcurl", 0);
-  ASSERT_BUFSTREQ_RET(req->host, "127.0.0.1:10000", 0);
-  ASSERT_BUFSTREQ_RET(req->accept, "*/*", 0);
-  ASSERT_RET(!req->content_type.data, 0);
-  ASSERT_RET(!req->content_type.size, 0);
-  ASSERT_RET(req->content_length == 0, 0);
+  EXPECT(req->method == DFK_HTTP_HEAD);
+  EXPECT_BUFSTREQ(req->url, "/");
+  EXPECT_BUFSTREQ(req->user_agent, "dfk-libcurl");
+  EXPECT_BUFSTREQ(req->host, "127.0.0.1:10000");
+  EXPECT_BUFSTREQ(req->accept, "*/*");
+  EXPECT(!req->content_type.data);
+  EXPECT(!req->content_type.size);
+  EXPECT(req->content_length == 0);
   resp->code = 200;
   return 0;
 }
@@ -250,13 +250,13 @@ TEST_F(http_fixture, http, parse_common_headers)
 static int ut_iterate_headers(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
 {
   DFK_UNUSED(http);
-  ASSERT_RET(req->method == DFK_HTTP_POST, 0);
-  ASSERT_BUFSTREQ_RET(req->url, "/", 0);
-  ASSERT_BUFSTREQ_RET(req->user_agent, "dfk-libcurl", 0);
-  ASSERT_BUFSTREQ_RET(req->host, "127.0.0.1:10000", 0);
-  ASSERT_BUFSTREQ_RET(req->accept, "*/*", 0);
-  ASSERT_BUFSTREQ_RET(req->content_type, "application/x-www-form-urlencoded", 0);
-  ASSERT_RET(req->content_length == 0, 0);
+  EXPECT(req->method == DFK_HTTP_POST);
+  EXPECT_BUFSTREQ(req->url, "/");
+  EXPECT_BUFSTREQ(req->user_agent, "dfk-libcurl");
+  EXPECT_BUFSTREQ(req->host, "127.0.0.1:10000");
+  EXPECT_BUFSTREQ(req->accept, "*/*");
+  EXPECT_BUFSTREQ(req->content_type, "application/x-www-form-urlencoded");
+  EXPECT(req->content_length == 0);
   {
     char* expected_fields[] = {
       "User-Agent",
@@ -277,12 +277,12 @@ static int ut_iterate_headers(dfk_http_t* http, dfk_http_req_t* req, dfk_http_re
     assert(DFK_SIZE(expected_fields) == DFK_SIZE(expected_values));
     dfk_http_headers_begin(req, &it);
     while (dfk_http_headers_valid(&it) == dfk_err_ok) {
-      ASSERT_BUFSTREQ_RET(it.field, expected_fields[i], 0);
-      ASSERT_BUFSTREQ_RET(it.value, expected_values[i], 0);
+      EXPECT_BUFSTREQ(it.field, expected_fields[i]);
+      EXPECT_BUFSTREQ(it.value, expected_values[i]);
       dfk_http_headers_next(&it);
       ++i;
     }
-    ASSERT_RET(i == DFK_SIZE(expected_fields), 0);
+    EXPECT(i == DFK_SIZE(expected_fields));
   }
   resp->code = 200;
   return 0;
@@ -393,7 +393,7 @@ static size_t ut_read_callback(void* buffer, size_t size, size_t nitems, void* u
 static int ut_content_length(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
 {
   DFK_UNUSED(http);
-  ASSERT_RET(req->content_length == 9, 0);
+  EXPECT(req->content_length == 9);
   resp->code = 200;
   return 0;
 }
@@ -418,11 +418,11 @@ TEST_F(http_fixture, http, content_length)
 static int ut_post_9_bytes(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
 {
   DFK_UNUSED(http);
-  ASSERT_RET(req->content_length == 9, 0);
+  EXPECT(req->content_length == 9);
   char buf[9] = {0};
   size_t nread = dfk_http_read(req, buf, req->content_length);
-  ASSERT_RET(nread == req->content_length, 0);
-  ASSERT_RET(memcmp(buf, "some data", 9) == 0, 0);
+  EXPECT(nread == req->content_length);
+  EXPECT(memcmp(buf, "some data", 9) == 0);
   resp->code = 200;
   return 0;
 }
@@ -447,14 +447,14 @@ TEST_F(http_fixture, http, post_9_bytes)
 static int ut_post_100_mb(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
 {
   DFK_UNUSED(http);
-  ASSERT_RET(req->content_length == 100 * MiB, 0);
+  EXPECT(req->content_length == 100 * MiB);
   size_t bufsize = MiB;
   char* buf = DFK_MALLOC(http->dfk, bufsize);
   assert(buf);
   size_t totalread = 0;
   while (totalread != 100 * MiB) {
     size_t nread = dfk_http_read(req, buf, bufsize);
-    ASSERT_RET(nread > 0, 0);
+    EXPECT(nread > 0);
     totalread += nread;
   }
   DFK_FREE(http->dfk, buf);
@@ -477,7 +477,7 @@ TEST_F(http_fixture, http, post_100_mb)
   curl_easy_setopt(fixture->curl, CURLOPT_POSTFIELDSIZE, 100 * MiB);
   struct curl_slist *chunk = NULL;
   chunk = curl_slist_append(chunk, "Expect:");
-  ASSERT(curl_easy_setopt(fixture->curl, CURLOPT_HTTPHEADER, chunk) == CURLE_OK);
+  EXPECT(curl_easy_setopt(fixture->curl, CURLOPT_HTTPHEADER, chunk) == CURLE_OK);
   CURLcode res = curl_easy_perform(fixture->curl);
   curl_slist_free_all(chunk);
   EXPECT(res == CURLE_OK);
@@ -498,12 +498,12 @@ static int ut_output_headers(dfk_http_t* http, dfk_http_req_t* req, dfk_http_res
 static size_t ut_output_headers_callback(char* buffer, size_t size, size_t nitems, void* userdata)
 {
   int* counter = (int*) userdata;
-  ASSERT_RET(0 <= *counter && *counter <= 2, 0);
+  EXPECT(0 <= *counter && *counter <= 2);
   dfk_buf_t buf = {buffer, size * nitems};
   if (*counter == 1) {
-    ASSERT_BUFSTREQ_RET(buf, "Server: rocks\r\n", 0);
+    EXPECT_BUFSTREQ(buf, "Server: rocks\r\n");
   } else if (*counter == 2) {
-    ASSERT_BUFSTREQ_RET(buf, "Foo: bar\r\n", 0);
+    EXPECT_BUFSTREQ(buf, "Foo: bar\r\n");
   }
   (*counter)++;
   return size * nitems;

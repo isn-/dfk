@@ -27,14 +27,38 @@
 
 #pragma once
 #include <string.h>
-#include "ut_init.h"
+#include <dfk.h>
+#include <ut_init.h>
 
-void ut_register_all_test_cases(void);
-void ut_register_test_case(const char* group, const char* name, void (*func)(void));
+void ut_register_test_case(const char* group, const char* name,
+                           void (*func)(void));
 void ut_error(const char* file, const int line, const char* message);
-void ut_disable(const char* group, const char* name);
+void ut_skip(const char* group, const char* name, const char* reason);
+int ut_main(int argc, char** argv);
 
+typedef enum ut_oom_policy_e {
+  UT_OOM_ALWAYS = 0,
+  UT_OOM_NEVER = 1,
+  UT_OOM_NTH_FAIL = 2,
+  UT_OOM_N_PASS = 3,
+} ut_oom_policy_e;
+
+void ut_simulate_out_of_memory(struct dfk_t* dfk, ut_oom_policy_e policy,
+                               size_t arg);
+
+
+/**
+ * Unit test declaration macros
+ */
+
+/**
+ * Declares a simple test
+ */
 #define TEST(group, name) void ut_##group##_##name(void)
+
+/**
+ * Declares a test with test fixture
+ */
 #define TEST_F(fixture_name, group, name) \
 void _ut_##group##_##name(fixture_name##_t*); \
 void ut_##group##_##name(void) \
@@ -48,16 +72,24 @@ void ut_##group##_##name(void) \
 \
 void _ut_##group##_##name(fixture_name##_t* fixture)
 
+/**
+ * Declares a simple test, which is temporary excluded from the test suite
+ */
 #define DISABLED_TEST(group, name) \
 void _ut_##group##_##name(void); \
 void ut_##group##_##name(void) \
 { \
   (void) _ut_##group##_##name; \
-  ut_disable(DFK_STRINGIFY(group), DFK_STRINGIFY(name)); \
+  ut_skip(DFK_STRINGIFY(group), DFK_STRINGIFY(name), "test is disabled"); \
 } \
 \
 void _ut_##group##_##name(void)
 
+
+/**
+ * Declares a test with test fixture, which is temporary excluded from the test
+ * suite
+ */
 #define DISABLED_TEST_F(fixture_name, group, name) \
 void _ut_##group##_##name(fixture_name##_t*); \
 void ut_##group##_##name(void) \
@@ -65,38 +97,37 @@ void ut_##group##_##name(void) \
   (void) fixture_name##_setup; \
   (void) fixture_name##_teardown; \
   (void) _ut_##group##_##name; \
-  ut_disable(DFK_STRINGIFY(group), DFK_STRINGIFY(name)); \
+  ut_skip(DFK_STRINGIFY(group), DFK_STRINGIFY(name), "test is disabled"); \
 } \
 \
 void _ut_##group##_##name(fixture_name##_t* fixture)
 
+
+/**
+ * Unit test assertion macros
+ */
+
+
+/**
+ * Expect expr to be evaluated to non-zero
+ */
 #define EXPECT(expr) \
 if (!(expr)) { \
   ut_error(__FILE__, __LINE__, #expr); \
 }
 
-#define ASSERT_RET(expr, ret) \
-if (!(expr)) { \
-  ut_error(__FILE__, __LINE__, #expr); \
-  return (ret); \
-}
 
-#define ASSERT(expr) \
-if (!(expr)) { \
-  ut_error(__FILE__, __LINE__, #expr); \
-  return; \
-}
-
+/**
+ * Expect exptr to be evaluated to dfk_err_ok
+ */
 #define EXPECT_OK(expr) EXPECT((expr) == dfk_err_ok)
-#define ASSERT_OK(expr) ASSERT((expr) == dfk_err_ok)
 
-#define ASSERT_BUFSTREQ_RET(buf, str, ret) \
+
+/**
+ * Expect dfk_buf_t-compatible object buf to be equal to NULL-terminated str
+ */
+#define EXPECT_BUFSTREQ(buf, str) \
 { \
-  ASSERT_RET((buf).size == strlen((str)), (ret)); \
-  ASSERT_RET(!strncmp((buf).data, (str), strlen((str))), (ret)); \
-}
-#define ASSERT_BUFSTREQ(buf, str) \
-{ \
-  ASSERT((buf).size == strlen((str))); \
-  ASSERT(!strncmp((buf).data, (str), strlen((str)))); \
+  EXPECT((buf).size == strlen((str))); \
+  EXPECT(!strncmp((buf).data, (str), strlen((str)))); \
 }

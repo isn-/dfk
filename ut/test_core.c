@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <dfk.h>
 #include <dfk/internal.h>
-#include "ut.h"
+#include <ut.h>
 
 
 TEST(core, strerror_no_empty_strings)
@@ -57,17 +57,17 @@ TEST(core, strerror_sys_errno)
 TEST(core, no_run)
 {
   dfk_t dfk;
-  ASSERT_OK(dfk_init(&dfk));
-  ASSERT_OK(dfk_free(&dfk));
+  EXPECT_OK(dfk_init(&dfk));
+  EXPECT_OK(dfk_free(&dfk));
 }
 
 
 TEST(core, free_run)
 {
   dfk_t dfk;
-  ASSERT_OK(dfk_init(&dfk));
-  ASSERT_OK(dfk_work(&dfk));
-  ASSERT_OK(dfk_free(&dfk));
+  EXPECT_OK(dfk_init(&dfk));
+  EXPECT_OK(dfk_work(&dfk));
+  EXPECT_OK(dfk_free(&dfk));
 }
 
 
@@ -83,11 +83,11 @@ TEST(core, no_subroutines)
 {
   dfk_t dfk;
   int invoked = 0;
-  ASSERT_OK(dfk_init(&dfk));
-  ASSERT(dfk_run(&dfk, do_inc_arg, &invoked, 0));
-  ASSERT_OK(dfk_work(&dfk));
+  EXPECT_OK(dfk_init(&dfk));
+  EXPECT(dfk_run(&dfk, do_inc_arg, &invoked, 0));
+  EXPECT_OK(dfk_work(&dfk));
   EXPECT(invoked);
-  ASSERT_OK(dfk_free(&dfk));
+  EXPECT_OK(dfk_free(&dfk));
 }
 
 
@@ -95,12 +95,12 @@ TEST(core, two_coros_in_clip)
 {
   dfk_t dfk;
   int invoked = 0;
-  ASSERT_OK(dfk_init(&dfk));
-  ASSERT(dfk_run(&dfk, do_inc_arg, &invoked, 0));
-  ASSERT(dfk_run(&dfk, do_inc_arg, &invoked, 0));
-  ASSERT_OK(dfk_work(&dfk));
+  EXPECT_OK(dfk_init(&dfk));
+  EXPECT(dfk_run(&dfk, do_inc_arg, &invoked, 0));
+  EXPECT(dfk_run(&dfk, do_inc_arg, &invoked, 0));
+  EXPECT_OK(dfk_work(&dfk));
   EXPECT(invoked == 2);
-  ASSERT_OK(dfk_free(&dfk));
+  EXPECT_OK(dfk_free(&dfk));
 }
 
 
@@ -118,11 +118,11 @@ TEST(core, spawn_and_die)
 {
   dfk_t dfk;
   int count = 8;
-  ASSERT_OK(dfk_init(&dfk));
-  ASSERT(dfk_run(&dfk, do_spawn_and_die, &count, 0));
-  ASSERT_OK(dfk_work(&dfk));
+  EXPECT_OK(dfk_init(&dfk));
+  EXPECT(dfk_run(&dfk, do_spawn_and_die, &count, 0));
+  EXPECT_OK(dfk_work(&dfk));
   EXPECT(count == 0);
-  ASSERT_OK(dfk_free(&dfk));
+  EXPECT_OK(dfk_free(&dfk));
 }
 
 
@@ -159,7 +159,7 @@ TEST(core, default_memory_functions)
   const size_t size = 10000;
   EXPECT_OK(dfk_init(&dfk));
   p = dfk.malloc(NULL, size);
-  ASSERT(p);
+  EXPECT(p);
   {
     size_t i = 0;
     for (i = 0; i < size; ++i) {
@@ -167,7 +167,7 @@ TEST(core, default_memory_functions)
     }
   }
   p = dfk.realloc(NULL, p, 2 * size);
-  ASSERT(p);
+  EXPECT(p);
   {
     size_t i = 0;
     for (i = 0; i < 2 * size; ++i) {

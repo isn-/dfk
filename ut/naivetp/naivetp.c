@@ -128,7 +128,7 @@ static void* naivetp_main_thread(void* arg)
 }
 
 
-naivetp_server_t* naivetp_server_start(dfk_t* dfk, uint16_t port, int protocol)
+naivetp_server_t* naivetp_server_start(dfk_t* dfk, uint16_t port, naivetp_server_protocol_e protocol)
 {
   naivetp_server_t* s = NULL;
   struct sockaddr_in addr;
