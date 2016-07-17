@@ -15,3 +15,8 @@ Build examples:
 Reported by: [Stanislav Ivochkin](https://github.com/ivochkin)
 
 dfk_tcp_socket_{write,read}v? functions should return -1 and set dfk.dfk_errno in the case of error
+
+
+@bug HTTP server should skip request body if handler does not call dfk_http_read
+
+Reported by: [Stanislav Ivochkin](https://github.com/ivochkin)
