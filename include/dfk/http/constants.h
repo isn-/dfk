@@ -31,6 +31,14 @@
 #pragma once
 
 
+#define DFK_HTTP_USER_AGENT "User-Agent"
+#define DFK_HTTP_HOST "Host"
+#define DFK_HTTP_ACCEPT "Accept"
+#define DFK_HTTP_CONTENT_TYPE "Content-Type"
+#define DFK_HTTP_CONTENT_LENGTH "Content-Length"
+#define DFK_HTTP_CONNECTION "Connection"
+
+
 typedef enum dfk_http_method_e {
   DFK_HTTP_DELETE = 0,
   DFK_HTTP_GET = 1,

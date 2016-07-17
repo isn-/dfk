@@ -34,14 +34,6 @@
 #include <dfk/http/response.h>
 
 
-#define DFK_HTTP_USER_AGENT "User-Agent"
-#define DFK_HTTP_HOST "Host"
-#define DFK_HTTP_ACCEPT "Accept"
-#define DFK_HTTP_CONTENT_TYPE "Content-Type"
-#define DFK_HTTP_CONTENT_LENGTH "Content-Length"
-#define DFK_HTTP_CONNECTION "Connection"
-
-
 typedef struct dfk__http_parser_data_t {
   dfk_t* dfk;
   dfk_http_request_t* req;

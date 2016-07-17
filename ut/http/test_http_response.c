@@ -32,6 +32,10 @@
 #include <ut.h>
 
 
+/*
+ * The following tests are using dfk_http_response._sock mock,
+ * so if DFK_MOCKS are disabled, these tests does not make sense
+ */
 #if DFK_MOCKS
 
 
@@ -206,6 +210,33 @@ TEST_F(fixture, http_response, set_tricky_out_of_memory)
   EXPECT(dfk_http_set_copy(&fixture->resp, buf, nbytes, buf, nbytes) == dfk_err_nomem);
   ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_NEVER, 0);
   free(buf);
+}
+
+
+TEST_F(fixture, http_response, write)
+{
+  char buf[] = "Hello world";
+  fixture->resp.content_length = sizeof(buf) - 1;
+  dfk_http_write(&fixture->resp, buf, sizeof(buf) - 1);
+  expect_resp(&fixture->resp,
+      "HTTP/1.0 200 OK\r\n"
+      "Content-Length: 11\r\n"
+      "\r\n"
+      "Hello world");
+}
+
+
+TEST_F(fixture, http_response, writev)
+{
+  char buf[] = "Hello world";
+  dfk_iovec_t iov[2] = {{buf, 6}, {buf + 6, 5}};
+  fixture->resp.content_length = sizeof(buf) - 1;
+  dfk_http_writev(&fixture->resp, iov, DFK_SIZE(iov));
+  expect_resp(&fixture->resp,
+      "HTTP/1.0 200 OK\r\n"
+      "Content-Length: 11\r\n"
+      "\r\n"
+      "Hello world");
 }
 
 #endif /* DFK_MOCKS */

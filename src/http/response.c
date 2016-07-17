@@ -144,6 +144,16 @@ int dfk__http_response_flush_headers(dfk_http_response_t* resp)
     return dfk_err_ok;
   }
 
+  /* Set "Content-Length" header if not specified manually */
+  if (resp->content_length != (size_t) -1) {
+    dfk_buf_t content_length = dfk_http_response_get(resp, DFK_HTTP_CONTENT_LENGTH, sizeof(DFK_HTTP_CONTENT_LENGTH) - 1);
+    if (!content_length.data) {
+      char buf[64] = {0};
+      size_t len = snprintf(buf, sizeof(buf), "%llu", (unsigned long long) resp->content_length);
+      dfk_http_set_copy_value(resp, DFK_HTTP_CONTENT_LENGTH, sizeof(DFK_HTTP_CONTENT_LENGTH) - 1, buf, len);
+    }
+  }
+
   size_t totalheaders = dfk_avltree_size(&resp->_headers);
   size_t niov = 4 * totalheaders + 2;
   dfk_iovec_t* iov = dfk_arena_alloc(resp->_request_arena, niov * sizeof(dfk_iovec_t));
