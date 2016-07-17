@@ -58,6 +58,7 @@ static void dfk__http_connection(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void*
   dfk__http(coro, sock, http);
 
   dfk_list_erase(&http->_connections, &ml.hook);
+  dfk_list_hook_free(&ml.hook);
   DFK_CALL_RVOID(http->dfk, dfk_mutex_unlock(&ml.mutex));
 }
 

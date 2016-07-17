@@ -53,8 +53,7 @@ static int http_fixture_dyn_handler(dfk_http_t* http, dfk_http_request_t* req, d
   if (fixture->handler) {
     return fixture->handler(http, req, resp);
   } else {
-    resp->code = 200;
-    return 0;
+    return dfk_err_ok;
   }
 }
 
@@ -343,6 +342,9 @@ static int ut_content_length(dfk_http_t* http, dfk_http_request_t* req, dfk_http
 {
   DFK_UNUSED(http);
   EXPECT(req->content_length == 9);
+  char buf[9] = {0};
+  size_t nread = dfk_http_read(req, buf, req->content_length);
+  EXPECT(nread == req->content_length);
   resp->code = 200;
   return 0;
 }
