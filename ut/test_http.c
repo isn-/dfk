@@ -32,7 +32,6 @@
 #include <curl/curl.h>
 #include <dfk.h>
 #include <dfk/internal.h>
-#include <dfk/internal/http.h>
 #include <ut.h>
 
 
@@ -48,7 +47,7 @@ typedef struct http_fixture_t {
 } http_fixture_t;
 
 
-static int http_fixture_dyn_handler(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+static int http_fixture_dyn_handler(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
   http_fixture_t* fixture = (http_fixture_t*) http->user.data;
   if (fixture->handler) {
@@ -123,7 +122,7 @@ static void http_fixture_teardown(http_fixture_t* f)
 }
 
 
-static int ut_errors_handler(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+static int ut_errors_handler(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
   DFK_UNUSED(http);
   DFK_UNUSED(req);
@@ -161,56 +160,6 @@ TEST(http, errors)
 }
 
 
-TEST(http, reason_phrase)
-{
-  /* For the most common error codes, check exact phrase */
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_OK), "OK"));
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_CREATED), "Created"));
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_BAD_REQUEST), "Bad Request"));
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_NOT_FOUND), "Not Found"));
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_REQUEST_TIMEOUT), "Request Timeout"));
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_INTERNAL_SERVER_ERROR), "Internal Server Error"));
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_BAD_GATEWAY), "Bad Gateway"));
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_GATEWAY_TIMEOUT), "Gateway Timeout"));
-
-  /* For other codes, check presence of the phrase */
-  dfk_http_status_e st[] = {
-    DFK_HTTP_CONTINUE, DFK_HTTP_SWITCHING_PROTOCOLS, DFK_HTTP_PROCESSING, DFK_HTTP_OK,
-    DFK_HTTP_CREATED, DFK_HTTP_ACCEPTED, DFK_HTTP_NON_AUTHORITATIVE_INFORMATION,
-    DFK_HTTP_NO_CONTENT, DFK_HTTP_RESET_CONTENT, DFK_HTTP_PARTIAL_CONTENT, DFK_HTTP_MULTI_STATUS,
-    DFK_HTTP_ALREADY_REPORTED, DFK_HTTP_IM_USED, DFK_HTTP_MULTIPLE_CHOICES,
-    DFK_HTTP_MOVED_PERMANENTLY, DFK_HTTP_FOUND, DFK_HTTP_SEE_OTHER, DFK_HTTP_NOT_MODIFIED,
-    DFK_HTTP_USE_PROXY, DFK_HTTP_SWITCH_PROXY, DFK_HTTP_TEMPORARY_REDIRECT,
-    DFK_HTTP_PERMANENT_REDIRECT, DFK_HTTP_BAD_REQUEST, DFK_HTTP_UNAUTHORIZED,
-    DFK_HTTP_PAYMENT_REQUIRED, DFK_HTTP_FORBIDDEN, DFK_HTTP_NOT_FOUND,
-    DFK_HTTP_METHOD_NOT_ALLOWED, DFK_HTTP_NOT_ACCEPTABLE, DFK_HTTP_PROXY_AUTHENTICATION_REQUIRED,
-    DFK_HTTP_REQUEST_TIMEOUT, DFK_HTTP_CONFLICT, DFK_HTTP_GONE, DFK_HTTP_LENGTH_REQUIRED,
-    DFK_HTTP_PRECONDITION_FAILED, DFK_HTTP_PAYLOAD_TOO_LARGE, DFK_HTTP_URI_TOO_LONG,
-    DFK_HTTP_UNSUPPORTED_MEDIA_TYPE, DFK_HTTP_RANGE_NOT_SATISFIABLE, DFK_HTTP_EXPECTATION_FAILED,
-    DFK_HTTP_I_AM_A_TEAPOT, DFK_HTTP_MISDIRECTED_REQUEST, DFK_HTTP_UNPROCESSABLE_ENTITY,
-    DFK_HTTP_LOCKED, DFK_HTTP_FAILED_DEPENDENCY, DFK_HTTP_UPGRADE_REQUIRED,
-    DFK_HTTP_PRECONDITION_REQUIRED, DFK_HTTP_TOO_MANY_REQUESTS,
-    DFK_HTTP_REQUEST_HEADER_FIELDS_TOO_LARGE, DFK_HTTP_UNAVAILABLE_FOR_LEGAL_REASONS,
-    DFK_HTTP_INTERNAL_SERVER_ERROR, DFK_HTTP_NOT_IMPLEMENTED, DFK_HTTP_BAD_GATEWAY,
-    DFK_HTTP_SERVICE_UNAVAILABLE, DFK_HTTP_GATEWAY_TIMEOUT, DFK_HTTP_HTTP_VERSION_NOT_SUPPORTED,
-    DFK_HTTP_VARIANT_ALSO_NEGOTIATES, DFK_HTTP_INSUFFICIENT_STORAGE, DFK_HTTP_LOOP_DETECTED,
-    DFK_HTTP_NOT_EXTENDED, DFK_HTTP_NETWORK_AUTHENTICATION_REQUIRED
-  };
-
-  for (size_t i = 0; i < DFK_SIZE(st); ++i) {
-    const char* rp = dfk__http_reason_phrase(st[i]);
-    EXPECT(rp);
-    EXPECT(rp[0] != '\0');
-  }
-}
-
-
-TEST(http, reason_phrase_unknown)
-{
-  EXPECT(!strcmp(dfk__http_reason_phrase(0), "Unknown"));
-}
-
-
 TEST_F(http_fixture, http, get_no_url_no_content)
 {
   CURLcode res;
@@ -220,7 +169,7 @@ TEST_F(http_fixture, http, get_no_url_no_content)
 }
 
 
-static int ut_parse_common_headers(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+static int ut_parse_common_headers(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
   DFK_UNUSED(http);
   EXPECT(req->method == DFK_HTTP_HEAD);
@@ -247,7 +196,7 @@ TEST_F(http_fixture, http, parse_common_headers)
 }
 
 
-static int ut_iterate_headers(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+static int ut_iterate_headers(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
   DFK_UNUSED(http);
   EXPECT(req->method == DFK_HTTP_POST);
@@ -272,13 +221,13 @@ static int ut_iterate_headers(dfk_http_t* http, dfk_http_req_t* req, dfk_http_re
       "application/x-www-form-urlencoded",
       "*/*"
     };
-    dfk_http_headers_it it;
+    dfk_http_header_it it;
     size_t i = 0;
     assert(DFK_SIZE(expected_fields) == DFK_SIZE(expected_values));
-    dfk_http_headers_begin(req, &it);
+    dfk_http_request_headers_begin(req, &it);
     while (dfk_http_headers_valid(&it) == dfk_err_ok) {
-      EXPECT_BUFSTREQ(it.field, expected_fields[i]);
-      EXPECT_BUFSTREQ(it.value, expected_values[i]);
+      EXPECT_BUFSTREQ(it.header->name, expected_fields[i]);
+      EXPECT_BUFSTREQ(it.header->value, expected_values[i]);
       dfk_http_headers_next(&it);
       ++i;
     }
@@ -300,26 +249,26 @@ TEST_F(http_fixture, http, iterate_headers)
 }
 
 
-static int ut_request_errors(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+static int ut_request_errors(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
   DFK_UNUSED(http);
   DFK_UNUSED(req);
-  EXPECT(dfk_http_get(NULL, "foo", 3).data == NULL);
-  EXPECT(dfk_http_get(NULL, "foo", 3).size == 0);
-  EXPECT(dfk_http_get(req, NULL, 3).data == NULL);
-  EXPECT(dfk_http_get(req, NULL, 3).size == 0);
-  EXPECT(dfk_http_get(req, "foo", 0).data == NULL);
-  EXPECT(dfk_http_get(req, "foo", 0).size == 0);
+  EXPECT(dfk_http_request_get(NULL, "foo", 3).data == NULL);
+  EXPECT(dfk_http_request_get(NULL, "foo", 3).size == 0);
+  EXPECT(dfk_http_request_get(req, NULL, 3).data == NULL);
+  EXPECT(dfk_http_request_get(req, NULL, 3).size == 0);
+  EXPECT(dfk_http_request_get(req, "foo", 0).data == NULL);
+  EXPECT(dfk_http_request_get(req, "foo", 0).size == 0);
   {
-    dfk_http_headers_it it;
-    EXPECT(dfk_http_headers_begin(NULL, &it) == dfk_err_badarg);
-    EXPECT(dfk_http_headers_begin(req, NULL) == dfk_err_badarg);
+    dfk_http_header_it it;
+    EXPECT(dfk_http_request_headers_begin(NULL, &it) == dfk_err_badarg);
+    EXPECT(dfk_http_request_headers_begin(req, NULL) == dfk_err_badarg);
     EXPECT(dfk_http_headers_next(NULL) == dfk_err_badarg);
     EXPECT(dfk_http_headers_valid(NULL) == dfk_err_badarg);
   }
   {
-    dfk_http_headers_it it;
-    EXPECT_OK(dfk_http_headers_begin(req, &it));
+    dfk_http_header_it it;
+    EXPECT_OK(dfk_http_request_headers_begin(req, &it));
     while (dfk_http_headers_valid(&it) == dfk_err_ok) {
       EXPECT_OK(dfk_http_headers_next(&it));
     }
@@ -390,7 +339,7 @@ static size_t ut_read_callback(void* buffer, size_t size, size_t nitems, void* u
 }
 
 
-static int ut_content_length(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+static int ut_content_length(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
   DFK_UNUSED(http);
   EXPECT(req->content_length == 9);
@@ -415,7 +364,7 @@ TEST_F(http_fixture, http, content_length)
 }
 
 
-static int ut_post_9_bytes(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+static int ut_post_9_bytes(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
   DFK_UNUSED(http);
   EXPECT(req->content_length == 9);
@@ -444,7 +393,7 @@ TEST_F(http_fixture, http, post_9_bytes)
 }
 
 
-static int ut_post_100_mb(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+static int ut_post_100_mb(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
   DFK_UNUSED(http);
   EXPECT(req->content_length == 100 * MiB);
@@ -484,7 +433,7 @@ TEST_F(http_fixture, http, post_100_mb)
 }
 
 
-static int ut_output_headers(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+static int ut_output_headers(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
   DFK_UNUSED(http);
   DFK_UNUSED(req);
@@ -498,12 +447,15 @@ static int ut_output_headers(dfk_http_t* http, dfk_http_req_t* req, dfk_http_res
 static size_t ut_output_headers_callback(char* buffer, size_t size, size_t nitems, void* userdata)
 {
   int* counter = (int*) userdata;
-  EXPECT(0 <= *counter && *counter <= 2);
+  printf("counter %d: %s %llu\n", *counter, buffer, (unsigned long long) size * nitems);
+  EXPECT(0 <= *counter && *counter <= 3);
   dfk_buf_t buf = {buffer, size * nitems};
   if (*counter == 1) {
     EXPECT_BUFSTREQ(buf, "Server: rocks\r\n");
   } else if (*counter == 2) {
     EXPECT_BUFSTREQ(buf, "Foo: bar\r\n");
+  } else if (*counter == 3) {
+    EXPECT_BUFSTREQ(buf, "\r\n");
   }
   (*counter)++;
   return size * nitems;

@@ -1,6 +1,6 @@
 /**
- * @file dfk/internal/http.h
- * HTTP server private methods
+ * @file dfk/http/constants.h
+ * Constants for HTTP methods and return codes
  *
  * @copyright
  * Copyright (c) 2016, Stanislav Ivochkin. All Rights Reserved.
@@ -29,20 +29,65 @@
  */
 
 #pragma once
+#include <stddef.h>
 #include <dfk/core.h>
-#include <dfk/http.h>
+#include <dfk/internal/avltree.h>
 
 
-void dfk__http_req_init(dfk_http_req_t* req, dfk_t* dfk, dfk_arena_t* request_arena,
-                        dfk_arena_t* connection_arena, dfk_tcp_socket_t* sock);
-void dfk__http_req_free(dfk_http_req_t* req);
+typedef struct dfk_http_header_t {
+  /** @private */
+  dfk_avltree_hook_t _hook;
+  dfk_buf_t name;
+  dfk_buf_t value;
+} dfk_http_header_t;
 
 
-void dfk__http_resp_init(dfk_http_resp_t* resp, dfk_t* dfk, dfk_arena_t* request_arena,
-                         dfk_arena_t* connection_arena, dfk_tcp_socket_t* sock);
-void dfk__http_resp_free(dfk_http_resp_t* resp);
-int dfk__http_resp_flush_headers(dfk_http_resp_t* resp);
-int dfk__http_resp_flush(dfk_http_resp_t* resp);
+typedef struct dfk_http_header_it {
+  /** @private */
+  dfk_avltree_it_t _it;
+  dfk_http_header_t* header;
+} dfk_http_header_it;
 
-const char* dfk__http_reason_phrase(dfk_http_status_e status);
+
+/** @internal */
+void dfk__http_header_init(dfk_http_header_t* header);
+
+
+/**
+ * Used by dfk_http_request_headers_get and dfk_http_response_headers_get
+ * @internal
+ */
+dfk_buf_t dfk__http_headers_get(dfk_avltree_t* cont, const char* name, size_t namesize);
+
+
+/**
+ * Used by dfk_http_request_headers_begin and dfk_http_response_headers_begin
+ * @internal
+ */
+int dfk__http_headers_begin(dfk_avltree_t* cont, dfk_http_header_it* it);
+
+
+/**
+ * Compare-function for dfk_avltree_t initialization
+ * @internal
+ */
+int dfk__http_headers_cmp(dfk_avltree_hook_t* l, dfk_avltree_hook_t* r);
+
+
+/**
+ * Increment iterator
+ *
+ * Do not forget to call dfk_http_headers_valid before accessing iterator's value
+ */
+int dfk_http_headers_next(dfk_http_header_it* it);
+
+
+/**
+ * Check whether iterator's value can be accessed.
+ * @returns
+ * @li dfk_err_ok if iterator is valid
+ * @li dfk_err_eof if iterator is not valid
+ * @li dfk_err_badarg if @p it is NULL
+ */
+int dfk_http_headers_valid(dfk_http_header_it* it);
 

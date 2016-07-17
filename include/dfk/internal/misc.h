@@ -35,5 +35,9 @@
  * strtoll for pascal strings
  * @warning Does not preserve errno upon success
  */
-int dfk_strtoll(dfk_buf_t nbuf, char** endptr, int base, long long* out);
+int dfk__strtoll(dfk_buf_t nbuf, char** endptr, int base, long long* out);
+
+
+void dfk__buf_append(dfk_buf_t* to, const char* data, size_t size);
+
 

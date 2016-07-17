@@ -39,13 +39,15 @@ typedef struct args_t {
 #define CALL_DFK_API(c) if ((c) != dfk_err_ok) { return -1; }
 
 
-static int echo(dfk_http_t* http, dfk_http_req_t* req, dfk_http_resp_t* resp)
+static int echo(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
-  dfk_http_headers_it it;
+  dfk_http_header_it it;
   (void) http;
-  CALL_DFK_API(dfk_http_headers_begin(req, &it));
+  CALL_DFK_API(dfk_http_request_headers_begin(req, &it));
   while (dfk_http_headers_valid(&it) == dfk_err_ok) {
-    CALL_DFK_API(dfk_http_set(resp, it.field.data, it.field.size, it.value.data, it.value.size));
+    dfk_buf_t name = it.header->name;
+    dfk_buf_t value = it.header->value;
+    CALL_DFK_API(dfk_http_set(resp, name.data, name.size, value.data, value.size));
     CALL_DFK_API(dfk_http_headers_next(&it));
   }
   resp->code = DFK_HTTP_OK;

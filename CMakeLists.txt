@@ -129,7 +129,12 @@ add_library(dfk
   src/core.c
   src/sync.c
   src/tcp_socket.c
-  src/http.c)
+  src/http/constants.c
+  src/http/header.c
+  src/http/request.c
+  src/http/response.c
+  src/http/protocol.c
+  src/http/server.c)
 
 target_link_libraries(dfk
   dfkinternal

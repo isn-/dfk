@@ -1,6 +1,6 @@
 /**
- * @file dfk/internal/avltree.h
- * Balanced tree data structure
+ * @file dfk/http/server.h
+ * HTTP server
  *
  * @copyright
  * Copyright (c) 2016, Stanislav Ivochkin. All Rights Reserved.
@@ -29,46 +29,43 @@
  */
 
 #pragma once
-#include <stddef.h>
 #include <dfk/config.h>
-
-typedef struct dfk_avltree_hook_t {
-  struct dfk_avltree_hook_t* left;
-  struct dfk_avltree_hook_t* right;
-  struct dfk_avltree_hook_t* parent;
-  signed char bal;
-#if DFK_DEBUG
-  struct dfk_avltree_t* tree;
-#endif
-} dfk_avltree_hook_t;
-
-typedef int (*dfk_avltree_cmp)(dfk_avltree_hook_t*, dfk_avltree_hook_t*);
-typedef int (*dfk_avltree_lookup_cmp)(dfk_avltree_hook_t*, void*);
-
-typedef struct dfk_avltree_t {
-  dfk_avltree_hook_t* root;
-  dfk_avltree_cmp cmp;
-  size_t size;
-} dfk_avltree_t;
+#include <dfk/core.h>
+#include <dfk/tcp_socket.h>
+#include <dfk/http/request.h>
+#include <dfk/http/response.h>
+#include <dfk/internal/list.h>
 
 
-typedef struct dfk_avltree_it_t {
-  dfk_avltree_hook_t* value;
-} dfk_avltree_it_t;
+struct dfk_http_t;
+typedef int (*dfk_http_handler)(struct dfk_http_t*, dfk_http_request_t*,
+                                dfk_http_response_t*);
 
-void dfk_avltree_init(dfk_avltree_t* tree, dfk_avltree_cmp cmp);
-void dfk_avltree_free(dfk_avltree_t* tree);
 
-void dfk_avltree_hook_init(dfk_avltree_hook_t* h);
-void dfk_avltree_hook_free(dfk_avltree_hook_t* h);
+typedef struct dfk_http_t {
+  /** @privatesection */
+  dfk_list_hook_t _hook;
+  dfk_tcp_socket_t _listensock;
+  dfk_http_handler _handler;
+  dfk_list_t _connections;
 
-dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* e);
-void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e);
-dfk_avltree_hook_t* dfk_avltree_lookup(dfk_avltree_t* tree, void* e, dfk_avltree_lookup_cmp cmp);
-size_t dfk_avltree_size(dfk_avltree_t* tree);
+  /** @publicsection */
+  dfk_t* dfk;
+  dfk_userdata_t user;
 
-void dfk_avltree_it_init(dfk_avltree_t* tree, dfk_avltree_it_t* it);
-void dfk_avltree_it_free(dfk_avltree_it_t* it);
-void dfk_avltree_it_next(dfk_avltree_it_t* it);
-int dfk_avltree_it_valid(dfk_avltree_it_t* it);
+  /**
+   * Maximum number of requests for a single keepalive connection
+   * @note default: 100
+   */
+  size_t keepalive_requests;
+} dfk_http_t;
+
+
+int dfk_http_init(dfk_http_t* http, dfk_t* dfk);
+int dfk_http_stop(dfk_http_t* http);
+int dfk_http_free(dfk_http_t* http);
+int dfk_http_serve(dfk_http_t* http,
+    const char* endpoint,
+    uint16_t port,
+    dfk_http_handler handler);
 

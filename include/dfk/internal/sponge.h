@@ -29,6 +29,7 @@
  */
 
 #pragma once
+#include <stddef.h>
 #include <dfk/core.h>
 
 /**

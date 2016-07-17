@@ -32,7 +32,7 @@
 #include <dfk/internal/misc.h>
 
 
-int dfk_strtoll(dfk_buf_t nbuf, char** endptr, int base, long long* out)
+int dfk__strtoll(dfk_buf_t nbuf, char** endptr, int base, long long* out)
 {
   /**
    * null-terminated copy of buf, for calling strtoll
@@ -68,4 +68,16 @@ int dfk_strtoll(dfk_buf_t nbuf, char** endptr, int base, long long* out)
   return dfk_err_ok;
 }
 
+
+void dfk__buf_append(dfk_buf_t* to, const char* data, size_t size)
+{
+  assert(to);
+  if (to->data) {
+    assert(to->data + to->size == data);
+    to->size += size;
+  } else {
+    to->data = (char*) data;
+    to->size = size;
+  }
+}
 

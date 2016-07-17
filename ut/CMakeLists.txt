@@ -10,11 +10,12 @@ set(ut_sources
   test_misc.c
   test_sync.c
   test_tcp_socket.c
+  http/test_http_constants.c
   test_http.c)
 
 if(DFK_MOCKS)
   list(APPEND ut_sources
-    test_http_resp.c)
+    http/test_http_response.c)
 endif()
 
 set(ut_init_c "${CMAKE_CURRENT_BINARY_DIR}/ut_init.c")

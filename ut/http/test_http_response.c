@@ -29,7 +29,6 @@
 #include <assert.h>
 #include <dfk.h>
 #include <dfk/internal.h>
-#include <dfk/internal/http.h>
 #include <ut.h>
 
 
@@ -41,7 +40,7 @@ typedef struct fixture_t {
   dfk_arena_t conn_arena;
   dfk_arena_t req_arena;
   dfk_tcp_socket_t sock;
-  dfk_http_resp_t resp;
+  dfk_http_response_t resp;
   dfk_sponge_t respbuf;
 } fixture_t;
 
@@ -51,7 +50,7 @@ static void fixture_setup(fixture_t* f)
   EXPECT_OK(dfk_init(&f->dfk));
   EXPECT_OK(dfk_arena_init(&f->conn_arena, &f->dfk));
   EXPECT_OK(dfk_arena_init(&f->req_arena, &f->dfk));
-  dfk__http_resp_init(&f->resp, &f->dfk, &f->req_arena, &f->conn_arena, &f->sock);
+  dfk__http_response_init(&f->resp, &f->dfk, &f->req_arena, &f->conn_arena, &f->sock);
   dfk_sponge_init(&f->respbuf, &f->dfk);
   f->resp._sock_mocked = 1;
   f->resp._sock_mock = &f->respbuf;
@@ -64,16 +63,16 @@ static void fixture_setup(fixture_t* f)
 static void fixture_teardown(fixture_t* f)
 {
   dfk_sponge_free(&f->respbuf);
-  dfk__http_resp_free(&f->resp);
+  dfk__http_response_free(&f->resp);
   EXPECT_OK(dfk_arena_free(&f->conn_arena));
   EXPECT_OK(dfk_arena_free(&f->req_arena));
   EXPECT_OK(dfk_free(&f->dfk));
 }
 
 
-static void expect_resp(dfk_http_resp_t* resp, const char* expected)
+static void expect_resp(dfk_http_response_t* resp, const char* expected)
 {
-  dfk__http_resp_flush(resp);
+  dfk__http_response_flush(resp);
   size_t actuallen = resp->_sock_mock->size;
   char* actual = DFK_MALLOC(resp->dfk, actuallen);
   EXPECT(actual);
@@ -85,33 +84,33 @@ static void expect_resp(dfk_http_resp_t* resp, const char* expected)
 }
 
 
-TEST_F(fixture, http_resp, version)
+TEST_F(fixture, http_response, version)
 {
   fixture->resp.major_version = 2;
   fixture->resp.minor_version = 1;
   expect_resp(&fixture->resp,
-      "HTTP/2.1 200 OK\r\n");
+      "HTTP/2.1 200 OK\r\n\r\n");
 }
 
 
-TEST_F(fixture, http_resp, code)
+TEST_F(fixture, http_response, code)
 {
   fixture->resp.code = 404;
   expect_resp(&fixture->resp,
-      "HTTP/1.0 404 Not Found\r\n");
+      "HTTP/1.0 404 Not Found\r\n\r\n");
 }
 
 
-TEST_F(fixture, http_resp, set_one)
+TEST_F(fixture, http_response, set_one)
 {
   EXPECT_OK(dfk_http_set(&fixture->resp, "Foo", 3, "bar", 3));
   expect_resp(&fixture->resp,
       "HTTP/1.0 200 OK\r\n"
-      "Foo: bar\r\n");
+      "Foo: bar\r\n\r\n");
 }
 
 
-TEST_F(fixture, http_resp, set_many)
+TEST_F(fixture, http_response, set_many)
 {
   EXPECT_OK(dfk_http_set(&fixture->resp, "Foo", 3, "bar", 3));
   EXPECT_OK(dfk_http_set(&fixture->resp, "Quazu", 5, "v", 1));
@@ -120,11 +119,11 @@ TEST_F(fixture, http_resp, set_many)
       "HTTP/1.0 200 OK\r\n"
       "Some-Header: With some spaces\r\n"
       "Quazu: v\r\n"
-      "Foo: bar\r\n");
+      "Foo: bar\r\n\r\n");
 }
 
 
-TEST_F(fixture, http_resp, set_copy)
+TEST_F(fixture, http_response, set_copy)
 {
   char h[] = "Foo";
   char v[] = "Value";
@@ -133,11 +132,11 @@ TEST_F(fixture, http_resp, set_copy)
   v[0] = 'b';
   expect_resp(&fixture->resp,
       "HTTP/1.0 200 OK\r\n"
-      "Foo: Value\r\n");
+      "Foo: Value\r\n\r\n");
 }
 
 
-TEST_F(fixture, http_resp, set_copy_name)
+TEST_F(fixture, http_response, set_copy_name)
 {
   char h[] = "Foo";
   char v[] = "Value";
@@ -146,11 +145,11 @@ TEST_F(fixture, http_resp, set_copy_name)
   v[0] = 'b';
   expect_resp(&fixture->resp,
       "HTTP/1.0 200 OK\r\n"
-      "Foo: balue\r\n");
+      "Foo: balue\r\n\r\n");
 }
 
 
-TEST_F(fixture, http_resp, set_copy_value)
+TEST_F(fixture, http_response, set_copy_value)
 {
   char h[] = "Foo";
   char v[] = "Value";
@@ -159,11 +158,11 @@ TEST_F(fixture, http_resp, set_copy_value)
   v[0] = 'b';
   expect_resp(&fixture->resp,
       "HTTP/1.0 200 OK\r\n"
-      "aoo: Value\r\n");
+      "aoo: Value\r\n\r\n");
 }
 
 
-TEST_F(fixture, http_resp, set_errors)
+TEST_F(fixture, http_response, set_errors)
 {
   EXPECT(dfk_http_set(NULL, "n", 1, "v", 1) == dfk_err_badarg);
   EXPECT(dfk_http_set(&fixture->resp, NULL, 1, "v", 1) == dfk_err_badarg);
@@ -195,7 +194,7 @@ TEST_F(fixture, http_resp, set_errors)
 }
 
 
-TEST_F(fixture, http_resp, set_tricky_out_of_memory)
+TEST_F(fixture, http_response, set_tricky_out_of_memory)
 {
   size_t nbytes = DFK_ARENA_SEGMENT_SIZE * 0.4;
   char* buf = malloc(nbytes);
