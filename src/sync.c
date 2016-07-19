@@ -222,3 +222,52 @@ int dfk_cond_broadcast(dfk_cond_t* cond)
   return dfk_err_ok;
 }
 
+
+int dfk_event_init(dfk_event_t* event, dfk_t* dfk)
+{
+  if (!event || !dfk) {
+    return dfk_err_badarg;
+  }
+  event->_awaiting = NULL;
+  event->dfk = dfk;
+  return dfk_err_ok;
+}
+
+
+int dfk_event_free(dfk_event_t* event)
+{
+  if (!event) {
+    return dfk_err_badarg;
+  }
+  if (event->_awaiting) {
+    return dfk_err_busy;
+  }
+  return dfk_err_badarg;
+}
+
+
+int dfk_event_wait(dfk_event_t* event)
+{
+  if (!event) {
+    return dfk_err_ok;
+  }
+  if (event->_awaiting) {
+    return dfk_err_busy;
+  }
+  event->_awaiting = DFK_THIS_CORO(event->dfk);
+  DFK_YIELD(event->dfk);
+  return dfk_err_ok;
+}
+
+
+int dfk_event_signal(dfk_event_t* event)
+{
+  if (!event) {
+    return dfk_err_badarg;
+  }
+  if (event->_awaiting) {
+    DFK_RESUME(event->dfk, event->_awaiting);
+  }
+  return dfk_err_ok;
+}
+

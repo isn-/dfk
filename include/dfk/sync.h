@@ -68,5 +68,17 @@ int dfk_cond_wait(dfk_cond_t* cond, dfk_mutex_t* mutex);
 int dfk_cond_signal(dfk_cond_t* cond);
 int dfk_cond_broadcast(dfk_cond_t* cond);
 
+
+typedef struct dfk_event_t {
+  /** @private */
+  dfk_coro_t* _awaiting;
+  dfk_t* dfk;
+} dfk_event_t;
+
+int dfk_event_init(dfk_event_t* event, dfk_t* dfk);
+int dfk_event_free(dfk_event_t* event);
+int dfk_event_wait(dfk_event_t* event);
+int dfk_event_signal(dfk_event_t* event);
+
 /** @} */
 
