@@ -457,8 +457,8 @@ ssize_t dfk_tcp_socket_read(
     assert(STATE(sock) & TCP_SOCKET_READING);
     sock->_flags ^= TCP_SOCKET_READING;
 
-    DFK_INFO(sock->dfk, "(%p) read returned %d (%s), bytes read %lu",
-        (void*) sock, arg.err, dfk_strerr(sock->dfk, arg.err),
+    DFK_INFO(sock->dfk, "(%p) read returned %s, bytes read %lu",
+        (void*) sock, dfk_strerr(sock->dfk, arg.err),
         (unsigned long) arg.nbytes);
 
     if (arg.err != dfk_err_ok) {

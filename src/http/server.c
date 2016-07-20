@@ -31,10 +31,10 @@
 #include <dfk/http/protocol.h>
 
 
-typedef struct dfk__mutex_list_item_t {
+typedef struct dfk__event_list_item_t {
   dfk_list_hook_t hook;
-  dfk_mutex_t mutex;
-} dfk__mutex_list_item_t;
+  dfk_event_t event;
+} dfk__event_list_item_t;
 
 
 static void dfk__http_connection(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
@@ -49,17 +49,17 @@ static void dfk__http_connection(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void*
    * only when connection is closed indicating that no wait is required for
    * this connection.
    */
-  dfk__mutex_list_item_t ml;
-  dfk_list_hook_init(&ml.hook);
-  DFK_CALL_RVOID(http->dfk, dfk_mutex_init(&ml.mutex, http->dfk));
-  DFK_CALL_RVOID(http->dfk, dfk_mutex_lock(&ml.mutex));
-  dfk_list_append(&http->_connections, &ml.hook);
+  dfk__event_list_item_t item;
+  dfk_list_hook_init(&item.hook);
+  DFK_CALL_RVOID(http->dfk, dfk_event_init(&item.event, http->dfk));
+  dfk_list_append(&http->_connections, &item.hook);
 
   dfk__http(coro, sock, http);
 
-  dfk_list_erase(&http->_connections, &ml.hook);
-  dfk_list_hook_free(&ml.hook);
-  DFK_CALL_RVOID(http->dfk, dfk_mutex_unlock(&ml.mutex));
+  dfk_list_erase(&http->_connections, &item.hook);
+  dfk_list_hook_free(&item.hook);
+  DFK_CALL_RVOID(http->dfk, dfk_event_signal(&item.event));
+  DFK_CALL_RVOID(http->dfk, dfk_event_free(&item.event));
 }
 
 
@@ -83,17 +83,7 @@ int dfk_http_stop(dfk_http_t* http)
   }
   DFK_DBG(http->dfk, "{%p}", (void*) http);
   DFK_CALL(http->dfk, dfk_tcp_socket_close(&http->_listensock));
-  {
-    dfk_list_hook_t* i = http->_connections.head;
-    while (i) {
-      dfk__mutex_list_item_t* it = (dfk__mutex_list_item_t*) i;
-      DFK_DBG(http->dfk, "{%p} waiting for {%p} to terminate", (void*) http, (void*) i);
-      DFK_CALL(http->dfk, dfk_mutex_lock(&it->mutex));
-      DFK_CALL(http->dfk, dfk_mutex_unlock(&it->mutex));
-      DFK_CALL(http->dfk, dfk_mutex_free(&it->mutex));
-      i = http->_connections.head;
-    }
-  }
+  DFK_DBG(http->dfk, "{%p} no longer accepts new connections", (void*) http);
   return dfk_err_ok;
 }
 
@@ -120,7 +110,16 @@ int dfk_http_serve(dfk_http_t* http,
   DFK_DBG(http->dfk, "{%p} serving at %s:%u", (void*) http, endpoint, port);
   http->_handler = handler;
   dfk_list_append(&http->dfk->_http_servers, &http->_hook);
-  return dfk_tcp_socket_listen(&http->_listensock, endpoint, port,
-                               dfk__http_connection, http, 0);
+  DFK_CALL(http->dfk, dfk_tcp_socket_listen(&http->_listensock, endpoint, port,
+                                            dfk__http_connection, http, 0));
+
+  dfk_list_hook_t* i = http->_connections.head;
+  while (i) {
+    dfk__event_list_item_t* it = (dfk__event_list_item_t*) i;
+    DFK_DBG(http->dfk, "{%p} waiting for {%p} to terminate", (void*) http, (void*) i);
+    DFK_CALL(http->dfk, dfk_event_wait(&it->event));
+    i = http->_connections.head;
+  }
+  return dfk_err_ok;
 }
 

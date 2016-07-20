@@ -476,3 +476,33 @@ TEST_F(http_fixture, http, output_headers)
   EXPECT(res == CURLE_OK);
 }
 
+
+static void ut_stop_during_request_stopper(dfk_coro_t* coro, void* arg)
+{
+  DFK_UNUSED(coro);
+  dfk_http_t* http = (dfk_http_t*) arg;
+  dfk_http_stop(http);
+}
+
+
+static int ut_stop_during_request(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+{
+  DFK_UNUSED(http);
+  DFK_UNUSED(req);
+  dfk_run(http->dfk, ut_stop_during_request_stopper, http, 0);
+  DFK_POSTPONE(http->dfk);
+  DFK_DBG(http->dfk, "Handler is terminating!!");
+  resp->code = 200;
+  return dfk_err_ok;
+}
+
+
+TEST_F(http_fixture, http, stop_during_request)
+{
+  CURLcode res;
+  fixture->handler = ut_stop_during_request;
+  curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
+  res = curl_easy_perform(fixture->curl);
+  EXPECT(res == CURLE_OK);
+}
+
