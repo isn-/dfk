@@ -87,8 +87,8 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
 { \
   int err; \
   if ((err = (c)) != dfk_err_ok) { \
-    DFK_ERROR((dfk), "Call \"" DFK_STRINGIFY(c) "\" " \
-        "failed with code %d (%s)", err, dfk_strerr((dfk), err)); \
+    DFK_ERROR((dfk), "call \"" DFK_STRINGIFY(c) "\" " \
+        "failed with code %s", dfk_strerr((dfk), err)); \
     return err; \
   } \
 }
@@ -98,8 +98,8 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
 { \
   int err; \
   if ((err = (c)) != dfk_err_ok) { \
-    DFK_ERROR((dfk), "Call \"" DFK_STRINGIFY(c) "\" " \
-        "failed with code %d (%s)", err, dfk_strerr((dfk), err)); \
+    DFK_ERROR((dfk), "call \"" DFK_STRINGIFY(c) "\" " \
+        "failed with code %s", dfk_strerr((dfk), err)); \
     return; \
   } \
 }
@@ -109,8 +109,8 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
 { \
   int err; \
   if ((err = (c)) != dfk_err_ok) { \
-    DFK_ERROR((dfk), "Call \"" DFK_STRINGIFY(c) "\" " \
-        "failed with code %d (%s)", err, dfk_strerr((dfk), err)); \
+    DFK_ERROR((dfk), "call \"" DFK_STRINGIFY(c) "\" " \
+        "failed with code %s", dfk_strerr((dfk), err)); \
     goto label; \
   } \
 }
@@ -119,8 +119,8 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
 { \
   int err; \
   if ((err = (c)) != 0) {\
-    DFK_ERROR((dfk), "Syscall \"" DFK_STRINGIFY(c) "\" " \
-        "failed with code %d", err); \
+    DFK_ERROR((dfk), "syscall \"" DFK_STRINGIFY(c) "\" " \
+        "failed with code %s", dfk_strerr((dfk), err)); \
     (dfk)->sys_errno = err; \
     return dfk_err_sys; \
   } \
@@ -131,8 +131,8 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
 { \
   int err; \
   if ((err = (c)) != 0) {\
-    DFK_ERROR((dfk), "Syscall \"" DFK_STRINGIFY(c) "\" " \
-        "failed with code %d", err); \
+    DFK_ERROR((dfk), "syscall \"" DFK_STRINGIFY(c) "\" " \
+        "failed with code %s", dfk_strerr((dfk), err)); \
     (dfk)->sys_errno = err; \
     return; \
   } \
@@ -143,8 +143,8 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
 { \
   int err; \
   if ((err = (c)) != 0) {\
-    DFK_ERROR((dfk), "Syscall \"" DFK_STRINGIFY(c) "\" " \
-        "failed with code %d", err); \
+    DFK_ERROR((dfk), "syscall \"" DFK_STRINGIFY(c) "\" " \
+        "failed with code %s", dfk_strerr((dfk), err)); \
     (dfk)->sys_errno = err; \
     goto label; \
   } \
