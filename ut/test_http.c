@@ -449,7 +449,6 @@ static int ut_output_headers(dfk_http_t* http, dfk_http_request_t* req, dfk_http
 static size_t ut_output_headers_callback(char* buffer, size_t size, size_t nitems, void* userdata)
 {
   int* counter = (int*) userdata;
-  printf("counter %d: %s %llu\n", *counter, buffer, (unsigned long long) size * nitems);
   EXPECT(0 <= *counter && *counter <= 3);
   dfk_buf_t buf = {buffer, size * nitems};
   if (*counter == 1) {
@@ -491,7 +490,6 @@ static int ut_stop_during_request(dfk_http_t* http, dfk_http_request_t* req, dfk
   DFK_UNUSED(req);
   dfk_run(http->dfk, ut_stop_during_request_stopper, http, 0);
   DFK_POSTPONE(http->dfk);
-  DFK_DBG(http->dfk, "Handler is terminating!!");
   resp->code = 200;
   return dfk_err_ok;
 }
