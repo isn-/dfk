@@ -186,9 +186,13 @@ int dfk_stop(dfk_t* dfk)
     return dfk_err_badarg;
   }
   DFK_DBG(dfk, "{%p}", (void*) dfk);
-  DFK_SYSCALL(dfk, uv_async_init(dfk->_uvloop, &dfk->_stop, dfk__stop));
-  dfk->_stop.data = dfk;
-  DFK_SYSCALL(dfk, uv_async_send(&dfk->_stop));
+  if (dfk->_scheduler) {
+    DFK_SYSCALL(dfk, uv_async_init(dfk->_uvloop, &dfk->_stop, dfk__stop));
+    dfk->_stop.data = dfk;
+    DFK_SYSCALL(dfk, uv_async_send(&dfk->_stop));
+  } else {
+    DFK_DBG(dfk, "{%p} no eventloop is running", (void*) dfk);
+  }
   return dfk_err_ok;
 }
 
