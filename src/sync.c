@@ -242,7 +242,7 @@ int dfk_event_free(dfk_event_t* event)
   if (event->_awaiting) {
     return dfk_err_busy;
   }
-  return dfk_err_badarg;
+  return dfk_err_ok;
 }
 
 
@@ -267,6 +267,7 @@ int dfk_event_signal(dfk_event_t* event)
   }
   if (event->_awaiting) {
     DFK_RESUME(event->dfk, event->_awaiting);
+    event->_awaiting = NULL;
   }
   return dfk_err_ok;
 }
