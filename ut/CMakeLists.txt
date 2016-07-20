@@ -77,5 +77,8 @@ file(APPEND ${ut_init_h} "\n")
 
 if(VALGRIND AND NOT DFK_ENABLE_COVERAGE)
   set(suppressions "${CMAKE_SOURCE_DIR}/scripts/pthread_create.supp")
+  foreach(i core list avltree arena sponge misc mutex cond tcp_socket http http_response)
+    add_test(valgrind.${i} ${VALGRIND} --error-exitcode=1 --leak-check=full --suppressions=${suppressions} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ut-dfk" ${i})
+  endforeach()
   add_test(valgrind.all_tests ${VALGRIND} --error-exitcode=1 --leak-check=full --suppressions=${suppressions} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ut-dfk")
 endif()

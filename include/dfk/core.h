@@ -30,6 +30,7 @@
 
 #pragma once
 #include <stddef.h>
+#include <pthread.h>
 #include <uv.h>
 #include <libcoro/coro.h>
 #include <dfk/config.h>
@@ -190,6 +191,7 @@ typedef struct dfk_t {
   struct dfk_coro_t* _scheduler;
   struct dfk_coro_t* _eventloop;
   uv_loop_t* _uvloop;
+  pthread_mutex_t _uvloop_m;
   uv_async_t _stop;
 
   /**

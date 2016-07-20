@@ -118,6 +118,7 @@ static void http_fixture_teardown(http_fixture_t* f)
   curl_easy_cleanup(f->curl);
   dfk_stop(&f->dfk);
   pthread_join(f->dfkthread, NULL);
+  dfk_free(&f->dfk);
 }
 
 
@@ -395,15 +396,15 @@ TEST_F(http_fixture, http, post_9_bytes)
 }
 
 
-static int ut_post_100_mb(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+static int ut_post_10_mb(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
   DFK_UNUSED(http);
-  EXPECT(req->content_length == 100 * MiB);
+  EXPECT(req->content_length == 10 * MiB);
   size_t bufsize = MiB;
   char* buf = DFK_MALLOC(http->dfk, bufsize);
   assert(buf);
   size_t totalread = 0;
-  while (totalread != 100 * MiB) {
+  while (totalread != 10 * MiB) {
     size_t nread = dfk_http_read(req, buf, bufsize);
     EXPECT(nread > 0);
     totalread += nread;
@@ -414,18 +415,18 @@ static int ut_post_100_mb(dfk_http_t* http, dfk_http_request_t* req, dfk_http_re
 }
 
 
-TEST_F(http_fixture, http, post_100_mb)
+TEST_F(http_fixture, http, post_10_mb)
 {
-  fixture->handler = ut_post_100_mb;
+  fixture->handler = ut_post_10_mb;
   ut_curl_postdata_t pd;
   ut_curl_postdata_init(&pd);
   pd.buf = (dfk_buf_t) {"somedata", 8};
-  pd.nrepeat = 100 * MiB / pd.buf.size;
+  pd.nrepeat = 10 * MiB / pd.buf.size;
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   curl_easy_setopt(fixture->curl, CURLOPT_POST, 1L);
   curl_easy_setopt(fixture->curl, CURLOPT_READFUNCTION, ut_read_callback);
   curl_easy_setopt(fixture->curl, CURLOPT_READDATA, &pd);
-  curl_easy_setopt(fixture->curl, CURLOPT_POSTFIELDSIZE, 100 * MiB);
+  curl_easy_setopt(fixture->curl, CURLOPT_POSTFIELDSIZE, 10 * MiB);
   struct curl_slist *chunk = NULL;
   chunk = curl_slist_append(chunk, "Expect:");
   EXPECT(curl_easy_setopt(fixture->curl, CURLOPT_HTTPHEADER, chunk) == CURLE_OK);
