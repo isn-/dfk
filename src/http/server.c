@@ -72,6 +72,7 @@ int dfk_http_init(dfk_http_t* http, dfk_t* dfk)
   http->dfk = dfk;
   http->keepalive_requests = 100;
   dfk_list_init(&http->_connections);
+  dfk_event_init(&http->_stopped, dfk);
   return dfk_tcp_socket_init(&http->_listensock, dfk);
 }
 
@@ -83,7 +84,8 @@ int dfk_http_stop(dfk_http_t* http)
   }
   DFK_DBG(http->dfk, "{%p}", (void*) http);
   DFK_CALL(http->dfk, dfk_tcp_socket_close(&http->_listensock));
-  DFK_DBG(http->dfk, "{%p} no longer accepts new connections", (void*) http);
+  DFK_DBG(http->dfk, "{%p} no longer accepts new connections, wait for requests in progress to terminate", (void*) http);
+  DFK_CALL(http->dfk, dfk_event_wait(&http->_stopped));
   return dfk_err_ok;
 }
 
@@ -94,6 +96,7 @@ int dfk_http_free(dfk_http_t* http)
     return dfk_err_badarg;
   }
   DFK_DBG(http->dfk, "{%p}", (void*) http);
+  DFK_CALL(http->dfk, dfk_event_free(&http->_stopped));
   dfk_list_free(&http->_connections);
   return dfk_tcp_socket_free(&http->_listensock);
 }
@@ -120,6 +123,10 @@ int dfk_http_serve(dfk_http_t* http,
     DFK_CALL(http->dfk, dfk_event_wait(&it->event));
     i = http->_connections.head;
   }
+  dfk_list_erase(&http->dfk->_http_servers, &http->_hook);
+
+  /* Wake up coroutine that called dfk_stop */
+  DFK_CALL(http->dfk, dfk_event_signal(&http->_stopped));
   return dfk_err_ok;
 }
 

@@ -148,15 +148,17 @@ static void dfk__terminator_cb(uv_handle_t* h, void* arg)
 static void dfk__terminator(dfk_coro_t* coro, void* p)
 {
   dfk_t* dfk = coro->dfk;
+  DFK_DBG(dfk, "hasta la vista, {%p}", (void*) dfk);
   DFK_UNUSED(p);
   DFK_UNUSED(coro);
   {
     dfk_list_hook_t* i = dfk->_http_servers.head;
     DFK_DBG(dfk, "{%p} stop http servers", (void*) dfk);
-    dfk_list_clear(&dfk->_http_servers);
     while (i) {
       dfk_http_stop((dfk_http_t*) i);
-      i = i->next;
+      /* dfk_http_stop should remove self from _http_servers list */
+      assert(i != dfk->_http_servers.head);
+      i = dfk->_http_servers.head;
     }
   }
   DFK_DBG(dfk, "{%p} close other event handles", (void*) dfk);

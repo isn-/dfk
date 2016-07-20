@@ -31,6 +31,7 @@
 #pragma once
 #include <dfk/config.h>
 #include <dfk/core.h>
+#include <dfk/sync.h>
 #include <dfk/tcp_socket.h>
 #include <dfk/http/request.h>
 #include <dfk/http/response.h>
@@ -48,6 +49,7 @@ typedef struct dfk_http_t {
   dfk_tcp_socket_t _listensock;
   dfk_http_handler _handler;
   dfk_list_t _connections;
+  dfk_event_t _stopped;
 
   /** @publicsection */
   dfk_t* dfk;
