@@ -249,7 +249,7 @@ int dfk_event_free(dfk_event_t* event)
 int dfk_event_wait(dfk_event_t* event)
 {
   if (!event) {
-    return dfk_err_ok;
+    return dfk_err_badarg;
   }
   if (event->_awaiting) {
     return dfk_err_busy;

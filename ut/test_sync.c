@@ -539,3 +539,109 @@ TEST_F(sync_fixture, cond, broadcast_multi_wait)
   EXPECT(state == 5);
 }
 
+
+TEST_F(sync_fixture, event, errors)
+{
+  dfk_event_t event;
+  EXPECT(dfk_event_init(NULL, &fixture->dfk) == dfk_err_badarg);
+  EXPECT(dfk_event_init(&event, NULL) == dfk_err_badarg);
+  EXPECT(dfk_event_free(NULL) == dfk_err_badarg);
+  EXPECT(dfk_event_wait(NULL) == dfk_err_badarg);
+  EXPECT(dfk_event_signal(NULL) == dfk_err_badarg);
+}
+
+
+typedef struct ut_event_s {
+  dfk_event_t event;
+  int state;
+} ut_event_s;
+
+
+static void ut_event_signal_waiter(dfk_coro_t* coro, void* arg)
+{
+  DFK_UNUSED(coro);
+  ut_event_s* e = (ut_event_s*) arg;
+  CHANGE_STATE(&e->state, 0, 1);
+  EXPECT_OK(dfk_event_wait(&e->event));
+  CHANGE_STATE(&e->state, 3, 4);
+}
+
+
+static void ut_event_signal_signaller(dfk_coro_t* coro, void* arg)
+{
+  DFK_UNUSED(coro);
+  ut_event_s* e = (ut_event_s*) arg;
+  CHANGE_STATE(&e->state, 1, 2);
+  EXPECT_OK(dfk_event_signal(&e->event));
+  EXPECT_OK(dfk_event_free(&e->event));
+  CHANGE_STATE(&e->state, 2, 3);
+}
+
+
+TEST_F(sync_fixture, event, wait_signal)
+{
+  ut_event_s e;
+  e.state = 0;
+  EXPECT_OK(dfk_event_init(&e.event, &fixture->dfk));
+  EXPECT(dfk_run(&fixture->dfk, ut_event_signal_waiter, &e, 0));
+  EXPECT(dfk_run(&fixture->dfk, ut_event_signal_signaller, &e, 0));
+  EXPECT_OK(dfk_work(&fixture->dfk));
+  EXPECT(e.state == 4);
+}
+
+
+static void ut_event_free_waiting_waiter(dfk_coro_t* coro, void* arg)
+{
+  DFK_UNUSED(coro);
+  dfk_event_t* event = (dfk_event_t*) arg;
+  EXPECT_OK(dfk_event_wait(event));
+}
+
+
+static void ut_event_free_waiting_signaller(dfk_coro_t* coro, void* arg)
+{
+  DFK_UNUSED(coro);
+  dfk_event_t* event = (dfk_event_t*) arg;
+  EXPECT(dfk_event_free(event) == dfk_err_busy);
+  EXPECT_OK(dfk_event_signal(event));
+  EXPECT_OK(dfk_event_free(event));
+}
+
+
+TEST_F(sync_fixture, event, free_waiting)
+{
+  dfk_event_t event;
+  EXPECT_OK(dfk_event_init(&event, &fixture->dfk));
+  EXPECT(dfk_run(&fixture->dfk, ut_event_free_waiting_waiter, &event, 0));
+  EXPECT(dfk_run(&fixture->dfk, ut_event_free_waiting_signaller, &event, 0));
+  EXPECT_OK(dfk_work(&fixture->dfk));
+}
+
+
+static void ut_event_multi_wait_waiter0(dfk_coro_t* coro, void* arg)
+{
+  DFK_UNUSED(coro);
+  dfk_event_t* event = (dfk_event_t*) arg;
+  EXPECT_OK(dfk_event_wait(event));
+}
+
+
+static void ut_event_multi_wait_waiter1(dfk_coro_t* coro, void* arg)
+{
+  DFK_UNUSED(coro);
+  dfk_event_t* event = (dfk_event_t*) arg;
+  EXPECT(dfk_event_wait(event) == dfk_err_busy);
+  EXPECT_OK(dfk_event_signal(event));
+}
+
+
+TEST_F(sync_fixture, event, multi_wait)
+{
+  dfk_event_t event;
+  EXPECT_OK(dfk_event_init(&event, &fixture->dfk));
+  EXPECT(dfk_run(&fixture->dfk, ut_event_multi_wait_waiter0, &event, 0));
+  EXPECT(dfk_run(&fixture->dfk, ut_event_multi_wait_waiter1, &event, 0));
+  EXPECT_OK(dfk_work(&fixture->dfk));
+  EXPECT_OK(dfk_event_free(&event));
+}
+
