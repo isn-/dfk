@@ -38,6 +38,7 @@ set(DFK_MOCKS TRUE CACHE BOOL "Enable object mocking for unit testing. If set to
 set(DFK_THREADS FALSE CACHE BOOL "Enable multithreading support.")
 set(DFK_COVERAGE FALSE CACHE BOOL "Collect gcov coverage statistics.")
 set(DFK_VALGRIND FALSE CACHE BOOL "In addition to regular mode, run unit tests under valgrind.")
+set(DFK_THREAD_SANITIZER FALSE CACHE BOOL "Enable Thread Sanitizer.")
 set(DFK_HTTP_HEADERS_BUFFER 10240 CACHE STRING "Buffer for HTTP headers, stack-allocated.")
 set(DFK_IGNORE_SIGPIPE TRUE CACHE BOOL "Ignore SIGPIPE when entering dfk loop.")
 set(DFK_ARENA_SEGMENT_SIZE 40960 CACHE STRING "Size of arena's segment, in bytes.")
@@ -76,6 +77,10 @@ check_function_exists(fflush DFK_HAVE_FFLUSH)
 if(${DFK_VALGRIND})
   find_program(VALGRIND valgrind REQUIRED)
   mark_as_advanced(VALGRIND)
+endif()
+
+if(${DFK_THREAD_SANITIZER})
+  fw_c_flags("-fsanitize=thread")
 endif()
 
 if("${DFK_EVENT_LOOP}" STREQUAL LIBUV)
