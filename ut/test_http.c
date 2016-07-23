@@ -44,17 +44,29 @@ typedef struct http_fixture_t {
   dfk_http_t http;
   dfk_http_handler handler;
   pthread_t dfkthread;
+  pthread_mutex_t handler_m;
 } http_fixture_t;
 
 
 static int http_fixture_dyn_handler(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
   http_fixture_t* fixture = (http_fixture_t*) http->user.data;
-  if (fixture->handler) {
-    return fixture->handler(http, req, resp);
+  pthread_mutex_lock(&fixture->handler_m);
+  dfk_http_handler handler = fixture->handler;
+  pthread_mutex_unlock(&fixture->handler_m);
+  if (handler) {
+    return handler(http, req, resp);
   } else {
     return dfk_err_ok;
   }
+}
+
+
+static void http_fixture_set_handler(http_fixture_t* fixture, dfk_http_handler handler)
+{
+  pthread_mutex_lock(&fixture->handler_m);
+  fixture->handler = handler;
+  pthread_mutex_unlock(&fixture->handler_m);
 }
 
 
@@ -109,6 +121,7 @@ static void http_fixture_setup(http_fixture_t* f)
       }
       curl_easy_cleanup(testcurl);
     }
+    EXPECT(server_ready);
   }
 }
 
@@ -118,6 +131,7 @@ static void http_fixture_teardown(http_fixture_t* f)
   curl_easy_cleanup(f->curl);
   dfk_stop(&f->dfk);
   pthread_join(f->dfkthread, NULL);
+  pthread_mutex_destroy(&f->handler_m);
   dfk_free(&f->dfk);
 }
 
@@ -188,7 +202,7 @@ static int ut_parse_common_headers(dfk_http_t* http, dfk_http_request_t* req, df
 TEST_F(http_fixture, http, parse_common_headers)
 {
   CURLcode res;
-  fixture->handler = ut_parse_common_headers;
+  http_fixture_set_handler(fixture, ut_parse_common_headers);
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   curl_easy_setopt(fixture->curl, CURLOPT_NOBODY, 1L);
   res = curl_easy_perform(fixture->curl);
@@ -241,7 +255,7 @@ static int ut_iterate_headers(dfk_http_t* http, dfk_http_request_t* req, dfk_htt
 TEST_F(http_fixture, http, iterate_headers)
 {
   CURLcode res;
-  fixture->handler = ut_iterate_headers;
+  http_fixture_set_handler(fixture, ut_iterate_headers);
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   curl_easy_setopt(fixture->curl, CURLOPT_POST, 1L);
   res = curl_easy_perform(fixture->curl);
@@ -282,7 +296,7 @@ static int ut_request_errors(dfk_http_t* http, dfk_http_request_t* req, dfk_http
 TEST_F(http_fixture, http, request_errors)
 {
   CURLcode res;
-  fixture->handler = ut_request_errors;
+  http_fixture_set_handler(fixture, ut_request_errors);
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   res = curl_easy_perform(fixture->curl);
   EXPECT(res == CURLE_OK);
@@ -353,7 +367,7 @@ static int ut_content_length(dfk_http_t* http, dfk_http_request_t* req, dfk_http
 
 TEST_F(http_fixture, http, content_length)
 {
-  fixture->handler = ut_content_length;
+  http_fixture_set_handler(fixture, ut_content_length);
   ut_curl_postdata_t pd;
   ut_curl_postdata_init(&pd);
   pd.buf = (dfk_buf_t) {"some data", 9};
@@ -382,7 +396,7 @@ static int ut_post_9_bytes(dfk_http_t* http, dfk_http_request_t* req, dfk_http_r
 
 TEST_F(http_fixture, http, post_9_bytes)
 {
-  fixture->handler = ut_post_9_bytes;
+  http_fixture_set_handler(fixture, ut_post_9_bytes);
   ut_curl_postdata_t pd;
   ut_curl_postdata_init(&pd);
   pd.buf = (dfk_buf_t) {"some data", 9};
@@ -417,7 +431,7 @@ static int ut_post_10_mb(dfk_http_t* http, dfk_http_request_t* req, dfk_http_res
 
 TEST_F(http_fixture, http, post_10_mb)
 {
-  fixture->handler = ut_post_10_mb;
+  http_fixture_set_handler(fixture, ut_post_10_mb);
   ut_curl_postdata_t pd;
   ut_curl_postdata_init(&pd);
   pd.buf = (dfk_buf_t) {"somedata", 8};
@@ -467,7 +481,7 @@ static size_t ut_output_headers_callback(char* buffer, size_t size, size_t nitem
 TEST_F(http_fixture, http, output_headers)
 {
   CURLcode res;
-  fixture->handler = ut_output_headers;
+  http_fixture_set_handler(fixture, ut_output_headers);
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   curl_easy_setopt(fixture->curl, CURLOPT_HEADERFUNCTION, ut_output_headers_callback);
   int counter = 0;
@@ -499,7 +513,7 @@ static int ut_stop_during_request(dfk_http_t* http, dfk_http_request_t* req, dfk
 TEST_F(http_fixture, http, stop_during_request)
 {
   CURLcode res;
-  fixture->handler = ut_stop_during_request;
+  http_fixture_set_handler(fixture, ut_stop_during_request);
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   res = curl_easy_perform(fixture->curl);
   EXPECT(res == CURLE_OK);

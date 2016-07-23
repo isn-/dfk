@@ -72,6 +72,8 @@ foreach(source ${ut_sources})
   endforeach()
 endforeach()
 
+add_test(all_tests "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ut-dfk")
+
 file(APPEND ${ut_init_c} "}\n\n")
 file(APPEND ${ut_init_h} "\n")
 
