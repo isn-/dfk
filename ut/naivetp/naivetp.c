@@ -68,10 +68,16 @@ static void* naivetp_conn_echo_thread(void* arg)
       ssize_t nwritten = 0;
       DFK_INFO(c->dfk, "{%p} bytes read %ld", (void*) c, (long) nread);
       nwritten = write(c->sock, buf, nread);
+      if (nwritten != nread) {
+        break;
+      }
       DFK_INFO(c->dfk, "{%p} bytes written %ld", (void*) c, (long) nwritten);
     } else {
       break;
     }
+  }
+  if (close(c->sock) != 0) {
+    DFK_ERROR(c->dfk, "{%p} socket close failed: %s", (void*) c, strerror(errno));
   }
   DFK_INFO(c->dfk, "{%p} terminated", (void*) c);
   pthread_exit(c);
@@ -104,9 +110,9 @@ static void* naivetp_main_thread(void* arg)
     newclient = (client_t*) DFK_MALLOC(s->dfk, sizeof(client_t));
     newclient->sock = csock;
     newclient->dfk = s->dfk;
-    newclient->next = s->clients;
     newclient->srv = s;
     pthread_mutex_lock(&s->clients_m);
+    newclient->next = s->clients;
     s->clients = newclient;
     pthread_mutex_unlock(&s->clients_m);
 
@@ -216,9 +222,6 @@ void naivetp_server_stop(naivetp_server_t* srv)
       if (errno != ENOTCONN) {
         DFK_ERROR(srv->dfk, "{%p} socket shutdown failed: %s", (void*) srv, strerror(errno));
       }
-    }
-    if (close(client->sock) != 0) {
-      DFK_ERROR(srv->dfk, "{%p} socket close failed: %s", (void*) srv, strerror(errno));
     }
     pthread_join(client->thread, &retval);
     client = client->next;
