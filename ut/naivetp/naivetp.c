@@ -44,6 +44,7 @@ typedef struct _naivetp_server_t {
   dfk_t* dfk;
   int protocol;
   struct client_t* clients;
+  pthread_mutex_t clients_m;
 } _naivetp_server_t;
 
 
@@ -105,7 +106,9 @@ static void* naivetp_main_thread(void* arg)
     newclient->dfk = s->dfk;
     newclient->next = s->clients;
     newclient->srv = s;
+    pthread_mutex_lock(&s->clients_m);
     s->clients = newclient;
+    pthread_mutex_unlock(&s->clients_m);
 
     switch(s->protocol) {
       case naivetp_server_echo: {
@@ -150,6 +153,7 @@ naivetp_server_t* naivetp_server_start(dfk_t* dfk, uint16_t port, naivetp_server
     goto cleanup;
   }
   s->clients = NULL;
+  pthread_mutex_init(&s->clients_m, NULL);
 
   addr.sin_port = htons(port);
   addr.sin_family = AF_INET;
@@ -189,13 +193,11 @@ cleanup:
 void naivetp_server_stop(naivetp_server_t* srv)
 {
   void* retval;
-  client_t* client;
 
   if (srv == NULL) {
     return;
   }
 
-  client = srv->clients;
   DFK_INFO(srv->dfk, "{%p} shut down listener", (void*) srv);
   if (shutdown(srv->sock, SHUT_RDWR) != 0) {
     if (errno != ENOTCONN) {
@@ -207,6 +209,7 @@ void naivetp_server_stop(naivetp_server_t* srv)
   }
   pthread_join(srv->thread, &retval);
   DFK_INFO(srv->dfk, "{%p} listener terminated", (void*) srv);
+  client_t* client = srv->clients;
   while (client) {
     DFK_INFO(srv->dfk, "{%p} shut down client %p", (void*) srv, (void*) client);
     if (shutdown(client->sock, SHUT_RDWR) != 0) {
@@ -221,6 +224,7 @@ void naivetp_server_stop(naivetp_server_t* srv)
     client = client->next;
     DFK_FREE(srv->dfk, retval);
   }
+  pthread_mutex_destroy(&srv->clients_m);
   DFK_FREE(srv->dfk, srv);
 }
 

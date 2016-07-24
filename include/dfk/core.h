@@ -193,6 +193,7 @@ typedef struct dfk_t {
   uv_loop_t* _uvloop;
   pthread_mutex_t _uvloop_m;
   uv_async_t _stop;
+  sig_atomic_t _stopped;
 
   /**
    * @publicsection

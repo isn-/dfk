@@ -110,6 +110,7 @@ int dfk_init(dfk_t* dfk)
   dfk->_eventloop = NULL;
   dfk->_uvloop = NULL;
   pthread_mutex_init(&dfk->_uvloop_m, NULL);
+  dfk->_stopped = 0;
   dfk->malloc = dfk__default_malloc;
   dfk->free = dfk__default_free;
   dfk->realloc = dfk__default_realloc;
@@ -135,6 +136,7 @@ int dfk_free(dfk_t* dfk)
   dfk_list_free(&dfk->_terminated_coros);
   dfk_list_free(&dfk->_iowait_coros);
   dfk_list_free(&dfk->_pending_coros);
+  pthread_mutex_destroy(&dfk->_uvloop_m);
   return dfk_err_ok;
 }
 
@@ -144,6 +146,7 @@ static void dfk__terminator_cb(uv_handle_t* h, void* arg)
   dfk_t* dfk = (dfk_t*) arg;
   DFK_DBG(dfk, "{%p} close handle {%p}", (void*) dfk, (void*) h);
   uv_close(h, NULL);
+  dfk->_stopped = 4;
 }
 
 
@@ -168,24 +171,6 @@ static void dfk__terminator(dfk_coro_t* coro, void* p)
 }
 
 
-/* Executed within dfk_eventloop */
-static void dfk__stop(uv_async_t* h)
-{
-  dfk_t* dfk = (dfk_t*) h->data;
-  DFK_DBG(dfk, "{%p}", (void*) dfk);
-  /* close uv_signal_t handle */
-  uv_close((uv_handle_t*) h, NULL);
-  {
-    dfk_coro_t* c = dfk_run(dfk, dfk__terminator, NULL, 0);
-    if (!c) {
-      DFK_ERROR(dfk, "{%p} dfk_run returned %d (%s)", (void*) dfk,
-          dfk->dfk_errno, dfk_strerr(dfk, dfk->dfk_errno));
-    }
-    DFK_CALL_RVOID(dfk, dfk_coro_name(c, "terminator"));
-  }
-}
-
-
 int dfk_stop(dfk_t* dfk)
 {
   if (!dfk) {
@@ -193,11 +178,11 @@ int dfk_stop(dfk_t* dfk)
   }
   DFK_DBG(dfk, "{%p}", (void*) dfk);
   pthread_mutex_lock(&dfk->_uvloop_m);
-  if (dfk->_uvloop) {
+  if (dfk->_uvloop && !dfk->_stopped) {
     /* Don't forget to unlock mutex */
-    DFK_SYSCALL(dfk, uv_async_init(dfk->_uvloop, &dfk->_stop, dfk__stop));
-    dfk->_stop.data = dfk;
+    dfk->_stopped = 2;
     DFK_SYSCALL(dfk, uv_async_send(&dfk->_stop));
+    DFK_DBG(dfk, "uv_async signal {%p} submitted", (void*) &dfk->_stop);
   }
   pthread_mutex_unlock(&dfk->_uvloop_m);
   return dfk_err_ok;
@@ -322,6 +307,9 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
         && !dfk_list_size(&dfk->_iowait_coros)) {
       DFK_DBG(dfk, "{%p} no pending coroutines, cleanup event loop {%p}",
               (void*) dfk, (void*) dfk->_eventloop);
+      pthread_mutex_lock(&dfk->_uvloop_m);
+      dfk->_stopped = 3;
+      pthread_mutex_unlock(&dfk->_uvloop_m);
       dfk->_current = dfk->_eventloop;
       dfk_yield(scheduler, dfk->_eventloop);
       dfk->_current = scheduler;
@@ -377,27 +365,57 @@ static void dfk_eventloop(dfk_coro_t* coro, void* p)
   uv_loop_init(&loop);
   pthread_mutex_lock(&dfk->_uvloop_m);
   dfk->_uvloop = &loop;
+  DFK_SYSCALL_RVOID(dfk, uv_async_init(dfk->_uvloop, &dfk->_stop, NULL));
   pthread_mutex_unlock(&dfk->_uvloop_m);
   DFK_DBG(dfk, "initialized");
   dfk_yield(coro, dfk->_scheduler);
-  int loop_alive = uv_loop_alive(&loop);
-  while (loop_alive) {
-    DFK_DBG(dfk, "{%p} poll", (void*) &loop);
-    if (uv_run(&loop, UV_RUN_ONCE) == 0) {
-      DFK_DBG(dfk, "{%p} no more active handlers", (void*) &loop);
-    }
-    dfk_yield(coro, dfk->_scheduler);
-    loop_alive = uv_loop_alive(&loop);
-    if (!loop_alive) {
-      /* Last chance for the loop to become alive is to enqueue
-       * uv_async_t task from dfk_stop.
-       */
-      pthread_mutex_lock(&dfk->_uvloop_m);
-      dfk->_uvloop = NULL;
-      loop_alive = uv_loop_alive(&loop);
-      pthread_mutex_unlock(&dfk->_uvloop_m);
+  pthread_mutex_lock(&dfk->_uvloop_m);
+  while (uv_loop_alive(&loop)) {
+    switch (dfk->_stopped) {
+      case 0:
+      case 1:
+        DFK_DBG(dfk, "{%p} poll", (void*) &loop);
+        pthread_mutex_unlock(&dfk->_uvloop_m);
+        if (uv_run(&loop, UV_RUN_ONCE) == 0) {
+          DFK_DBG(dfk, "{%p} no more active handlers", (void*) &loop);
+        }
+        dfk_yield(coro, dfk->_scheduler);
+        pthread_mutex_lock(&dfk->_uvloop_m);
+        break;
+      case 2: /* dfk_stop was called */
+        dfk->_stopped = 1;
+        DFK_DBG(dfk, "{%p} stopped flag is set, lauch terminator", (void*) dfk);
+        dfk_coro_t* c = dfk_run(dfk, dfk__terminator, NULL, 0);
+        if (!c) {
+          DFK_ERROR(dfk, "{%p} dfk_run returned %d (%s)", (void*) dfk,
+              dfk->dfk_errno, dfk_strerr(dfk, dfk->dfk_errno));
+        } else {
+          DFK_CALL_RVOID(dfk, dfk_coro_name(c, "terminator"));
+          dfk_yield(coro, dfk->_scheduler);
+        }
+        break;
+      case 3:
+        if (!uv_is_closing((uv_handle_t*) &dfk->_stop)) {
+          uv_close((uv_handle_t*) &dfk->_stop, NULL);
+        }
+        uv_run(&loop, UV_RUN_DEFAULT);
+        assert(!uv_loop_alive(&loop));
+        break;
+      case 4:
+        /*
+         * Run uv_close empty callbacks and stop
+         */
+        uv_run(&loop, UV_RUN_DEFAULT);
+        assert(!uv_loop_alive(&loop));
+        break;
+      default:
+        assert(0 && "impossible");
     }
   }
+
+  dfk->_uvloop = NULL;
+  pthread_mutex_unlock(&dfk->_uvloop_m);
+
   {
     int err = uv_loop_close(&loop);
     DFK_DBG(dfk, "{%p} uv_loop_close() returned %d", (void*) &loop, err);
