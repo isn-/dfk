@@ -36,7 +36,7 @@ matrix:
         packages:
         - valgrind
   - os: linux
-    compiler: gcc
+    compiler: clang
     env: CMAKE_ARGS="-DDFK_THREAD_SANITIZER=ON -DCMAKE_BUILD_TYPE=Debug -DDFK_DEBUG=ON"
   - os: linux
     compiler: gcc

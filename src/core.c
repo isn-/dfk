@@ -145,7 +145,9 @@ static void dfk__terminator_cb(uv_handle_t* h, void* arg)
 {
   dfk_t* dfk = (dfk_t*) arg;
   DFK_DBG(dfk, "{%p} close handle {%p}", (void*) dfk, (void*) h);
-  uv_close(h, NULL);
+  if (!uv_is_closing(h)) {
+    uv_close(h, NULL);
+  }
   dfk->_stopped = 4;
 }
 
