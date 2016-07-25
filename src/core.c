@@ -294,7 +294,7 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
   assert(scheduler);
   dfk = scheduler->dfk;
   assert(dfk);
-  /* Initialize event loop */
+  DFK_DBG(dfk, "{%p} initialize event loop", (void*) dfk);
   dfk->_current = dfk->_eventloop;
   dfk_yield(scheduler, dfk->_eventloop);
   dfk->_current = scheduler;
@@ -307,19 +307,24 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
     if (!dfk_list_size(&dfk->_terminated_coros)
         && !dfk_list_size(&dfk->_pending_coros)
         && !dfk_list_size(&dfk->_iowait_coros)) {
-      DFK_DBG(dfk, "{%p} no pending coroutines, cleanup event loop {%p}",
+      DFK_DBG(dfk, "{%p} no pending coroutines, maybe cleanup event loop {%p}",
               (void*) dfk, (void*) dfk->_eventloop);
       pthread_mutex_lock(&dfk->_uvloop_m);
       dfk->_stopped = 3;
+      int need_cleanup = !!dfk->_uvloop;
       pthread_mutex_unlock(&dfk->_uvloop_m);
-      dfk->_current = dfk->_eventloop;
-      dfk_yield(scheduler, dfk->_eventloop);
-      dfk->_current = scheduler;
+      DFK_DBG(dfk, "{%p} %sneed to cleanup event loop {%p}",
+              (void*) dfk, need_cleanup ? "" : "no ", (void*) dfk->_eventloop);
+      if (need_cleanup) {
+        dfk->_current = dfk->_eventloop;
+        dfk_yield(scheduler, dfk->_eventloop);
+        dfk->_current = scheduler;
+      }
       break;
     }
 
     {
-      /* Cleanup terminated coroutines */
+      DFK_DBG(dfk, "{%p} cleanup terminated coroutines", (void*) dfk);
       dfk_coro_t* i = (dfk_coro_t*) dfk->_terminated_coros.head;
       dfk_list_clear(&dfk->_terminated_coros);
       while (i) {
@@ -331,7 +336,7 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
     }
 
     {
-      /* Execute pending coroutines */
+      DFK_DBG(dfk, "{%p} execute pending coroutines", (void*) dfk);
       dfk_coro_t* i = (dfk_coro_t*) dfk->_pending_coros.head;
       dfk_list_clear(&dfk->_pending_coros);
       while (i) {
