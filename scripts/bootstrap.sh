@@ -53,7 +53,8 @@ HTTP_PARSER_URL=https://github.com/nodejs/http-parser/archive/v$HTTP_PARSER_VERS
 [ -e $HTTP_PARSER_TARBALL ] || wget --continue -O $HTTP_PARSER_TARBALL $HTTP_PARSER_URL
 [ -e $HTTP_PARSER_SOURCE_DIR ] || tar xzf $HTTP_PARSER_TARBALL -C $PREFIX/src
 cd $HTTP_PARSER_SOURCE_DIR
-make -j package
+# CFLAGS replace built-in flags, while CPPFLAGS are appended
+make CPPFLAGS=-fPIC -j package
 cp libhttp_parser.a $PREFIX/lib
 cp http_parser.h $PREFIX/include
 
