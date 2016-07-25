@@ -319,6 +319,8 @@ static void dfk_scheduler(dfk_coro_t* scheduler, void* p)
         dfk->_current = dfk->_eventloop;
         dfk_yield(scheduler, dfk->_eventloop);
         dfk->_current = scheduler;
+      } else {
+        dfk->_eventloop = NULL;
       }
       break;
     }
@@ -482,13 +484,15 @@ int dfk_work(dfk_t* dfk)
   DFK_CALL(dfk, dfk_yield(NULL, dfk->_scheduler));
 
   /* Scheduler and eventloop are still in "terminated" state
-   * Cleanup them manually
+   * Cleanup them manually, if required
    */
   dfk_list_clear(&dfk->_terminated_coros);
   dfk__coro_free(dfk->_scheduler);
-  dfk__coro_free(dfk->_eventloop);
   dfk->_scheduler = NULL;
-  dfk->_eventloop = NULL;
+  if (dfk->_eventloop) {
+    dfk__coro_free(dfk->_eventloop);
+    dfk->_eventloop = NULL;
+  }
   DFK_INFO(dfk, "work cycle {%p} done", (void*) dfk);
   return dfk_err_ok;
 }
