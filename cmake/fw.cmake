@@ -79,6 +79,7 @@ int main()
     compile_result_unused
     "${CMAKE_BINARY_DIR}"
     "${CMAKE_BINARY_DIR}/getstacksize.c"
+    CMAKE_FLAGS -DCMAKE_EXE_LINKER_FLAGS=-lpthread
     RUN_OUTPUT_VARIABLE stack_size)
   set(${out} ${stack_size} PARENT_SCOPE)
 endfunction()
