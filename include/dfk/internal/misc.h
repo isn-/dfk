@@ -40,4 +40,3 @@ int dfk__strtoll(dfk_buf_t nbuf, char** endptr, int base, long long* out);
 
 void dfk__buf_append(dfk_buf_t* to, const char* data, size_t size);
 
-

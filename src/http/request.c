@@ -47,6 +47,10 @@ void dfk__http_request_init(dfk_http_request_t* req, dfk_t* dfk,
   req->_bodypart = (dfk_buf_t) {NULL, 0};
   req->_body_bytes_nread = 0;
   req->_headers_done = 0;
+#if DFK_MOCKS
+  req->_sock_mocked = 0;
+  req->_sock_mock = 0;
+#endif
   req->dfk = dfk;
   req->url = (dfk_buf_t) {NULL, 0};
   req->user_agent = (dfk_buf_t) {NULL, 0};
@@ -84,7 +88,15 @@ ssize_t dfk_http_read(dfk_http_request_t* req, char* buf, size_t size)
     return tocopy;
   }
   size_t toread = DFK_MIN(size, req->content_length - req->_body_bytes_nread);
+#if DFK_MOCKS
+  if (req->_sock_mocked) {
+    return dfk_sponge_read(req->_sock_mock, buf, toread);
+  } else {
+    return dfk_tcp_socket_read(req->_sock, buf, toread);
+  }
+#else
   return dfk_tcp_socket_read(req->_sock, buf, toread);
+#endif
 }
 
 

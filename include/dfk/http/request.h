@@ -36,6 +36,9 @@
 #include <dfk/internal/arena.h>
 #include <dfk/http/constants.h>
 #include <dfk/http/header.h>
+#if DFK_MOCKS
+#include <dfk/internal/sponge.h>
+#endif
 
 
 /**
@@ -53,6 +56,11 @@ typedef struct dfk_http_request_t {
   dfk_buf_t _bodypart;
   size_t _body_bytes_nread;
   int _headers_done;
+
+#if DFK_MOCKS
+  int _sock_mocked;
+  dfk_sponge_t* _sock_mock;
+#endif
 
   /**
    * @publicsection
