@@ -86,6 +86,10 @@
 #cmakedefine01 DFK_COVERAGE
 /** In addition to regular mode, run unit tests under valgrind */
 #cmakedefine01 DFK_VALGRIND
+/** Enable Thread Sanitizer */
+#cmakedefine01 DFK_THREAD_SANITIZER
+/** Enable Memory Sanitizer */
+#cmakedefine01 DFK_MEMORY_SANITIZER
 /** Buffer for HTTP headers, stack-allocated */
 #define DFK_HTTP_HEADERS_BUFFER @DFK_HTTP_HEADERS_BUFFER@
 /** Ignore SIGPIPE when entering dfk loop */
