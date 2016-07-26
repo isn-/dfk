@@ -14,6 +14,7 @@ include(CheckFunctionExists)
 
 fw_version_from_git(DFK_VERSION DFK_VERSION_MAJOR DFK_VERSION_MINOR DFK_VERSION_PATCH)
 fw_page_size(page_size)
+fw_stack_size(stack_size)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING
@@ -30,7 +31,7 @@ set(DFK_COROUTINE ASM CACHE STRING "Coroutine implementation, options are: ASM."
 set(DFK_NAMED_COROUTINES TRUE CACHE BOOL "Enable user-provided names for coroutines.")
 set(DFK_COROUTINE_NAME_LENGTH 32 CACHE STRING "Maximum size of coroutine name, including zero termination byte.")
 set(DFK_STACK FIXED CACHE STRING "Stack growth strategy, options are: FIXED.")
-set(DFK_STACK_SIZE 1048576 CACHE STRING "Default stack size, in bytes.")
+set(DFK_STACK_SIZE ${stack_size} CACHE STRING "Default stack size, in bytes.")
 set(DFK_STACK_ALIGNMENT 16 CACHE STRING "Stack alignment, in bytes.")
 set(DFK_EVENT_LOOP LIBUV CACHE STRING "Event loop implementation, options are: LIBUV.")
 set(DFK_DEBUG FALSE CACHE BOOL "Emit debug log messages.")

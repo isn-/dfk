@@ -56,3 +56,29 @@ int main()
     RUN_OUTPUT_VARIABLE page_size)
   set(${out} ${page_size} PARENT_SCOPE)
 endfunction()
+
+function(fw_stack_size out)
+  set(getstacksize "
+#include <pthread.h>
+#include <stdio.h>
+
+int main()
+{
+  pthread_attr_t a;
+  pthread_attr_init(&a);
+  size_t size;
+  pthread_attr_getstacksize(&a, &size);
+  printf(\"%llu\", (unsigned long long) size);
+  return 0;
+}
+")
+  file(WRITE "${CMAKE_BINARY_DIR}/getstacksize.c" "${getstacksize}")
+  enable_language(C)
+  try_run(
+    run_result_unused
+    compile_result_unused
+    "${CMAKE_BINARY_DIR}"
+    "${CMAKE_BINARY_DIR}/getstacksize.c"
+    RUN_OUTPUT_VARIABLE stack_size)
+  set(${out} ${stack_size} PARENT_SCOPE)
+endfunction()
