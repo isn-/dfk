@@ -1,4 +1,13 @@
 #!/usr/bin/env bash
+# Create test coverage report
+#
+# Prerequisite:
+# * installed lcov,
+# * dfk library built with DFK_COVERAGE=ON
+#
+# Can be run in two modes:
+# * default (no special environment variables set) - create local html report
+# * CI ("$TRAVIS" == "true") - upload coverage report to codecov.io
 
 lcov --directory . --capture --output-file lcov.info
 lcov --remove lcov.info '*/thirdparty/*' --output lcov.info

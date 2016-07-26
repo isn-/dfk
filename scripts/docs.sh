@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Generate doxygen documentation
 
 DOXYGEN=doxygen
 

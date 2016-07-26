@@ -1,4 +1,5 @@
 from setuptools import setup
+
 setup(
     name="dfk-schedprof",
     setup_requires=['vcversioner'],
