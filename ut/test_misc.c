@@ -84,3 +84,12 @@ TEST(misc, strtoll_partial)
   EXPECT(endptr == nbuf.data + 4);
 }
 
+
+TEST(misc, buf_append)
+{
+  char c[] = "Hello world";
+  dfk_buf_t buf = {c, 4};
+  dfk__buf_append(&buf, c + 4, sizeof(c) - 4);
+  EXPECT(buf.size == sizeof(c));
+}
+
