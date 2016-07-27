@@ -46,13 +46,13 @@ int main()
   return 0;
 }
 ")
-  file(WRITE "${CMAKE_BINARY_DIR}/getpagesize.c" "${getpagesize}")
+  file(WRITE "${CMAKE_BINARY_DIR}/getpagesize/main.c" "${getpagesize}")
   enable_language(C)
   try_run(
     run_result_unused
     compile_result_unused
-    "${CMAKE_BINARY_DIR}"
-    "${CMAKE_BINARY_DIR}/getpagesize.c"
+    "${CMAKE_BINARY_DIR}/getpagesize"
+    "${CMAKE_BINARY_DIR}/getpagesize/main.c"
     RUN_OUTPUT_VARIABLE page_size)
   set(${out} ${page_size} PARENT_SCOPE)
 endfunction()
@@ -72,14 +72,14 @@ int main()
   return 0;
 }
 ")
-  file(WRITE "${CMAKE_BINARY_DIR}/getstacksize.c" "${getstacksize}")
+  file(WRITE "${CMAKE_BINARY_DIR}/getstacksize/main.c" "${getstacksize}")
   enable_language(C)
   try_run(
     run_result_unused
     compile_result_unused
-    "${CMAKE_BINARY_DIR}"
-    "${CMAKE_BINARY_DIR}/getstacksize.c"
-    CMAKE_FLAGS -DCMAKE_EXE_LINKER_FLAGS=-lpthread
+    "${CMAKE_BINARY_DIR}/getstacksize"
+    "${CMAKE_BINARY_DIR}/getstacksize/main.c"
+    CMAKE_FLAGS "-DLINK_LIBRARIES=pthread"
     RUN_OUTPUT_VARIABLE stack_size)
   set(${out} ${stack_size} PARENT_SCOPE)
 endfunction()
