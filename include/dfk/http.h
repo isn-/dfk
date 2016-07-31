@@ -32,3 +32,8 @@
 #include <dfk/http/protocol.h>
 #include <dfk/http/server.h>
 
+/**
+ * @defgroup http http
+ * HTTP server
+ */
+

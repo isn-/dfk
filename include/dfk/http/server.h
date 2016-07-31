@@ -34,11 +34,15 @@
 #include <dfk/http/response.h>
 #include <dfk/internal/list.h>
 
+/**
+ * @addtogroup http
+ * @{
+ */
 
 struct dfk_http_t;
+
 typedef int (*dfk_http_handler)(struct dfk_http_t*, dfk_http_request_t*,
                                 dfk_http_response_t*);
-
 
 typedef struct dfk_http_t {
   /** @privatesection */
@@ -59,7 +63,6 @@ typedef struct dfk_http_t {
   size_t keepalive_requests;
 } dfk_http_t;
 
-
 int dfk_http_init(dfk_http_t* http, dfk_t* dfk);
 int dfk_http_stop(dfk_http_t* http);
 int dfk_http_free(dfk_http_t* http);
@@ -67,4 +70,6 @@ int dfk_http_serve(dfk_http_t* http,
     const char* endpoint,
     uint16_t port,
     dfk_http_handler handler);
+
+/** @} */
 

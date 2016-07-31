@@ -34,7 +34,7 @@
 typedef struct dfk__http_parser_data_t {
   dfk_t* dfk;
   dfk_http_request_t* req;
-  dfk_http_header_t* cheader; /* current header */
+  dfk_strmap_item_t* cheader; /* current header */
   int keepalive;
 } dfk__http_parser_data_t;
 
@@ -71,12 +71,13 @@ static int dfk__http_on_header_field(http_parser* parser, const char* at, size_t
   DFK_DBG(p->dfk, "{%p} %.*s", (void*) p->req, (int) size, at);
   if (!p->cheader || p->cheader->value.data) {
     if (p->cheader) {
-      dfk_avltree_insert(&p->req->_headers, (dfk_avltree_hook_t*) p->cheader);
+      dfk_strmap_insert(&p->req->headers, p->cheader);
     }
-    p->cheader = dfk_arena_alloc(p->req->_request_arena, sizeof(dfk_http_header_t));
-    dfk__http_header_init(p->cheader);
+    p->cheader = dfk_arena_alloc(p->req->_request_arena, sizeof(dfk_strmap_item_t));
+    /** @todo check p->cheader for NULL */
+    dfk_strmap_item_init(p->cheader, NULL, 0, NULL, 0);
   }
-  dfk__buf_append(&p->cheader->name, at, size);
+  dfk__buf_append(&p->cheader->key, at, size);
   return 0;
 }
 
@@ -95,7 +96,7 @@ static int dfk__http_on_headers_complete(http_parser* parser)
   dfk__http_parser_data_t* p = (dfk__http_parser_data_t*) parser->data;
   DFK_DBG(p->dfk, "{%p}", (void*) p->req);
   if (p->cheader) {
-    dfk_avltree_insert(&p->req->_headers, (dfk_avltree_hook_t*) p->cheader);
+    dfk_strmap_insert(&p->req->headers, p->cheader);
     p->cheader = NULL;
   }
   p->req->_headers_done = 1;
@@ -177,7 +178,8 @@ void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
     dfk_arena_init(&request_arena, http->dfk);
 
     dfk_http_request_t req;
-    dfk__http_request_init(&req, http->dfk, &request_arena, &connection_arena, sock);
+    /** @todo check return value */
+    dfk_http_request_init(&req, http->dfk, &request_arena, &connection_arena, sock);
 
     pdata.req = &req;
 
@@ -198,13 +200,13 @@ void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
     req.major_version = parser.http_major;
     req.minor_version = parser.http_minor;
     req.method = parser.method;
-    req.user_agent = dfk_http_request_get(&req, DFK_HTTP_USER_AGENT, sizeof(DFK_HTTP_USER_AGENT) - 1);
-    req.host = dfk_http_request_get(&req, DFK_HTTP_HOST, sizeof(DFK_HTTP_HOST) - 1);
-    req.accept = dfk_http_request_get(&req, DFK_HTTP_ACCEPT, sizeof(DFK_HTTP_ACCEPT) - 1);
-    req.content_type = dfk_http_request_get(&req, DFK_HTTP_CONTENT_TYPE, sizeof(DFK_HTTP_CONTENT_TYPE) - 1);
+    req.user_agent = dfk_strmap_get(&req.headers, DFK_HTTP_USER_AGENT, sizeof(DFK_HTTP_USER_AGENT) - 1);
+    req.host = dfk_strmap_get(&req.headers, DFK_HTTP_HOST, sizeof(DFK_HTTP_HOST) - 1);
+    req.accept = dfk_strmap_get(&req.headers, DFK_HTTP_ACCEPT, sizeof(DFK_HTTP_ACCEPT) - 1);
+    req.content_type = dfk_strmap_get(&req.headers, DFK_HTTP_CONTENT_TYPE, sizeof(DFK_HTTP_CONTENT_TYPE) - 1);
     {
       /* Parse and set content_length member */
-      dfk_buf_t content_length = dfk_http_request_get(&req, DFK_HTTP_CONTENT_LENGTH, sizeof(DFK_HTTP_CONTENT_LENGTH) - 1);
+      dfk_buf_t content_length = dfk_strmap_get(&req.headers, DFK_HTTP_CONTENT_LENGTH, sizeof(DFK_HTTP_CONTENT_LENGTH) - 1);
       if (content_length.size) {
         long long intval;
         int res = dfk__strtoll(content_length, NULL, 10, &intval);
@@ -227,7 +229,8 @@ void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
         (int) req.user_agent.size, req.user_agent.data);
 
     dfk_http_response_t resp;
-    dfk__http_response_init(&resp, http->dfk, &request_arena, &connection_arena, sock);
+    /** @todo check return value */
+    dfk_http_response_init(&resp, http->dfk, &request_arena, &connection_arena, sock);
 
     int hres = http->_handler(http, &req, &resp);
     DFK_INFO(http->dfk, "{%p} http handler returned %d", (void*) http, hres);
@@ -243,8 +246,8 @@ void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
       pdata.keepalive = 0;
     }
 
-    dfk_buf_t connection = dfk_http_response_get(&resp, DFK_HTTP_CONNECTION,
-                                                 sizeof(DFK_HTTP_CONNECTION));
+    dfk_buf_t connection = dfk_strmap_get(&resp.headers, DFK_HTTP_CONNECTION,
+                                          sizeof(DFK_HTTP_CONNECTION));
     if (!strncmp(connection.data, "close", DFK_MIN(connection.size, 5))) {
       pdata.keepalive = 0;
     }
@@ -254,13 +257,14 @@ void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
      */
     pdata.keepalive = 0;
 
-    dfk__http_response_flush(&resp);
+    dfk_http_response_flush_headers(&resp);
 
     ++nrequests;
 
 connection_broken:
-    dfk__http_response_free(&resp);
-    dfk__http_request_free(&req);
+    /** @todo check for return value */
+    dfk_http_response_free(&resp);
+    dfk_http_request_free(&req);
     dfk_arena_free(&request_arena);
   }
 

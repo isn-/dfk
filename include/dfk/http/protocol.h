@@ -30,5 +30,12 @@
 #include <dfk/tcp_socket.h>
 #include <dfk/http/server.h>
 
+/**
+ * @addtogroup http
+ * @{
+ */
+
 void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http);
+
+/** @} */
 

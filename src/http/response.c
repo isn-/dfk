@@ -27,10 +27,10 @@
 #include <dfk/internal.h>
 
 
-void dfk__http_response_init(dfk_http_response_t* resp, dfk_t* dfk,
-                             dfk_arena_t* request_arena,
-                             dfk_arena_t* connection_arena,
-                             dfk_tcp_socket_t* sock)
+int dfk_http_response_init(dfk_http_response_t* resp, dfk_t* dfk,
+                           dfk_arena_t* request_arena,
+                           dfk_arena_t* connection_arena,
+                           dfk_tcp_socket_t* sock)
 {
   assert(resp);
   assert(request_arena);
@@ -40,7 +40,7 @@ void dfk__http_response_init(dfk_http_response_t* resp, dfk_t* dfk,
   resp->_request_arena = request_arena;
   resp->_connection_arena = connection_arena;
   resp->_sock = sock;
-  dfk_avltree_init(&resp->_headers, dfk__http_headers_cmp);
+  DFK_CALL(dfk, dfk_strmap_init(&resp->headers));
 #if DFK_MOCKS
   resp->_sock_mocked = 0;
   resp->_sock_mock = 0;
@@ -53,88 +53,20 @@ void dfk__http_response_init(dfk_http_response_t* resp, dfk_t* dfk,
   resp->code = DFK_HTTP_OK;
   resp->content_length = (size_t) -1;
   resp->chunked = 0;
-}
-
-
-void dfk__http_response_free(dfk_http_response_t* resp)
-{
-  assert(resp);
-  dfk_avltree_free(&resp->_headers);
-}
-
-
-int dfk_http_set(dfk_http_response_t* resp, const char* name, size_t namesize, const char* value, size_t valuesize)
-{
-  if (!resp || (!name && namesize) || (!value && valuesize)) {
-    return dfk_err_badarg;
-  }
-  DFK_DBG(resp->dfk, "{%p} %.*s: %.*s", (void*) resp, (int) namesize, name,
-          (int) valuesize, value);
-  dfk_http_header_t* header = dfk_arena_alloc(resp->_request_arena,
-                                              sizeof(dfk_http_header_t));
-  if (!header) {
-    return dfk_err_nomem;
-  }
-  dfk__http_header_init(header);
-  header->name = (dfk_buf_t) {(char*) name, namesize};
-  header->value = (dfk_buf_t) {(char*) value, valuesize};
-  dfk_avltree_insert(&resp->_headers, (dfk_avltree_hook_t*) header);
   return dfk_err_ok;
 }
 
 
-int dfk_http_set_copy(dfk_http_response_t* resp, const char* name,
-                      size_t namesize, const char* value, size_t valuesize)
+int dfk_http_response_free(dfk_http_response_t* resp)
 {
-  if (!resp || (!name && namesize) || (!value && valuesize)) {
+  if (!resp) {
     return dfk_err_badarg;
   }
-  DFK_DBG(resp->dfk, "{%p} %.*s: %.*s", (void*) resp, (int) namesize, name, (int) valuesize, value);
-  void* namecopy = dfk_arena_alloc_copy(resp->_request_arena, name, namesize);
-  if (!namecopy) {
-    return dfk_err_nomem;
-  }
-  void* valuecopy = dfk_arena_alloc_copy(resp->_request_arena, value, valuesize);
-  if (!valuecopy) {
-    return dfk_err_nomem;
-  }
-  return dfk_http_set(resp, namecopy, namesize, valuecopy, valuesize);
+  return dfk_strmap_free(&resp->headers);
 }
 
 
-int dfk_http_set_copy_name(dfk_http_response_t* resp, const char* name,
-                           size_t namesize, const char* value,
-                           size_t valuesize)
-{
-  if (!resp || (!name && namesize) || (!value && valuesize)) {
-    return dfk_err_badarg;
-  }
-  DFK_DBG(resp->dfk, "{%p} %.*s: %.*s", (void*) resp, (int) namesize, name, (int) valuesize, value);
-  void* namecopy = dfk_arena_alloc_copy(resp->_request_arena, name, namesize);
-  if (!namecopy) {
-    return dfk_err_nomem;
-  }
-  return dfk_http_set(resp, namecopy, namesize, value, valuesize);
-}
-
-
-int dfk_http_set_copy_value(dfk_http_response_t* resp, const char* name,
-                            size_t namesize, const char* value,
-                            size_t valuesize)
-{
-  if (!resp || (!name && namesize) || (!value && valuesize)) {
-    return dfk_err_badarg;
-  }
-  DFK_DBG(resp->dfk, "{%p} %.*s: %.*s", (void*) resp, (int) namesize, name, (int) valuesize, value);
-  void* valuecopy = dfk_arena_alloc_copy(resp->_request_arena, value, valuesize);
-  if (!valuecopy) {
-    return dfk_err_nomem;
-  }
-  return dfk_http_set(resp, name, namesize, valuecopy, valuesize);
-}
-
-
-int dfk__http_response_flush_headers(dfk_http_response_t* resp)
+int dfk_http_response_flush_headers(dfk_http_response_t* resp)
 {
   assert(resp);
   if (resp->_headers_flushed) {
@@ -143,15 +75,16 @@ int dfk__http_response_flush_headers(dfk_http_response_t* resp)
 
   /* Set "Content-Length" header if not specified manually */
   if (resp->content_length != (size_t) -1) {
-    dfk_buf_t content_length = dfk_http_response_get(resp, DFK_HTTP_CONTENT_LENGTH, sizeof(DFK_HTTP_CONTENT_LENGTH) - 1);
+    dfk_buf_t content_length = dfk_strmap_get(&resp->headers, DFK_HTTP_CONTENT_LENGTH, sizeof(DFK_HTTP_CONTENT_LENGTH) - 1);
     if (!content_length.data) {
       char buf[64] = {0};
       size_t len = snprintf(buf, sizeof(buf), "%llu", (unsigned long long) resp->content_length);
-      dfk_http_set_copy_value(resp, DFK_HTTP_CONTENT_LENGTH, sizeof(DFK_HTTP_CONTENT_LENGTH) - 1, buf, len);
+      dfk_strmap_item_t* cl = dfk_strmap_item_acopy_value(resp->_request_arena, DFK_HTTP_CONTENT_LENGTH, sizeof(DFK_HTTP_CONTENT_LENGTH) - 1, buf, len);
+      dfk_strmap_insert(&resp->headers, cl);
     }
   }
 
-  size_t totalheaders = dfk_avltree_size(&resp->_headers);
+  size_t totalheaders = dfk_strmap_size(&resp->headers);
   size_t niov = 4 * totalheaders + 2;
   dfk_iovec_t* iov = dfk_arena_alloc(resp->_request_arena, niov * sizeof(dfk_iovec_t));
   if (!iov) {
@@ -175,15 +108,14 @@ int dfk__http_response_flush_headers(dfk_http_response_t* resp)
   } else {
     size_t i = 0;
     iov[i++] = (dfk_iovec_t) {sbuf, ssize};
-    dfk_avltree_it_t it;
-    dfk_avltree_it_init(&resp->_headers, &it);
-    while (dfk_avltree_it_valid(&it) && i < niov) {
-      dfk_http_header_t* h = (dfk_http_header_t*) it.value;
-      iov[i++] = h->name;
+    dfk_strmap_it it;
+    dfk_strmap_begin(&resp->headers, &it);
+    while (dfk_strmap_it_valid(&it) == dfk_err_ok && i < niov) {
+      iov[i++] = it.item->key;
       iov[i++] = (dfk_iovec_t) {": ", 2};
-      iov[i++] = h->value;
+      iov[i++] = it.item->value;
       iov[i++] = (dfk_iovec_t) {"\r\n", 2};
-      dfk_avltree_it_next(&it);
+      dfk_strmap_it_next(&it);
     }
     iov[i++] = (dfk_iovec_t) {"\r\n", 2};
 #if DFK_MOCKS
@@ -201,38 +133,7 @@ int dfk__http_response_flush_headers(dfk_http_response_t* resp)
 }
 
 
-int dfk__http_response_flush(dfk_http_response_t* resp)
-{
-  assert(resp);
-  return dfk__http_response_flush_headers(resp);
-}
-
-
-dfk_buf_t dfk_http_response_get(dfk_http_response_t* resp,
-                                const char* name, size_t namesize)
-{
-  if (!resp) {
-    return (dfk_buf_t) {NULL, 0};
-  }
-  if (!name && namesize) {
-    resp->dfk->dfk_errno = dfk_err_badarg;
-    return (dfk_buf_t) {NULL, 0};
-  }
-  return dfk__http_headers_get(&resp->_headers, name, namesize);
-}
-
-
-int dfk_http_response_headers_begin(dfk_http_response_t* resp,
-                                    dfk_http_header_it* it)
-{
-  if (!resp || !it) {
-    return dfk_err_badarg;
-  }
-  return dfk__http_headers_begin(&resp->_headers, it);
-}
-
-
-ssize_t dfk_http_write(dfk_http_response_t* resp, char* buf, size_t nbytes)
+ssize_t dfk_http_response_write(dfk_http_response_t* resp, char* buf, size_t nbytes)
 {
   if (!resp) {
     return -1;
@@ -242,11 +143,11 @@ ssize_t dfk_http_write(dfk_http_response_t* resp, char* buf, size_t nbytes)
     return -1;
   }
   dfk_iovec_t iov = {buf, nbytes};
-  return dfk_http_writev(resp, &iov, 1);
+  return dfk_http_response_writev(resp, &iov, 1);
 }
 
 
-ssize_t dfk_http_writev(dfk_http_response_t* resp, dfk_iovec_t* iov, size_t niov)
+ssize_t dfk_http_response_writev(dfk_http_response_t* resp, dfk_iovec_t* iov, size_t niov)
 {
   if (!resp) {
     return -1;
@@ -255,7 +156,7 @@ ssize_t dfk_http_writev(dfk_http_response_t* resp, dfk_iovec_t* iov, size_t niov
     resp->dfk->dfk_errno = dfk_err_badarg;
     return -1;
   }
-  dfk__http_response_flush_headers(resp);
+  dfk_http_response_flush_headers(resp);
 #if DFK_MOCKS
   if (resp->_sock_mocked) {
     return dfk_sponge_writev(resp->_sock_mock, iov, niov);
@@ -265,5 +166,104 @@ ssize_t dfk_http_writev(dfk_http_response_t* resp, dfk_iovec_t* iov, size_t niov
 #else
   return dfk_tcp_socket_writev(resp->_sock, iov, niov);
 #endif
+}
+
+
+int dfk_http_response_set(
+    dfk_http_response_t* resp,
+    const char* name, size_t namelen, const char* value, size_t valuelen)
+{
+  if (!resp || (!name && namelen) || (!value && valuelen)) {
+    return dfk_err_badarg;
+  }
+  dfk_strmap_item_t* i = dfk_arena_alloc(resp->_request_arena, sizeof(dfk_strmap_item_t));
+  if (!i) {
+    return dfk_err_nomem;
+  }
+  int ret = dfk_strmap_item_init(i, name, namelen, value, valuelen);
+  if (ret != dfk_err_ok) {
+    return ret;
+  }
+  return dfk_strmap_insert(&resp->headers, i);
+}
+
+
+int dfk_http_response_set_copy(
+    dfk_http_response_t* resp,
+    const char* name, size_t namelen, const char* value, size_t valuelen)
+{
+  if (!resp || (!name && namelen) || (!value && valuelen)) {
+    return dfk_err_badarg;
+  }
+  dfk_strmap_item_t* i = dfk_strmap_item_acopy(
+      resp->_request_arena, name, namelen, value, valuelen);
+  if (!i) {
+    return resp->_request_arena->dfk->dfk_errno;
+  }
+  return dfk_strmap_insert(&resp->headers, i);
+}
+
+
+int dfk_http_response_set_copy_name(
+    dfk_http_response_t* resp,
+    const char* name, size_t namelen, const char* value, size_t valuelen)
+{
+  if (!resp || (!name && namelen) || (!value && valuelen)) {
+    return dfk_err_badarg;
+  }
+  dfk_strmap_item_t* i = dfk_strmap_item_acopy_key(
+      resp->_request_arena, name, namelen, value, valuelen);
+  if (!i) {
+    return resp->_request_arena->dfk->dfk_errno;
+  }
+  return dfk_strmap_insert(&resp->headers, i);
+}
+
+
+int dfk_http_response_set_copy_value(
+    dfk_http_response_t* resp,
+    const char* name, size_t namelen, const char* value, size_t valuelen)
+{
+  if (!resp || (!name && namelen) || (!value && valuelen)) {
+    return dfk_err_badarg;
+  }
+  dfk_strmap_item_t* i = dfk_strmap_item_acopy_value(
+      resp->_request_arena, name, namelen, value, valuelen);
+  if (!i) {
+    return resp->_request_arena->dfk->dfk_errno;
+  }
+  return dfk_strmap_insert(&resp->headers, i);
+}
+
+
+int dfk_http_response_bset(dfk_http_response_t* resp,
+                           dfk_buf_t name, dfk_buf_t value)
+{
+  return dfk_http_response_set(
+      resp, name.data, name.size, value.data, value.size);
+}
+
+
+int dfk_http_response_bset_copy(dfk_http_response_t* resp,
+                                dfk_buf_t name, dfk_buf_t value)
+{
+  return dfk_http_response_set_copy(
+      resp, name.data, name.size, value.data, value.size);
+}
+
+
+int dfk_http_response_bset_copy_name(dfk_http_response_t* resp,
+                                     dfk_buf_t name, dfk_buf_t value)
+{
+  return dfk_http_response_set_copy_name(
+      resp, name.data, name.size, value.data, value.size);
+}
+
+
+int dfk_http_response_bset_copy_value(dfk_http_response_t* resp,
+                                      dfk_buf_t name, dfk_buf_t value)
+{
+  return dfk_http_response_set_copy_value(
+      resp, name.data, name.size, value.data, value.size);
 }
 

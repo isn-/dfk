@@ -27,6 +27,10 @@
 
 #pragma once
 
+/**
+ * @addtogroup http
+ * @{
+ */
 
 #define DFK_HTTP_USER_AGENT "User-Agent"
 #define DFK_HTTP_HOST "Host"
@@ -143,4 +147,6 @@ typedef enum dfk_http_status_e {
 
 
 const char* dfk__http_reason_phrase(dfk_http_status_e status);
+
+/** @} */
 

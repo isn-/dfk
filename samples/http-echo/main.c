@@ -38,14 +38,14 @@ typedef struct args_t {
 
 static int echo(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
-  dfk_http_header_it it;
+  dfk_strmap_it it;
   (void) http;
-  CALL_DFK_API(dfk_http_request_headers_begin(req, &it));
-  while (dfk_http_headers_valid(&it) == dfk_err_ok) {
-    dfk_buf_t name = it.header->name;
-    dfk_buf_t value = it.header->value;
-    CALL_DFK_API(dfk_http_set(resp, name.data, name.size, value.data, value.size));
-    CALL_DFK_API(dfk_http_headers_next(&it));
+  CALL_DFK_API(dfk_strmap_begin(&req->headers, &it));
+  while (dfk_strmap_it_valid(&it) == dfk_err_ok) {
+    dfk_buf_t name = it.item->key;
+    dfk_buf_t value = it.item->value;
+    CALL_DFK_API(dfk_http_response_bset(resp, name, value));
+    CALL_DFK_API(dfk_strmap_it_next(&it));
   }
   resp->code = DFK_HTTP_OK;
   return dfk_err_ok;;

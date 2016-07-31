@@ -27,10 +27,10 @@
 #include <dfk/internal.h>
 
 
-void dfk__http_request_init(dfk_http_request_t* req, dfk_t* dfk,
-                            dfk_arena_t* request_arena,
-                            dfk_arena_t* connection_arena,
-                            dfk_tcp_socket_t* sock)
+int dfk_http_request_init(dfk_http_request_t* req, dfk_t* dfk,
+                          dfk_arena_t* request_arena,
+                          dfk_arena_t* connection_arena,
+                          dfk_tcp_socket_t* sock)
 {
   assert(req);
   assert(request_arena);
@@ -39,8 +39,8 @@ void dfk__http_request_init(dfk_http_request_t* req, dfk_t* dfk,
   req->_request_arena = request_arena;
   req->_connection_arena = connection_arena;
   req->_sock = sock;
-  dfk_avltree_init(&req->_headers, dfk__http_headers_cmp);
-  dfk_avltree_init(&req->_arguments, dfk__http_headers_cmp);
+  DFK_CALL(dfk, dfk_strmap_init(&req->headers));
+  DFK_CALL(dfk, dfk_strmap_init(&req->arguments));
   req->_bodypart = (dfk_buf_t) {NULL, 0};
   req->_body_bytes_nread = 0;
   req->_headers_done = 0;
@@ -54,17 +54,19 @@ void dfk__http_request_init(dfk_http_request_t* req, dfk_t* dfk,
   req->host = (dfk_buf_t) {NULL, 0};
   req->content_type = (dfk_buf_t) {NULL, 0};
   req->content_length = 0;
+  return dfk_err_ok;
 }
 
 
-void dfk__http_request_free(dfk_http_request_t* req)
+int dfk_http_request_free(dfk_http_request_t* req)
 {
-  dfk_avltree_free(&req->_arguments);
-  dfk_avltree_free(&req->_headers);
+  DFK_CALL(req->dfk, dfk_strmap_free(&req->arguments));
+  DFK_CALL(req->dfk, dfk_strmap_free(&req->headers));
+  return dfk_err_ok;
 }
 
 
-ssize_t dfk_http_read(dfk_http_request_t* req, char* buf, size_t size)
+ssize_t dfk_http_request_read(dfk_http_request_t* req, char* buf, size_t size)
 {
   if (!req || (!buf && size)) {
     return dfk_err_badarg;
@@ -97,36 +99,12 @@ ssize_t dfk_http_read(dfk_http_request_t* req, char* buf, size_t size)
 }
 
 
-ssize_t dfk_http_readv(dfk_http_request_t* req, dfk_iovec_t* iov, size_t niov)
+ssize_t dfk_http_request_readv(dfk_http_request_t* req, dfk_iovec_t* iov, size_t niov)
 {
   if (!req || (!iov && niov)) {
     return dfk_err_badarg;
   }
   DFK_DBG(req->dfk, "{%p} into %llu blocks", (void*) req, (unsigned long long) niov);
-  return dfk_http_read(req, iov[0].data, iov[0].size);
-}
-
-
-dfk_buf_t dfk_http_request_get(struct dfk_http_request_t* req,
-                               const char* name, size_t namesize)
-{
-  if (!req) {
-    return (dfk_buf_t) {NULL, 0};
-  }
-  if (!name && namesize) {
-    req->dfk->dfk_errno = dfk_err_badarg;
-    return (dfk_buf_t) {NULL, 0};
-  }
-  return dfk__http_headers_get(&req->_headers, name, namesize);
-}
-
-
-int dfk_http_request_headers_begin(struct dfk_http_request_t* req,
-                                   dfk_http_header_it* it)
-{
-  if (!req || !it) {
-    return dfk_err_badarg;
-  }
-  return dfk__http_headers_begin(&req->_headers, it);
+  return dfk_http_request_read(req, iov[0].data, iov[0].size);
 }
 

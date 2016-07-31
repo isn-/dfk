@@ -232,14 +232,14 @@ static int ut_iterate_headers(dfk_http_t* http, dfk_http_request_t* req, dfk_htt
       "application/x-www-form-urlencoded",
       "*/*"
     };
-    dfk_http_header_it it;
+    dfk_strmap_it it;
     size_t i = 0;
     assert(DFK_SIZE(expected_fields) == DFK_SIZE(expected_values));
-    dfk_http_request_headers_begin(req, &it);
-    while (dfk_http_headers_valid(&it) == dfk_err_ok) {
-      EXPECT_BUFSTREQ(it.header->name, expected_fields[i]);
-      EXPECT_BUFSTREQ(it.header->value, expected_values[i]);
-      dfk_http_headers_next(&it);
+    dfk_strmap_begin(&req->headers, &it);
+    while (dfk_strmap_it_valid(&it) == dfk_err_ok) {
+      EXPECT_BUFSTREQ(it.item->key, expected_fields[i]);
+      EXPECT_BUFSTREQ(it.item->value, expected_values[i]);
+      dfk_strmap_it_next(&it);
       ++i;
     }
     EXPECT(i == DFK_SIZE(expected_fields));
@@ -255,46 +255,6 @@ TEST_F(http_fixture, http, iterate_headers)
   http_fixture_set_handler(fixture, ut_iterate_headers);
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   curl_easy_setopt(fixture->curl, CURLOPT_POST, 1L);
-  res = curl_easy_perform(fixture->curl);
-  EXPECT(res == CURLE_OK);
-}
-
-
-static int ut_request_errors(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
-{
-  DFK_UNUSED(http);
-  DFK_UNUSED(req);
-  EXPECT(dfk_http_request_get(NULL, "foo", 3).data == NULL);
-  EXPECT(dfk_http_request_get(NULL, "foo", 3).size == 0);
-  EXPECT(dfk_http_request_get(req, NULL, 3).data == NULL);
-  EXPECT(dfk_http_request_get(req, NULL, 3).size == 0);
-  EXPECT(dfk_http_request_get(req, "foo", 0).data == NULL);
-  EXPECT(dfk_http_request_get(req, "foo", 0).size == 0);
-  {
-    dfk_http_header_it it;
-    EXPECT(dfk_http_request_headers_begin(NULL, &it) == dfk_err_badarg);
-    EXPECT(dfk_http_request_headers_begin(req, NULL) == dfk_err_badarg);
-    EXPECT(dfk_http_headers_next(NULL) == dfk_err_badarg);
-    EXPECT(dfk_http_headers_valid(NULL) == dfk_err_badarg);
-  }
-  {
-    dfk_http_header_it it;
-    EXPECT_OK(dfk_http_request_headers_begin(req, &it));
-    while (dfk_http_headers_valid(&it) == dfk_err_ok) {
-      EXPECT_OK(dfk_http_headers_next(&it));
-    }
-    EXPECT(dfk_http_headers_next(&it) == dfk_err_eof);
-  }
-  resp->code = 200;
-  return 0;
-}
-
-
-TEST_F(http_fixture, http, request_errors)
-{
-  CURLcode res;
-  http_fixture_set_handler(fixture, ut_request_errors);
-  curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   res = curl_easy_perform(fixture->curl);
   EXPECT(res == CURLE_OK);
 }
@@ -355,7 +315,7 @@ static int ut_content_length(dfk_http_t* http, dfk_http_request_t* req, dfk_http
   DFK_UNUSED(http);
   EXPECT(req->content_length == 9);
   char buf[9] = {0};
-  size_t nread = dfk_http_read(req, buf, req->content_length);
+  size_t nread = dfk_http_request_read(req, buf, req->content_length);
   EXPECT(nread == req->content_length);
   resp->code = 200;
   return 0;
@@ -383,7 +343,7 @@ static int ut_post_9_bytes(dfk_http_t* http, dfk_http_request_t* req, dfk_http_r
   DFK_UNUSED(http);
   EXPECT(req->content_length == 9);
   char buf[9] = {0};
-  size_t nread = dfk_http_read(req, buf, req->content_length);
+  size_t nread = dfk_http_request_read(req, buf, req->content_length);
   EXPECT(nread == req->content_length);
   EXPECT(memcmp(buf, "some data", 9) == 0);
   resp->code = 200;
@@ -416,7 +376,7 @@ static int ut_post_10_mb(dfk_http_t* http, dfk_http_request_t* req, dfk_http_res
   assert(buf);
   size_t totalread = 0;
   while (totalread != 10 * MiB) {
-    size_t nread = dfk_http_read(req, buf, bufsize);
+    size_t nread = dfk_http_request_read(req, buf, bufsize);
     EXPECT(nread > 0);
     totalread += nread;
   }
@@ -451,8 +411,10 @@ static int ut_output_headers(dfk_http_t* http, dfk_http_request_t* req, dfk_http
 {
   DFK_UNUSED(http);
   DFK_UNUSED(req);
-  dfk_http_set(resp, "Server", 6, "rocks", 5);
-  dfk_http_set(resp, "Foo", 3, "bar", 3);
+  dfk_strmap_item_t* i = dfk_strmap_item_acopy(req->_request_arena, "Server", 6, "rocks", 5);
+  dfk_strmap_insert(&resp->headers, i);
+  i = dfk_strmap_item_acopy(req->_request_arena, "Foo", 3, "bar", 3);
+  dfk_strmap_insert(&resp->headers, i);
   resp->code = 200;
   return 0;
 }

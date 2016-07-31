@@ -29,14 +29,17 @@
 #include <dfk/config.h>
 #include <dfk/core.h>
 #include <dfk/tcp_socket.h>
-#include <dfk/internal/avltree.h>
+#include <dfk/strmap.h>
 #include <dfk/internal/arena.h>
 #include <dfk/http/constants.h>
-#include <dfk/http/header.h>
 #if DFK_MOCKS
 #include <dfk/internal/sponge.h>
 #endif
 
+/**
+ * @addtogroup http
+ * @{
+ */
 
 /**
  * HTTP request type
@@ -48,8 +51,6 @@ typedef struct dfk_http_request_t {
   dfk_arena_t* _connection_arena;
   dfk_arena_t* _request_arena;
   dfk_tcp_socket_t* _sock;
-  dfk_avltree_t _headers; /* contains dfk_http_header_t */
-  dfk_avltree_t _arguments; /* contains dfk_http_argument_t */
   dfk_buf_t _bodypart;
   size_t _body_bytes_nread;
   int _headers_done;
@@ -74,32 +75,21 @@ typedef struct dfk_http_request_t {
   dfk_buf_t accept;
   dfk_buf_t content_type;
   uint64_t content_length;
+  dfk_strmap_t headers;
+  dfk_strmap_t arguments;
 } dfk_http_request_t;
 
 
-void dfk__http_request_init(dfk_http_request_t* req, dfk_t* dfk,
-                            dfk_arena_t* request_arena,
-                            dfk_arena_t* connection_arena,
-                            dfk_tcp_socket_t* sock);
+int dfk_http_request_init(dfk_http_request_t* req, dfk_t* dfk,
+                          dfk_arena_t* request_arena,
+                          dfk_arena_t* connection_arena,
+                          dfk_tcp_socket_t* sock);
 
-void dfk__http_request_free(dfk_http_request_t* req);
+int dfk_http_request_free(dfk_http_request_t* req);
 
-
-ssize_t dfk_http_read(dfk_http_request_t* req, char* buf, size_t size);
-ssize_t dfk_http_readv(dfk_http_request_t* req, dfk_iovec_t* iov, size_t niov);
-
-dfk_buf_t dfk_http_request_get(struct dfk_http_request_t* req,
-                               const char* name, size_t namesize);
-
-int dfk_http_request_headers_begin(struct dfk_http_request_t* req,
-                                   dfk_http_header_it* it);
+ssize_t dfk_http_request_read(dfk_http_request_t* req, char* buf, size_t size);
+ssize_t dfk_http_request_readv(dfk_http_request_t* req, dfk_iovec_t* iov, size_t niov);
 
 
-typedef dfk_http_header_t dfk_http_arg_t;
-typedef dfk_http_header_it dfk_http_arg_it;
-
-dfk_buf_t dfk_http_getarg(dfk_http_request_t* req, const char* name, size_t namesize);
-int dfk_http_args_begin(dfk_http_request_t* req, dfk_http_arg_it* it);
-int dfk_http_args_next(dfk_http_arg_it* it);
-int dfk_http_args_end(dfk_http_arg_it* it);
+/** @} */
 

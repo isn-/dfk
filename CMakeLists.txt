@@ -147,7 +147,6 @@ add_library(dfk
   src/tcp_socket.c
   src/strmap.c
   src/http/constants.c
-  src/http/header.c
   src/http/request.c
   src/http/response.c
   src/http/protocol.c
