@@ -344,6 +344,7 @@ ssize_t dfk_http_request_read(dfk_http_request_t* req, char* buf, size_t size)
 
   char* bufcopy = buf;
   size_t sizecopy = size;
+  DFK_UNUSED(sizecopy);
   dfk_body_parser_data_t pdata;
   pdata.req = req;
   pdata.dfk_errno = dfk_err_ok;

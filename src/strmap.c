@@ -91,6 +91,7 @@ dfk_strmap_item_t* dfk_strmap_item_copy(
   int ret = dfk_strmap_item_init((dfk_strmap_item_t*) buf,
                                  pkey, keylen, pvalue, valuelen);
   assert(ret == dfk_err_ok);
+  DFK_UNUSED(ret);
   return (dfk_strmap_item_t*) buf;
 }
 
@@ -118,6 +119,7 @@ dfk_strmap_item_t* dfk_strmap_item_copy_key(
   int ret = dfk_strmap_item_init((dfk_strmap_item_t*) buf,
                                  pkey, keylen, value, valuelen);
   assert(ret == dfk_err_ok);
+  DFK_UNUSED(ret);
   return (dfk_strmap_item_t*) buf;
 }
 
@@ -145,6 +147,7 @@ dfk_strmap_item_t* dfk_strmap_item_copy_value(
   int ret = dfk_strmap_item_init((dfk_strmap_item_t*) buf,
                                  key, keylen, pvalue, valuelen);
   assert(ret == dfk_err_ok);
+  DFK_UNUSED(ret);
   return (dfk_strmap_item_t*) buf;
 }
 
@@ -178,6 +181,7 @@ dfk_strmap_item_t* dfk_strmap_item_acopy(
   }
   int ret = dfk_strmap_item_init(item, pkey, keylen, pvalue, valuelen);
   assert(ret == dfk_err_ok);
+  DFK_UNUSED(ret);
   return (dfk_strmap_item_t*) item;
 }
 
@@ -204,6 +208,7 @@ dfk_strmap_item_t* dfk_strmap_item_acopy_key(
   }
   int ret = dfk_strmap_item_init(item, pkey, keylen, value, valuelen);
   assert(ret == dfk_err_ok);
+  DFK_UNUSED(ret);
   return (dfk_strmap_item_t*) item;
 }
 
@@ -230,6 +235,7 @@ dfk_strmap_item_t* dfk_strmap_item_acopy_value(
   }
   int ret = dfk_strmap_item_init(item, key, keylen, pvalue, valuelen);
   assert(ret == dfk_err_ok);
+  DFK_UNUSED(ret);
   return (dfk_strmap_item_t*) item;
 }
 
