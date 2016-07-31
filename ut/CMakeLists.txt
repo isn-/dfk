@@ -7,6 +7,7 @@ set(ut_sources
   test_avltree.c
   test_arena.c
   test_sponge.c
+  test_strmap.c
   test_misc.c
   test_sync.c
   test_tcp_socket.c
