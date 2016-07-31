@@ -30,14 +30,14 @@
 TEST(http, reason_phrase)
 {
   /* For the most common error codes, check exact phrase */
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_OK), "OK"));
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_CREATED), "Created"));
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_BAD_REQUEST), "Bad Request"));
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_NOT_FOUND), "Not Found"));
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_REQUEST_TIMEOUT), "Request Timeout"));
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_INTERNAL_SERVER_ERROR), "Internal Server Error"));
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_BAD_GATEWAY), "Bad Gateway"));
-  EXPECT(!strcmp(dfk__http_reason_phrase(DFK_HTTP_GATEWAY_TIMEOUT), "Gateway Timeout"));
+  EXPECT(!strcmp(dfk_http_reason_phrase(DFK_HTTP_OK), "OK"));
+  EXPECT(!strcmp(dfk_http_reason_phrase(DFK_HTTP_CREATED), "Created"));
+  EXPECT(!strcmp(dfk_http_reason_phrase(DFK_HTTP_BAD_REQUEST), "Bad Request"));
+  EXPECT(!strcmp(dfk_http_reason_phrase(DFK_HTTP_NOT_FOUND), "Not Found"));
+  EXPECT(!strcmp(dfk_http_reason_phrase(DFK_HTTP_REQUEST_TIMEOUT), "Request Timeout"));
+  EXPECT(!strcmp(dfk_http_reason_phrase(DFK_HTTP_INTERNAL_SERVER_ERROR), "Internal Server Error"));
+  EXPECT(!strcmp(dfk_http_reason_phrase(DFK_HTTP_BAD_GATEWAY), "Bad Gateway"));
+  EXPECT(!strcmp(dfk_http_reason_phrase(DFK_HTTP_GATEWAY_TIMEOUT), "Gateway Timeout"));
 
   /* For other codes, check presence of the phrase */
   dfk_http_status_e st[] = {
@@ -64,7 +64,7 @@ TEST(http, reason_phrase)
   };
 
   for (size_t i = 0; i < DFK_SIZE(st); ++i) {
-    const char* rp = dfk__http_reason_phrase(st[i]);
+    const char* rp = dfk_http_reason_phrase(st[i]);
     EXPECT(rp);
     EXPECT(rp[0] != '\0');
   }
@@ -73,6 +73,6 @@ TEST(http, reason_phrase)
 
 TEST(http, reason_phrase_unknown)
 {
-  EXPECT(!strcmp(dfk__http_reason_phrase(0), "Unknown"));
+  EXPECT(!strcmp(dfk_http_reason_phrase(0), "Unknown"));
 }
 

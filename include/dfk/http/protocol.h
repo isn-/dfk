@@ -35,7 +35,11 @@
  * @{
  */
 
-void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http);
+/**
+ * HTTP protocol implementation
+ * @private
+ */
+void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http);
 
 /** @} */
 

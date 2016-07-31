@@ -34,7 +34,7 @@ typedef struct dfk__event_list_item_t {
 } dfk__event_list_item_t;
 
 
-static void dfk__http_connection(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
+static void dfk_http_connection(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
 {
   dfk_http_t* http = (dfk_http_t*) p;
 
@@ -51,7 +51,7 @@ static void dfk__http_connection(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void*
   DFK_CALL_RVOID(http->dfk, dfk_event_init(&item.event, http->dfk));
   dfk_list_append(&http->_connections, &item.hook);
 
-  dfk__http(coro, sock, http);
+  dfk_http(coro, sock, http);
 
   dfk_list_erase(&http->_connections, &item.hook);
   dfk_list_hook_free(&item.hook);
@@ -113,7 +113,7 @@ int dfk_http_serve(dfk_http_t* http,
   http->_handler = handler;
   dfk_list_append(&http->dfk->_http_servers, &http->_hook);
   DFK_CALL(http->dfk, dfk_tcp_socket_listen(&http->_listensock, endpoint, port,
-                                            dfk__http_connection, http, 0));
+                                            dfk_http_connection, http, 0));
 
   dfk_list_hook_t* i = http->_connections.head;
   while (i) {

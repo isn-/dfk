@@ -94,7 +94,7 @@ int dfk_http_response_flush_headers(dfk_http_response_t* resp)
   char sbuf[128] = {0};
   int ssize = snprintf(sbuf, sizeof(sbuf), "HTTP/%d.%d %3d %s\r\n",
                        resp->major_version, resp->minor_version, resp->code,
-                       dfk__http_reason_phrase(resp->code));
+                       dfk_http_reason_phrase(resp->code));
   if (!iov) {
 #if DFK_MOCKS
     if (resp->_sock_mocked) {

@@ -146,7 +146,10 @@ typedef enum dfk_http_status_e {
 } dfk_http_status_e;
 
 
-const char* dfk__http_reason_phrase(dfk_http_status_e status);
+/**
+ * @private
+ */
+const char* dfk_http_reason_phrase(dfk_http_status_e status);
 
 /** @} */
 

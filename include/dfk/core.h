@@ -145,6 +145,13 @@ typedef enum dfk_error_e {
    */
   dfk_err_overflow,
 
+  /**
+   * Protocol violation
+   *
+   * For instance, invalid HTTP request method.
+   */
+  dfk_err_protocol,
+
   _dfk_err_total
 } dfk_error_e;
 

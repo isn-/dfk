@@ -16,6 +16,7 @@ set(ut_sources
 
 if(DFK_MOCKS)
   list(APPEND ut_sources
+    http/test_http_request.c
     http/test_http_response.c)
 endif()
 
@@ -80,7 +81,21 @@ file(APPEND ${ut_init_h} "\n")
 
 if(VALGRIND AND NOT DFK_ENABLE_COVERAGE)
   set(suppressions "${CMAKE_SOURCE_DIR}/scripts/pthread_create.supp")
-  foreach(i core list avltree arena sponge misc mutex cond event tcp_socket http http_response)
+  set(ut_modules
+    core
+    list
+    alvtree
+    strmap
+    sponge
+    misc
+    mutex
+    cond
+    event
+    tcp_socket
+    http
+    http_request
+    http_response)
+  foreach(i ${ut_modules})
     add_test(valgrind.${i} ${VALGRIND} --error-exitcode=1 --leak-check=full --suppressions=${suppressions} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ut-dfk" ${i})
   endforeach()
   add_test(valgrind.all_tests ${VALGRIND} --error-exitcode=1 --leak-check=full --suppressions=${suppressions} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ut-dfk")

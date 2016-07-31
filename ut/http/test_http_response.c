@@ -1,6 +1,7 @@
 /**
  * @copyright
  * Copyright (c) 2015-2016 Stanislav Ivochkin
+ *
  * Licensed under the MIT License:
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy

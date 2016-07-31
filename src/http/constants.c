@@ -25,7 +25,7 @@
 #include <dfk/http/constants.h>
 
 
-const char* dfk__http_reason_phrase(dfk_http_status_e status)
+const char* dfk_http_reason_phrase(dfk_http_status_e status)
 {
   switch (status) {
     case DFK_HTTP_CONTINUE: return "Continue";

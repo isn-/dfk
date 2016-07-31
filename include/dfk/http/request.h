@@ -26,6 +26,7 @@
  */
 
 #pragma once
+#include <http_parser.h>
 #include <dfk/config.h>
 #include <dfk/core.h>
 #include <dfk/tcp_socket.h>
@@ -51,9 +52,9 @@ typedef struct dfk_http_request_t {
   dfk_arena_t* _connection_arena;
   dfk_arena_t* _request_arena;
   dfk_tcp_socket_t* _sock;
-  dfk_buf_t _bodypart;
-  size_t _body_bytes_nread;
-  int _headers_done;
+  dfk_buf_t _remainder;
+  size_t _body_nread;
+  http_parser _parser;
 
 #if DFK_MOCKS
   int _sock_mocked;
@@ -75,17 +76,38 @@ typedef struct dfk_http_request_t {
   dfk_buf_t accept;
   dfk_buf_t content_type;
   uint64_t content_length;
+  unsigned int keepalive : 1;
+  unsigned int chunked : 1;
   dfk_strmap_t headers;
   dfk_strmap_t arguments;
 } dfk_http_request_t;
 
 
+/**
+ * @private
+ */
 int dfk_http_request_init(dfk_http_request_t* req, dfk_t* dfk,
                           dfk_arena_t* request_arena,
                           dfk_arena_t* connection_arena,
                           dfk_tcp_socket_t* sock);
 
+/**
+ * @private
+ */
 int dfk_http_request_free(dfk_http_request_t* req);
+
+/**
+ * Prepare HTTP request.
+ *
+ * Reads and parses url and headers.
+ *
+ * A part of request body, or even the next request within connection may
+ * be read by this function. If so, unused data is stored in
+ * dfk_http_request_t._remainder member and is accessible within
+ * dfk_http_request_t lifetime.
+ * @private
+ */
+int dfk_http_request_prepare(dfk_http_request_t* req);
 
 ssize_t dfk_http_request_read(dfk_http_request_t* req, char* buf, size_t size);
 ssize_t dfk_http_request_readv(dfk_http_request_t* req, dfk_iovec_t* iov, size_t niov);

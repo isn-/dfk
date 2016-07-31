@@ -531,7 +531,10 @@ const char* dfk_strerr(dfk_t* dfk, int err)
       return "dfk_err_not_implemented(9): Functionality is not implemented yet";
     }
     case dfk_err_overflow: {
-      return "dfk_err_overflow(10): Floating point, or integer overflow error.";
+      return "dfk_err_overflow(10): Floating point, or integer overflow error";
+    }
+    case dfk_err_protocol: {
+      return "dfk_err_protocol(11): Protocol violation";
     }
     default: {
       return "Unknown error";
