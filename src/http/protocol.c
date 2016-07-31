@@ -60,7 +60,7 @@ static int dfk__http_on_url(http_parser* parser, const char* at, size_t size)
 {
   dfk__http_parser_data_t* p = (dfk__http_parser_data_t*) parser->data;
   DFK_DBG(p->dfk, "{%p} %.*s", (void*) p->req, (int) size, at);
-  dfk__buf_append(&p->req->url, at, size);
+  dfk_buf_append(&p->req->url, at, size);
   return 0;
 }
 
@@ -77,7 +77,7 @@ static int dfk__http_on_header_field(http_parser* parser, const char* at, size_t
     /** @todo check p->cheader for NULL */
     dfk_strmap_item_init(p->cheader, NULL, 0, NULL, 0);
   }
-  dfk__buf_append(&p->cheader->key, at, size);
+  dfk_buf_append(&p->cheader->key, at, size);
   return 0;
 }
 
@@ -86,7 +86,7 @@ static int dfk__http_on_header_value(http_parser* parser, const char* at, size_t
 {
   dfk__http_parser_data_t* p = (dfk__http_parser_data_t*) parser->data;
   DFK_DBG(p->dfk, "{%p} %.*s", (void*) p->req, (int) size, at);
-  dfk__buf_append(&p->cheader->value, at, size);
+  dfk_buf_append(&p->cheader->value, at, size);
   return 0;
 }
 
@@ -109,7 +109,7 @@ static int dfk__http_on_body(http_parser* parser, const char* at, size_t size)
 {
   dfk__http_parser_data_t* p = (dfk__http_parser_data_t*) parser->data;
   DFK_DBG(p->dfk, "{%p} %llu bytes", (void*) p->req, (unsigned long long) size);
-  dfk__buf_append(&p->req->_bodypart, at, size);
+  dfk_buf_append(&p->req->_bodypart, at, size);
   return 0;
 }
 
@@ -209,7 +209,7 @@ void dfk__http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
       dfk_buf_t content_length = dfk_strmap_get(&req.headers, DFK_HTTP_CONTENT_LENGTH, sizeof(DFK_HTTP_CONTENT_LENGTH) - 1);
       if (content_length.size) {
         long long intval;
-        int res = dfk__strtoll(content_length, NULL, 10, &intval);
+        int res = dfk_strtoll(content_length, NULL, 10, &intval);
         if (res != dfk_err_ok) {
           DFK_WARNING(http->dfk, "{%p} malformed value for \"" DFK_HTTP_CONTENT_LENGTH "\" header: %.*s",
               (void*) http, (int) content_length.size, content_length.data);

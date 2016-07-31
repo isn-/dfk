@@ -30,10 +30,18 @@
 
 /**
  * strtoll for pascal strings
+ * @private
  * @warning Does not preserve errno upon success
  */
-int dfk__strtoll(dfk_buf_t nbuf, char** endptr, int base, long long* out);
+int dfk_strtoll(dfk_buf_t nbuf, char** endptr, int base, long long* out);
 
 
-void dfk__buf_append(dfk_buf_t* to, const char* data, size_t size);
+/**
+ * Append memory chunk to the buffer @p to.
+ *
+ * Buffers should be placed continuously in memory.
+ * @private
+ * @pre to->data + to->size == data
+ */
+void dfk_buf_append(dfk_buf_t* to, const char* data, size_t size);
 
