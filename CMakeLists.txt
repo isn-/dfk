@@ -123,7 +123,11 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 add_subdirectory(thirdparty)
 
-fw_c_flags("-std=c99")
+if(CMAKE_COMPILER_IS_GNUCC AND CMAKE_C_COMPILER_VERSION VERSION_LESS 4.7)
+  fw_c_flags("-std=c1x")
+else()
+  fw_c_flags("-std=c11")
+endif()
 fw_c_flags("-Werror -Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition")
 
 if(NOT APPLE AND "${DFK_EVENT_LOOP}" STREQUAL LIBUV)
