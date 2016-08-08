@@ -13,6 +13,7 @@ function build {
   fi
   VERSION=$(git describe --tags  --long)
   ( cat Doxyfile ; echo "PROJECT_NUMBER=$VERSION" ) | $DOXYGEN -
+  ( cat Doxyfile ; echo "PROJECT_NUMBER=$VERSION" ; echo "HTML_OUTPUT=doc/html/internal" ; echo "INTERNAL_DOCS=YES" ) | $DOXYGEN -
 
   if [ "$CLEANUP" == "yes" ]; then
     rm include/dfk/config.h
