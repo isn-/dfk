@@ -146,6 +146,7 @@ static node_t* ut_parse_avltree(dfk_t* dfk, dfk_avltree_t* tree, const char* def
   }
   tree->root = (dfk_avltree_hook_t*) (nodes + nnodes - 1);
   tree->root->parent = NULL;
+  tree->size = nnodes;
   return nodes;
 }
 
@@ -282,9 +283,9 @@ TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_1b)
   /*
    * Based on http://stackoverflow.com/a/13843966
    *
-   *                        ┌─20
+   *                       ┌─20
    *   20    --insert 8->  8
-   *    └─4                 └─4
+   *    └─4                └─4
    */
 
   fixture->in_nodes = ut_parse_avltree(&fixture->dfk, &fixture->in_tree,
