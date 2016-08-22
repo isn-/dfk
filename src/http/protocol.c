@@ -42,7 +42,7 @@ void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
   dfk_arena_init(&connection_arena, http->dfk);
 
   /* Requests processed within this connection */
-  size_t nrequests = 0;
+  ssize_t nrequests = 0;
   int keepalive = 1;
 
   while (keepalive) {
@@ -79,7 +79,7 @@ void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
       resp.code = DFK_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    if (nrequests + 1 >= http->keepalive_requests) {
+    if (http->keepalive_requests >= 0 && nrequests + 1 >= http->keepalive_requests) {
       DFK_INFO(http->dfk, "{%p} maximum number of keepalive requests (%llu) "
                "for connection {%p} has reached, close connection",
                (void*) http, (unsigned long long) http->keepalive_requests,

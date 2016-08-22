@@ -57,10 +57,12 @@ typedef struct dfk_http_t {
   dfk_userdata_t user;
 
   /**
-   * Maximum number of requests for a single keepalive connection
+   * Maximum number of requests for a single keepalive connection.
+   *
+   * Negative values means no limit.
    * @note default: 100
    */
-  size_t keepalive_requests;
+  ssize_t keepalive_requests;
 } dfk_http_t;
 
 int dfk_http_init(dfk_http_t* http, dfk_t* dfk);
