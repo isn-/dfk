@@ -33,7 +33,7 @@
 #include <dfk/internal/avltree.h>
 
 /**
- * @addtogroup core
+ * @addtogroup util
  * @{
  */
 

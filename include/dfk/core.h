@@ -205,10 +205,16 @@ typedef struct dfk_t {
 
   dfk_userdata_t user;
 
+  /** User-provided memory allocation function */
   void* (*malloc) (struct dfk_t*, size_t);
+
+  /** User-provided memory deallocation function */
   void (*free) (struct dfk_t*, void*);
+
+  /** User-provided memory relocation function */
   void* (*realloc)(struct dfk_t*, void*, size_t);
 
+  /** User-provided logging function */
   void (*log)(struct dfk_t*, int, const char*);
 
   /**
@@ -260,8 +266,6 @@ int dfk_init(dfk_t* dfk);
 
 /**
  * Cleanup resources allocated for dfk context
- *
- * @pre dfk != NULL
  */
 int dfk_free(dfk_t* dfk);
 
@@ -270,9 +274,10 @@ int dfk_free(dfk_t* dfk);
  * Start a new coroutine
  *
  * Resources allocated to coroutine will be automatically released upon completion.
- *
- * @pre dfk != NULL
- * @pre ep != NULL
+ * @param argsize Size of the arg object. If argsize is set to non-zero value, @p argsize
+ * bytes of memory pointed by @p arg will be copied onto the stack of the newly created
+ * coroutine and @p ep will be provided with arg copy. Set argsize to zero if arg
+ * is guaranteed to be accessible within spawned coroutine lifetime.
  */
 dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg, size_t argsize);
 
@@ -280,29 +285,28 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg, size_
 /**
  * Set name of the coroutine.
  *
- * if DFK_NAMED_COROUTINES is disabled, function returns dfk_err_ok and has no effect
+ * If #DFK_NAMED_COROUTINES is disabled, function returns dfk_err_ok and has no effect
  */
 int dfk_coro_name(dfk_coro_t* coro, const char* fmt, ...);
 
 
 /**
  * Switch execution context to another coroutine
+ *
+ * @note dfk_yield is a low-level function and is not recommended for everyday usage.
+ * Prefer using sync module for higher-level coroutine synchronization techniques.
  */
 int dfk_yield(dfk_coro_t* from, dfk_coro_t* to);
 
 
 /**
  * Start dfk working cycle.
- *
- * @pre dfk != NULL
  */
 int dfk_work(dfk_t* dfk);
 
 
 /**
  * Stop dfk working cycle
- *
- * @pre dfk != NULL
  */
 int dfk_stop(dfk_t* dfk);
 
@@ -310,7 +314,7 @@ int dfk_stop(dfk_t* dfk);
 /**
  * Returns string representation of the error code @p err.
  *
- * If system error has occured (err = dfk_err_sys), strerror(dfk_t.sys_errno) is returned.
+ * If system error has occured (err == dfk_err_sys), strerror(dfk->sys_errno) is returned.
  */
 const char* dfk_strerr(dfk_t* dfk, int err);
 
