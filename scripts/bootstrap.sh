@@ -11,7 +11,7 @@ ROOT=$(pwd -P)
 PREFIX=$ROOT/cpm_packages
 
 # Check for required programs
-for cmd in wget tar make; do
+for cmd in wget tar make libtoolize autogen; do
   echo -n "Checking for $cmd ... "
   if command -v $cmd >/dev/null 2>&1; then
     echo "OK"
@@ -44,7 +44,7 @@ make -j
 make install
 
 # ---------- http-parser ----------
-HTTP_PARSER_VERSION=2.7.0
+HTTP_PARSER_VERSION=2.7.1
 HTTP_PARSER_SOURCE_DIR=$PREFIX/src/http-parser-$HTTP_PARSER_VERSION
 HTTP_PARSER_BUILD_DIR=$PREFIX/build/http-parser-$HTTP_PARSER_VERSION
 HTTP_PARSER_TARBALL=$PREFIX/tarball/http-parser-v$HTTP_PARSER_VERSION.tar.gz
@@ -60,7 +60,7 @@ cp http_parser.h $PREFIX/include
 
 
 # ---------- curl ----------
-CURL_VERSION=7_49_1
+CURL_VERSION=7_50_1
 CURL_SOURCE_DIR=$PREFIX/src/curl-curl-$CURL_VERSION
 CURL_BUILD_DIR=$PREFIX/build/curl-$CURL_VERSION
 CURL_TARBALL=$PREFIX/tarball/curl-$CURL_VERSION.tar.gz
