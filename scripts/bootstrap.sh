@@ -11,7 +11,7 @@ ROOT=$(pwd -P)
 PREFIX=$ROOT/cpm_packages
 
 # Check for required programs
-for cmd in wget tar make libtoolize autogen; do
+for cmd in wget tar make autogen; do
   echo -n "Checking for $cmd ... "
   if command -v $cmd >/dev/null 2>&1; then
     echo "OK"
