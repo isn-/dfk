@@ -303,12 +303,12 @@ int dfk_http_request_prepare(dfk_http_request_t* req)
       DFK_WARNING(req->dfk, "{%p} malformed value for \"" DFK_HTTP_CONTENT_LENGTH "\" header: %.*s",
           (void*) req, (int) content_length.size, content_length.data);
     } else {
-      req->content_length = (size_t) intval;
+      req->content_length = (uint64_t) intval;
     }
   }
   req->keepalive = http_should_keep_alive(&req->_parser);
   req->chunked = !!(req->_parser.flags & F_CHUNKED);
-  if (req->content_length == (size_t) -1 && !req->chunked) {
+  if (req->content_length == (uint64_t) -1 && !req->chunked) {
     DFK_DBG(req->dfk, "{%p} no content-length header, no chunked encoding - "
         "expecting empty body", (void*) req);
     req->content_length = 0;

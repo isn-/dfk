@@ -111,7 +111,7 @@ TEST_F(fixture, http_request, trivial_chunked_body)
                    "0\r\n";
   dfk_sponge_write(&fixture->reqbuf, request, sizeof(request) - 1);
   EXPECT_OK(dfk_http_request_prepare(&fixture->req));
-  EXPECT(fixture->req.content_length == (size_t) -1);
+  EXPECT(fixture->req.content_length == (uint64_t) -1);
   EXPECT(fixture->req.method == DFK_HTTP_POST);
   EXPECT_BUFSTREQ(fixture->req.url, "/");
   EXPECT(fixture->req.major_version == 1);
