@@ -466,7 +466,6 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
    * If height has decreased, we need to update node's balance factor, and
    * possibly perform re-balancing, e.g. rotation to preserve AVL property.
    */
-  int height_decreased = 0;
   int erase_direction = 0;
   if (!e->right) {
     /*
@@ -479,7 +478,6 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
      */
     newe = e->left;
     prime = e->parent;
-    height_decreased = 1;
     erase_direction = prime ? (prime->left == e ? -1 : 1) : 0;
   } else if (!e->right->left) {
     /*
@@ -503,7 +501,6 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
      * height of R subtree after removal proceudre decreases
      * only if height(R) > heigth(A), or, in terms of nodes' balance, e->bal == 1
      */
-    height_decreased = e->bal == 1;
     erase_direction = 1;
   } else {
     /*
@@ -546,7 +543,6 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
     }
     newe = y;
     prime = x;
-    height_decreased = x->bal != 0;
     erase_direction = -1;
   }
 
