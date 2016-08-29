@@ -81,6 +81,7 @@ static void dfk__avltree_print_ptr(dfk_avltree_hook_t* hook)
 }
 
 
+/* Allow recursion for debug builds */
 static size_t dfk__avltree_check_invariants_node(dfk_avltree_hook_t* node)
 {
   assert(node);
@@ -186,52 +187,55 @@ static dfk_avltree_hook_t* dfk__avltree_single_rot(dfk_avltree_hook_t* prime)
    * prime: (A)
    * parent node relatively to the prime: (P)
    * "x" variable stores a pointer to the "B" node
-   *
    */
   if (prime->bal == 2) {
     /*
      * Following rotation is performed:
      *
-     *     ┌─c (height = h+1)        ┌─c
-     *   ┌─B                       P─B
-     *   │ └─b (height = h)    =>    │ ┌─b
-     * P─A                           └─A
-     *   └─a (height = h)              └─a
+     *     ┌─c (height = h+1)              ┌─c
+     *   ┌─B                             P─B
+     *   │ └─b (height = h, or h+1)  =>    │ ┌─b
+     * P─A                                 └─A
+     *   └─a (height = h)                    └─a
      *
      */
     x = prime->right;
     assert(x);
-    assert(x->bal == 1);
+    assert(x->bal == 0 || x->bal == 1);
     prime->right = x->left;
     if (x->left) {
       x->left->parent = prime;
     }
     x->left = prime;
     prime->parent = x;
-    prime->bal = 0;
-    x->bal = 0;
+    prime->bal = 1 - x->bal;
+    x->bal = x->bal - 1;
   } else {
     /*
      * Following rotation is performed:
      *
-     *   ┌─a (height = h)              ┌─a
-     * P─A                           ┌─A
-     *   │ ┌─b (height = h)    =>    │ └─b
-     *   └─B                       P─B
-     *     └─c (height = h+1)        └─c
+     *   ┌─a (height = h)                  ┌─a
+     * P─A                               ┌─A
+     *   │ ┌─b (height = h, or h+1)  =>  │ └─b
+     *   └─B                             P─B
+     *     └─c (height = h+1)              └─c
      */
     x = prime->left;
     assert(prime->bal == -2);
     assert(x);
-    assert(x->bal == -1);
+    assert(x->bal == 0 || x->bal == -1);
     prime->left = x->right;
     if (x->right) {
       x->right->parent = prime;
     }
     x->right = prime;
     prime->parent = x;
-    prime->bal = 0;
-    x->bal = 0;
+    prime->bal = -1 - x->bal;
+    /*
+     * height(b) == h, therefore x->bal == -1, then set x->bal = 0
+     * height(b) == h + 1, therefore x->bal == 0, then set x->bal = 1
+     */
+    x->bal = x->bal + 1;
   }
   return x;
 }
@@ -446,9 +450,215 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* 
 
 void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
 {
-  DFK_UNUSED(tree);
-  DFK_UNUSED(e);
+  assert(tree);
+  assert(e);
+  assert(tree->size);
+#if DFK_DEBUG
+  assert(tree == e->tree);
+#endif
   DFK_AVLTREE_CHECK_INVARIANTS(tree);
+  dfk__avltree_print(tree->root, dfk__avltree_print_int, 0, 0, 0);
+  /* Stores a pointer to node that should take e's place, may be NULL */
+  dfk_avltree_hook_t* newe;
+  /* Node to start rebalancing from */
+  dfk_avltree_hook_t* prime;
+  /* Is set to 1 if subtree's height has changed after the erase operation.
+   * Height can only decrease, obviously.
+   * If height has decreased, we need to update node's balance factor, and
+   * possibly perform re-balancing, e.g. rotation to preserve AVL property.
+   */
+  int height_decreased = 0;
+  int erase_direction = 0;
+  if (!e->right) {
+    /*
+     * Simple case - e has no right subtree.
+     * Replace e with it's left subtree.
+     * Rebalance P moving upwards.
+     *
+     *  P─e    ->  P─A
+     *    └─A
+     */
+    newe = e->left;
+    prime = e->parent;
+    height_decreased = 1;
+    erase_direction = prime ? (prime->left == e ? -1 : 1) : 0;
+  } else if (!e->right->left) {
+    /*
+     * A little more tricky - e has right child R and R has no left child.
+     * Replace e with it's right subtree and make e's left subtree new R's
+     * left subtree.
+     * Rebalance R moving upwards.
+     *
+     *      ┌─Q
+     *    ┌─R          ┌─Q
+     *  P─e      ->  P─R
+     *    └─A          └─A
+     */
+    dfk_avltree_hook_t* r = e->right;
+    dfk_avltree_hook_t* a = e->left;
+    r->left = a;
+    a->parent = r;
+    newe = r;
+    prime = r;
+    /* Since e's right subtree replaces e on it's position,
+     * height of R subtree after removal proceudre decreases
+     * only if height(R) > heigth(A), or, in terms of nodes' balance, e->bal == 1
+     */
+    height_decreased = e->bal == 1;
+    erase_direction = 1;
+  } else {
+    /*
+     * Most tricky case - e has right child R and R has a left child L.
+     * Go down to the leftmost leaf in R. Let's call it Y. And it's parent - X.
+     * X maybe be equal to L. Swap e and Y. Now e has no left subtree and could
+     * be replace with it's right subtree which used to be Y's right subtree (Z).
+     * Rebalance X moving upwards.
+     *
+     *      ┌─Q                ┌─Q
+     *    ┌─R                ┌─R
+     *    | └─L              | └─L
+     *    |   :.X      ->    |   :.X
+     *    |     | ┌─Z        |     └─Z
+     *    |     └─Y        P─Y
+     *  P─e                  └─A
+     *    └─A
+     */
+    dfk_avltree_hook_t* r = e->right;
+    dfk_avltree_hook_t* a = e->left;
+    dfk_avltree_hook_t* i = r;
+    /* Lookup for X node */
+    assert(i->left);
+    while (i->left->left) {
+      i = i->left;
+    }
+    dfk_avltree_hook_t* x = i;
+    dfk_avltree_hook_t* y = i->left;
+    assert(y);
+    assert(!y->left);
+    dfk_avltree_hook_t* z = y->right;
+    y->left = e->left;
+    y->right = e->right;
+    y->bal = e->bal;
+    r->parent = y;
+    a->parent = y;
+    x->left = z;
+    if (z) {
+      z->parent = x;
+    }
+    newe = y;
+    prime = x;
+    height_decreased = x->bal != 0;
+    erase_direction = -1;
+  }
+
+  if (e->parent) {
+    if (e->parent->left == e) {
+      e->parent->left = newe;
+    } else {
+      e->parent->right = newe;
+    }
+  } else {
+    tree->root = newe;
+  }
+  if (newe) {
+    newe->parent = e->parent;
+  }
+
+  while (prime) {
+    if (erase_direction == -1) {
+      /* A node was deleted from the left subtree */
+      prime->bal++;
+      /*
+       * If prime->bal equals to 0, no rebalancing is required,
+       * but we still need to proceed upwards in tree, because
+       * height of the parent subtree might have been changed
+       */
+      if (prime->bal == 1) {
+        /* Before deletion balance was 0, so left and right subtrees were of the same
+         * height. After node deletion height of the left subtree decrased by 1, but
+         * overall height of the prime remained the same = height of the right subtree
+         * plus 1
+         */
+        break;
+      }
+      if (prime->bal == 2) {
+        /*
+         * AVL condition is violate - need rotate.
+         * After the rotation, height of the tree will decrease by 1
+         */
+        dfk_avltree_hook_t* parent = prime->parent;
+        int dir = parent ? (parent->left == prime ? -1 : 1) : 0;
+        int rightbal = prime->right->bal;
+        dfk_avltree_hook_t* new_prime;
+        if (rightbal == -1) {
+          new_prime = dfk__avltree_double_rot(prime);
+        } else {
+          new_prime = dfk__avltree_single_rot(prime);
+        }
+        switch (dir) {
+          case -1:
+            parent->left = new_prime;
+            new_prime->parent = parent;
+            break;
+          case 0:
+            tree->root = new_prime;
+            tree->root->parent = NULL;
+            break;
+          case 1:
+            parent->right = new_prime;
+            new_prime->parent = parent;
+            break;
+        }
+        prime = new_prime;
+        if (!rightbal) {
+          break;
+        }
+      }
+    } else {
+      assert(erase_direction == 1);
+      prime->bal--;
+      if (prime->bal == -1) {
+        break;
+      }
+      if (prime->bal == -2) {
+        dfk_avltree_hook_t* parent = prime->parent;
+        int dir = parent ? (parent->left == prime ? -1 : 1) : 0;
+        int leftbal = prime->left->bal;
+        dfk_avltree_hook_t* new_prime;
+        if (leftbal == 1) {
+          new_prime = dfk__avltree_double_rot(prime);
+        } else {
+          new_prime = dfk__avltree_single_rot(prime);
+        }
+        switch (dir) {
+          case -1:
+            parent->left = new_prime;
+            new_prime->parent = parent;
+            break;
+          case 0:
+            tree->root = new_prime;
+            tree->root->parent = NULL;
+            break;
+          case 1:
+            parent->right = new_prime;
+            new_prime->parent = parent;
+            break;
+        }
+        prime = new_prime;
+        if (!leftbal) {
+          break;
+        }
+      }
+    }
+    erase_direction = prime->parent ? (prime->parent->left == prime ? -1 : 1) : 0;
+    prime = prime->parent;
+  }
+
+  tree->size--;
+  DFK_AVLTREE_CHECK_INVARIANTS(tree);
+#if DFK_DEBUG
+  e->tree = NULL;
+#endif
 }
 
 

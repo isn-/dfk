@@ -49,6 +49,7 @@ typedef struct dfk_avltree_t {
 } dfk_avltree_t;
 
 
+/** @todo rename to dfk_avltree_it */
 typedef struct dfk_avltree_it_t {
   dfk_avltree_hook_t* value;
 } dfk_avltree_it_t;
