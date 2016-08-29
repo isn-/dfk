@@ -36,7 +36,8 @@ if [ "$TRAVIS" == "true" ]; then
   git config --global user.name "Travis CI"
 
   pushd doc/html
-  echo dfk.extrn.org > CNAME
+# Documentation is now available at https://dfk.extrn.org
+#  echo dfk.extrn.org > CNAME
   git init
   git add .
   git commit -m "Deploy to Github Pages"
