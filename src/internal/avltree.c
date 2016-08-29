@@ -457,7 +457,6 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
   assert(tree == e->tree);
 #endif
   DFK_AVLTREE_CHECK_INVARIANTS(tree);
-  dfk__avltree_print(tree->root, dfk__avltree_print_int, 0, 0, 0);
   /* Stores a pointer to node that should take e's place, may be NULL */
   dfk_avltree_hook_t* newe;
   /* Node to start rebalancing from */
