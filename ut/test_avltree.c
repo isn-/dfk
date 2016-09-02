@@ -441,6 +441,53 @@ TEST_F(tree_fixture, avltree, insert_double_left_rotation)
 }
 
 
+TEST_F(tree_fixture, avltree, insert_double_left_rotation_with_child)
+{
+  /*
+   *                               ┌─10
+   *        ┌─10                 ┌─9
+   *      ┌─9                  ┌─8
+   *    ┌─8                    │ │ ┌─7
+   *    │ │ ┌─6                │ └─6
+   *    │ └─5    --insert 7--> 5
+   *    │   └─4                │ ┌─4
+   *    3                      └─3
+   *    └─2                      └─2
+   *      └─1                      └─1
+   */
+
+  fixture->in_nodes = ut_parse_avltree(&fixture->dfk, &fixture->in_tree,
+      /* 0 */ "10  0 -1 -1\n"
+      /* 1 */ " 9  1 -1  0\n"
+      /* 2 */ " 6  0 -1 -1\n"
+      /* 3 */ " 4  0 -1 -1\n"
+      /* 4 */ " 5  0  3  2\n"
+      /* 5 */ " 8  0  4  1\n"
+      /* 6 */ " 1  0 -1 -1\n"
+      /* 7 */ " 2 -1  6 -1\n"
+      /* 8 */ " 3  1  7  5\n"
+
+  );
+
+  fixture->expected_nodes = ut_parse_avltree(&fixture->dfk, &fixture->expected_tree,
+      /* 0 */ "10  0 -1 -1\n"
+      /* 1 */ " 9  1 -1  0\n"
+      /* 2 */ " 7  0 -1 -1\n"
+      /* 3 */ " 6  1 -1  2\n"
+      /* 4 */ " 8  0  3  1\n"
+      /* 5 */ " 4  0 -1 -1\n"
+      /* 6 */ " 1  0 -1 -1\n"
+      /* 7 */ " 2 -1  6 -1\n"
+      /* 8 */ " 3 -1  7  5\n"
+      /* 9 */ " 5  0  8  4\n"
+  );
+
+  fixture->new_node.value = 7;
+  dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
+  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+}
+
+
 TEST_F(tree_fixture, avltree, insert_double_right_rotation)
 {
   /*
@@ -509,6 +556,40 @@ TEST_F(tree_fixture, avltree, insert_single_left_rotation)
 }
 
 
+TEST_F(tree_fixture, avltree, insert_single_left_rotation_with_child)
+{
+  /*
+   *                          ┌─6
+   *    ┌─5                 ┌─5
+   *  ┌─4                   4
+   *  │ └─3  --insert 6-->  │ ┌─3
+   *  2                     └─2
+   *  └─1                     └─1
+   */
+
+  fixture->in_nodes = ut_parse_avltree(&fixture->dfk, &fixture->in_tree,
+      /* 0 */ " 5  0 -1 -1\n"
+      /* 1 */ " 3  0 -1 -1\n"
+      /* 2 */ " 4  0  1  0\n"
+      /* 3 */ " 1  0 -1 -1\n"
+      /* 4 */ " 2  1  3  2\n"
+  );
+
+  fixture->expected_nodes = ut_parse_avltree(&fixture->dfk, &fixture->expected_tree,
+      /* 0 */ " 6  0 -1 -1\n"
+      /* 1 */ " 5  1 -1  0\n"
+      /* 2 */ " 1  0 -1 -1\n"
+      /* 3 */ " 3  0 -1 -1\n"
+      /* 4 */ " 2  0  2  3\n"
+      /* 5 */ " 4  0  4  1\n"
+  );
+
+  fixture->new_node.value = 6;
+  dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
+  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+}
+
+
 TEST_F(tree_fixture, avltree, insert_single_right_rotation)
 {
   /*
@@ -529,6 +610,40 @@ TEST_F(tree_fixture, avltree, insert_single_right_rotation)
   );
 
   fixture->new_node.value = 7;
+  dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
+  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+}
+
+
+TEST_F(tree_fixture, avltree, insert_single_right_rotation_with_child)
+{
+  /*
+   * ┌─6                     ┌─6
+   * 5                     ┌─5
+   * │ ┌─4                 │ └─4
+   * └─3    --insert 1-->  3
+   *   └─2                 └─2
+   *                         └─1
+   */
+
+  fixture->in_nodes = ut_parse_avltree(&fixture->dfk, &fixture->in_tree,
+      /* 0 */ " 6  0 -1 -1\n"
+      /* 1 */ " 4  0 -1 -1\n"
+      /* 2 */ " 2  0 -1 -1\n"
+      /* 3 */ " 3  0  2  1\n"
+      /* 4 */ " 5 -1  3  0\n"
+  );
+
+  fixture->expected_nodes = ut_parse_avltree(&fixture->dfk, &fixture->expected_tree,
+      /* 0 */ " 6  0 -1 -1\n"
+      /* 1 */ " 4  0 -1 -1\n"
+      /* 2 */ " 5  0  1  0\n"
+      /* 3 */ " 1  0 -1 -1\n"
+      /* 4 */ " 2 -1  3 -1\n"
+      /* 5 */ " 3  0  4  2\n"
+  );
+
+  fixture->new_node.value = 1;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
   EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
 }
