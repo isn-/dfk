@@ -494,13 +494,16 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
     dfk_avltree_hook_t* r = e->right;
     dfk_avltree_hook_t* a = e->left;
     r->left = a;
-    a->parent = r;
-    newe = r;
-    prime = r;
+    if (a) {
+      a->parent = r;
+    }
+    r->bal = e->bal - 1;
     /* Since e's right subtree replaces e on it's position,
      * height of R subtree after removal proceudre decreases
-     * only if height(R) > heigth(A), or, in terms of nodes' balance, e->bal == 1
+     * only if height(R) > heigth(A), or, in terms of nodes' balance, if e->bal == 1
      */
+    newe = r;
+    prime = r->parent;
     erase_direction = 1;
   } else {
     /*
