@@ -98,6 +98,7 @@ int dfk_http_request_free(dfk_http_request_t* req);
 
 /**
  * Prepare HTTP request.
+ * @private
  *
  * Reads and parses url and headers.
  *
@@ -105,7 +106,6 @@ int dfk_http_request_free(dfk_http_request_t* req);
  * be read by this function. If so, unused data is stored in
  * dfk_http_request_t._remainder member and is accessible within
  * dfk_http_request_t lifetime.
- * @private
  */
 int dfk_http_request_prepare(dfk_http_request_t* req);
 

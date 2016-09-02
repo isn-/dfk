@@ -111,9 +111,9 @@ int dfk_http_response_flush_headers(dfk_http_response_t* resp)
     dfk_strmap_it it;
     dfk_strmap_begin(&resp->headers, &it);
     while (dfk_strmap_it_valid(&it) == dfk_err_ok && i < niov) {
-      iov[i++] = it.item->key;
+      iov[i++] = (dfk_iovec_t) {it.item->key.data, it.item->key.size};
       iov[i++] = (dfk_iovec_t) {": ", 2};
-      iov[i++] = it.item->value;
+      iov[i++] = (dfk_iovec_t) {it.item->value.data, it.item->value.size};
       iov[i++] = (dfk_iovec_t) {"\r\n", 2};
       dfk_strmap_it_next(&it);
     }

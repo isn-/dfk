@@ -162,7 +162,10 @@ typedef struct dfk_iovec_t {
 } dfk_iovec_t;
 
 
-typedef dfk_iovec_t dfk_buf_t;
+typedef struct dfk_buf_t {
+  char* data;
+  size_t size;
+} dfk_buf_t;
 
 
 /**
