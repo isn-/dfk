@@ -935,7 +935,7 @@ TEST_F(tree_fixture, avltree, erase_last)
 }
 
 
-TEST_F(tree_fixture, avltree, erase_two_nodes_left)
+TEST_F(tree_fixture, avltree, erase_two_nodes_left_child)
 {
   /*
    *  10    --erase 1-->  10
@@ -958,7 +958,7 @@ TEST_F(tree_fixture, avltree, erase_two_nodes_left)
 }
 
 
-TEST_F(tree_fixture, avltree, erase_two_nodes_right)
+TEST_F(tree_fixture, avltree, erase_two_nodes_right_child)
 {
   /*
    *   ┌─11  --erase 11-->  10
@@ -975,6 +975,52 @@ TEST_F(tree_fixture, avltree, erase_two_nodes_right)
   );
 
   int erase_value = 11;
+  dfk_avltree_hook_t* erase_node = dfk_avltree_lookup(&fixture->in_tree, &erase_value, node_int_lookup_cmp);
+  dfk_avltree_erase(&fixture->in_tree, erase_node);
+  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+}
+
+
+TEST_F(tree_fixture, avltree, erase_two_nodes_left_root)
+{
+  /*
+   *  10    --erase 10-->  1
+   *   └─1
+   */
+
+  fixture->in_nodes = ut_parse_avltree(&fixture->dfk, &fixture->in_tree,
+      /* 0 */ " 1  0 -1 -1\n"
+      /* 1 */ "10 -1  0 -1\n"
+  );
+
+  fixture->expected_nodes = ut_parse_avltree(&fixture->dfk, &fixture->expected_tree,
+      /* 0 */ " 1  0 -1 -1\n"
+  );
+
+  int erase_value = 10;
+  dfk_avltree_hook_t* erase_node = dfk_avltree_lookup(&fixture->in_tree, &erase_value, node_int_lookup_cmp);
+  dfk_avltree_erase(&fixture->in_tree, erase_node);
+  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+}
+
+
+TEST_F(tree_fixture, avltree, erase_two_nodes_right_root)
+{
+  /*
+   *   ┌─11  --erase 10-->  11
+   *  10
+   */
+
+  fixture->in_nodes = ut_parse_avltree(&fixture->dfk, &fixture->in_tree,
+      /* 0 */ "11  0 -1 -1\n"
+      /* 1 */ "10  1 -1  0\n"
+  );
+
+  fixture->expected_nodes = ut_parse_avltree(&fixture->dfk, &fixture->expected_tree,
+      /* 0 */ "11  0 -1 -1\n"
+  );
+
+  int erase_value = 10;
   dfk_avltree_hook_t* erase_node = dfk_avltree_lookup(&fixture->in_tree, &erase_value, node_int_lookup_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
   EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
@@ -1032,6 +1078,7 @@ TEST_F(tree_fixture, avltree, erase_three_nodes_right)
   EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
 }
 
+
 TEST_F(tree_fixture, avltree, erase_three_nodes_root)
 {
   /*
@@ -1057,3 +1104,61 @@ TEST_F(tree_fixture, avltree, erase_three_nodes_root)
   EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
 }
 
+
+TEST_F(tree_fixture, avltree, erase_with_rotation)
+{
+  /*
+   *          ┌─14                         ┌─14
+   *       ┌─13                         ┌─13
+   *    ┌─12                         ┌─12
+   *    │  └─11                      │  └─11
+   *  ┌─10                        ┌─10
+   *  │ │ ┌─9                     │  │ ┌─9
+   *  │ └─8         --erase 5-->  │  └─8
+   *  │   │ ┌─7                   │    └─7
+   *  │   └─6                     6
+   *  5                           │ ┌─4
+   *  │ ┌─4                       └─3
+   *  └─3                           └─2
+   *    └─2                           └─1
+   *      └─1
+   */
+
+  fixture->in_nodes = ut_parse_avltree(&fixture->dfk, &fixture->in_tree,
+      /*  0 */ "14  0 -1 -1\n"
+      /*  1 */ "13  1 -1  0\n"
+      /*  2 */ "11  0 -1 -1\n"
+      /*  3 */ "12  1  2  1\n"
+      /*  4 */ " 9  0 -1 -1\n"
+      /*  5 */ " 7  0 -1 -1\n"
+      /*  6 */ " 6  1 -1  5\n"
+      /*  7 */ " 8 -1  6  4\n"
+      /*  8 */ "10  0  7  3\n"
+      /*  9 */ " 4  0 -1 -1\n"
+      /* 10 */ " 1  0 -1 -1\n"
+      /* 11 */ " 2 -1 10 -1\n"
+      /* 12 */ " 3 -1 11  9\n"
+      /* 13 */ " 5  1 12  8\n"
+  );
+
+  fixture->expected_nodes = ut_parse_avltree(&fixture->dfk, &fixture->expected_tree,
+      /*  0 */ "14  0 -1 -1\n"
+      /*  1 */ "13  1 -1  0\n"
+      /*  2 */ "11  0 -1 -1\n"
+      /*  3 */ "12  1  2  1\n"
+      /*  4 */ " 9  0 -1 -1\n"
+      /*  5 */ " 7  0 -1 -1\n"
+      /*  6 */ " 8  0  5  4\n"
+      /*  7 */ "10  0  6  3\n"
+      /*  8 */ " 4  0 -1 -1\n"
+      /*  9 */ " 1  0 -1 -1\n"
+      /* 10 */ " 2 -1  9 -1\n"
+      /* 11 */ " 3 -1 10  8\n"
+      /* 12 */ " 6  1 11  7\n"
+  );
+
+  int erase_value = 5;
+  dfk_avltree_hook_t* erase_node = dfk_avltree_lookup(&fixture->in_tree, &erase_value, node_int_lookup_cmp);
+  dfk_avltree_erase(&fixture->in_tree, erase_node);
+  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+}
