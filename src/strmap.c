@@ -315,9 +315,6 @@ int dfk_strmap_insert(dfk_strmap_t* map, dfk_strmap_item_t* item)
 
 int dfk_strmap_erase_find(dfk_strmap_t* map, const char* key, size_t keylen)
 {
-  /** @todo remove the line below after dfk_avltree_erase is implemented */
-  return dfk_err_not_implemented;
-
   if (!map || (!key && keylen)) {
     return dfk_err_badarg;
   }
