@@ -7,7 +7,6 @@ digraph "DFK Library Roadmap - Current" {
   http_server [label="http\nHTTP basic server" style=filled fillcolor="#F5F553"];
     http_parser -> http_server
     htbl -> http_server
-    avltree -> http_server
 
   keepalive [label="http\nKeepalive support"];
     http_server -> keepalive;
@@ -28,8 +27,6 @@ digraph "DFK Library Roadmap - Current" {
   re [label="re\nRegular expressions engine"];
 
   htbl [label="htbl\nHash table data structure"];
-
-  avltree [label="avltree\nAVL search tree data structure" style=filled fillcolor="#F5F553"];
 
   router [label="http\nHTTP router"];
     http_server -> router;
