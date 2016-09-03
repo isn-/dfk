@@ -497,13 +497,13 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
     if (a) {
       a->parent = r;
     }
-    r->bal = e->bal - 1;
+    r->bal = e->bal;
     /* Since e's right subtree replaces e on it's position,
      * height of R subtree after removal proceudre decreases
      * only if height(R) > heigth(A), or, in terms of nodes' balance, if e->bal == 1
      */
     newe = r;
-    prime = r->parent;
+    prime = r;
     erase_direction = 1;
   } else {
     /*
@@ -581,7 +581,7 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
       }
       if (prime->bal == 2) {
         /*
-         * AVL condition is violate - need rotate.
+         * AVL condition is violated - need rotate.
          * After the rotation, height of the tree will decrease by 1
          */
         dfk_avltree_hook_t* parent = prime->parent;
