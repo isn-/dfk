@@ -46,6 +46,7 @@ set(DFK_VALGRIND FALSE CACHE BOOL "In addition to regular mode, run unit tests u
 set(DFK_THREAD_SANITIZER FALSE CACHE BOOL "Enable Thread Sanitizer.")
 set(DFK_MEMORY_SANITIZER FALSE CACHE BOOL "Enable Memory Sanitizer.")
 set(DFK_HTTP_HEADERS_BUFFER 10240 CACHE STRING "Buffer size for HTTP headers.")
+set(DFK_HTTP_PIPELINING TRUE CACHE STRING "Enable HTTP requests pipelining.")
 set(DFK_IGNORE_SIGPIPE TRUE CACHE BOOL "Ignore SIGPIPE when entering dfk loop.")
 set(DFK_ARENA_SEGMENT_SIZE 40960 CACHE STRING "Size of arena's segment, in bytes.")
 set(DFK_SPONGE_INITIAL_SIZE 4096 CACHE STRING "Size of sponge data structure initial size, in bytes.")

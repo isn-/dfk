@@ -93,6 +93,8 @@
 #cmakedefine01 DFK_MEMORY_SANITIZER
 /** Buffer for HTTP headers, stack-allocated */
 #define DFK_HTTP_HEADERS_BUFFER @DFK_HTTP_HEADERS_BUFFER@
+/** Enable HTTP request pipelining */
+#cmakedefine01 DFK_HTTP_PIPELINING
 /** Ignore SIGPIPE when entering dfk loop */
 #cmakedefine01 DFK_IGNORE_SIGPIPE
 /** Size of arena's segment, in bytes */
