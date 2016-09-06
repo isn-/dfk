@@ -1,6 +1,7 @@
 Compile-time options
 ====================
 
+@li #DFK_MAINTAINER_MODE
 @li #DFK_PAGE_SIZE
 @li #DFK_TCP_BACKLOG
 @li #DFK_COROUTINE
