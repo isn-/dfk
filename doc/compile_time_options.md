@@ -9,6 +9,7 @@ Compile-time options
 @li #DFK_STACK
 @li #DFK_STACK_SIZE
 @li #DFK_STACK_ALIGNMENT
+@li #DFK_STACK_GUARD_SIZE
 @li #DFK_EVENT_LOOP
 @li #DFK_DEBUG
 @li #DFK_MOCKS

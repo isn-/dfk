@@ -30,6 +30,15 @@
 #include <dfk.h>
 #include <dfk/internal.h>
 
+#if DFK_STACK_GUARD_SIZE
+#if DFK_HAVE_SYS_MMAN_H
+#include <sys/mman.h>
+#endif
+#if DFK_HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#endif
+
 #if DFK_IGNORE_SIGPIPE
 #include <signal.h>
 #endif
@@ -214,29 +223,35 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg, size_
   }
   {
     dfk_coro_t* coro = DFK_MALLOC(dfk, dfk->default_stack_size);
-    char* stack_base = (char*) coro + sizeof(dfk_coro_t);
-    size_t stack_size = dfk->default_stack_size - sizeof(dfk_coro_t);
     if (!coro) {
       dfk->dfk_errno = dfk_err_nomem;
       return NULL;
     }
+    char* stack_base = (char*) coro + sizeof(dfk_coro_t);
+    char* stack_end = (char*) coro + dfk->default_stack_size;
     if (argsize) {
       memcpy(stack_base, arg, argsize);
       coro->_arg = stack_base;
       stack_base += argsize;
-      stack_size -= argsize;
     } else {
       coro->_arg = arg;
     }
+
+#if DFK_STACK_GUARD_SIZE
+    mprotect(stack_base, DFK_STACK_GUARD_SIZE, PROT_NONE);
+    stack_base += DFK_STACK_GUARD_SIZE;
+#endif
+
+    /* Align stack_base */
     if ((ptrdiff_t) stack_base % DFK_STACK_ALIGNMENT) {
       size_t padding = DFK_STACK_ALIGNMENT - ((ptrdiff_t) stack_base % DFK_STACK_ALIGNMENT);
       DFK_DBG(dfk, "stack pointer %p is not align to %d byte border, adjust by %lu bytes",
           (void*) stack_base, DFK_STACK_ALIGNMENT, (unsigned long) padding);
       stack_base += padding;
-      stack_size -= padding;
     }
+
 #if DFK_VALGRIND
-    coro->_stack_id = VALGRIND_STACK_REGISTER(stack_base, stack_base + stack_size);
+    coro->_stack_id = VALGRIND_STACK_REGISTER(stack_base, stack_end);
 #endif
     coro->dfk = dfk;
     dfk_list_hook_init(&coro->_hook);
@@ -244,6 +259,8 @@ dfk_coro_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_coro_t*, void*), void* arg, size_
 #if DFK_NAMED_COROUTINES
     snprintf(coro->_name, sizeof(coro->_name), "%p", (void*) coro);
 #endif
+    assert(stack_end > stack_base);
+    size_t stack_size = stack_end - stack_base;
     DFK_INFO(dfk, "stack %p (%lu bytes) = {%p}",
         (void*) stack_base, (unsigned long) stack_size, (void*) coro);
     dfk_list_append(&dfk->_pending_coros, &coro->_hook);

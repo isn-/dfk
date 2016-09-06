@@ -83,3 +83,30 @@ int main()
     RUN_OUTPUT_VARIABLE stack_size)
   set(${out} ${stack_size} PARENT_SCOPE)
 endfunction()
+
+function(fw_guard_size out)
+  set(getguardsize "
+#include <pthread.h>
+#include <stdio.h>
+
+int main()
+{
+  pthread_attr_t a;
+  pthread_attr_init(&a);
+  size_t size;
+  pthread_attr_getguardsize(&a, &size);
+  printf(\"%llu\", (unsigned long long) size);
+  return 0;
+}
+")
+  file(WRITE "${CMAKE_BINARY_DIR}/getguardsize/main.c" "${getguardsize}")
+  enable_language(C)
+  try_run(
+    run_result_unused
+    compile_result_unused
+    "${CMAKE_BINARY_DIR}/getguardsize"
+    "${CMAKE_BINARY_DIR}/getguardsize/main.c"
+    CMAKE_FLAGS "-DLINK_LIBRARIES=pthread"
+    RUN_OUTPUT_VARIABLE guard_size)
+  set(${out} ${guard_size} PARENT_SCOPE)
+endfunction()

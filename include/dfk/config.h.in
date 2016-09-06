@@ -45,6 +45,7 @@
 #cmakedefine01 DFK_HAVE_PTHREAD_H
 #cmakedefine01 DFK_HAVE_SYS_SOCKET_H
 #cmakedefine01 DFK_HAVE_SYS_TYPES_H
+#cmakedefine01 DFK_HAVE_SYS_MMAN_H
 #cmakedefine01 DFK_HAVE_NETINET_IN_H
 #cmakedefine01 DFK_HAVE_ARPA_INET_H
 #cmakedefine01 DFK_HAVE_UCONTEXT_H
@@ -54,6 +55,7 @@
 #cmakedefine01 DFK_HAVE_SIGALTSTACK
 #cmakedefine01 DFK_HAVE_NANOSLEEP
 #cmakedefine01 DFK_HAVE_FFLUSH
+#cmakedefine01 DFK_HAVE_MPROTECT
 
 /** Memory page size of target platform */
 #define DFK_PAGE_SIZE @DFK_PAGE_SIZE@
@@ -71,6 +73,8 @@
 #define DFK_STACK_SIZE @DFK_STACK_SIZE@
 /** Stack alignment, in bytes */
 #define DFK_STACK_ALIGNMENT @DFK_STACK_ALIGNMENT@
+/** Emit N guard bytes to protect against stack overflow */
+#define DFK_STACK_GUARD_SIZE @DFK_STACK_GUARD_SIZE@
 /** Event loop implementation */
 #define DFK_EVENT_LOOP "@DFK_EVENT_LOOP@"
 /** Emit debug log messages */
@@ -95,4 +99,14 @@
 #define DFK_ARENA_SEGMENT_SIZE @DFK_ARENA_SEGMENT_SIZE@
 /** Size of sponge data structure initial size, in bytes. */
 #define DFK_SPONGE_INITIAL_SIZE @DFK_SPONGE_INITIAL_SIZE@
+
+/*
+ * User-provided compile-time options verification goes below.
+ * If desired options lead to unsatisfiable configuration, e.g.
+ * required syscall is missing, report it here via #error macro.
+ */
+
+#if DFK_STACK_GUARD_SIZE && (!DFK_HAVE_MPROTECT || !DFK_HAVE_SYS_MMAN_H)
+#error Can not emit guard pages without mprotect function and <sys/mman.h> header
+#endif
 
