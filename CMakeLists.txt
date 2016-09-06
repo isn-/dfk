@@ -26,6 +26,8 @@ set(DFK_BUILD_UNIT_TESTS TRUE CACHE BOOL "Build unit tests.")
 set(DFK_BUILD_AUTO_TESTS TRUE CACHE BOOL "Build auto tests.")
 set(DFK_BUILD_SAMPLES TRUE CACHE BOOL "Build code samples.")
 
+set(DFK_MAINTAINER_MODE FALSE CACHE BOOL "Enable binary package maintainer mode. Designed for deb/rpm packages maintainers. Disables -Werror and checks that neither of release-unfriendly options are set.")
+
 set(DFK_PAGE_SIZE ${page_size} CACHE STRING "Memory page size of target platform.")
 set(DFK_TCP_BACKLOG 128 CACHE STRING "Default TCP backlog size.")
 set(DFK_COROUTINE ASM CACHE STRING "Coroutine implementation, options are: ASM.")
@@ -81,18 +83,11 @@ check_function_exists(fflush DFK_HAVE_FFLUSH)
 set(CMAKE_REQUIRED_INCLUDES sys/mman.h sys/types.h)
 check_function_exists(mprotect DFK_HAVE_MPROTECT)
 
-if(${DFK_VALGRIND})
+# Searching for packages
+
+if(DFK_VALGRIND)
   find_program(VALGRIND valgrind REQUIRED)
   mark_as_advanced(VALGRIND)
-endif()
-
-if(${DFK_THREAD_SANITIZER})
-  fw_c_flags("-fsanitize=thread")
-endif()
-
-if(${DFK_MEMORY_SANITIZER})
-  fw_c_flags("-fsanitize=memory")
-  fw_c_flags("-fno-omit-frame-pointer -fno-optimize-sibling-calls")
 endif()
 
 if("${DFK_EVENT_LOOP}" STREQUAL LIBUV)
@@ -105,14 +100,59 @@ include_directories(${HTTP_PARSER_INCLUDE_DIR})
 
 if(DFK_BUILD_UNIT_TESTS)
   find_package(CURL REQUIRED)
+  include_directories(${CURL_INCLUDE_DIR})
 endif()
 
+# User-provided compile-time options verification goes below.
+# If desired options lead to unsatisfiable configuration, e.g.
+# required syscall is missing, report it here via #error macro.
+
 if(DFK_COVERAGE AND NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  message(FATAL_ERROR "Code coverage can be computed only for Debug builds\nDisable DFK_ENABLE_COVERAGE or change build type to Debug")
+  message(FATAL_ERROR "Code coverage can be computed only for Debug builds.\nDisable DFK_ENABLE_COVERAGE or change build type to Debug.")
+endif()
+
+if(DFK_STACK_GUARD_SIZE AND (NOT DFK_HAVE_MPROTECT OR NOT DFK_HAVE_SYS_MMAN_H))
+  message(FATAL_ERROR "Can not emit guard pages without mprotect function from <sys/mman.h> header.")
+endif()
+
+if(DFK_MAINTAINER_MODE)
+  set(disallowed_options
+    DFK_COVERAGE
+    DFK_THREAD_SANITIZER
+    DFK_MEMORY_SANITIZER
+    DFK_VALGRIND)
+  foreach(opt ${disallowed_options})
+    if(${${opt}})
+      message(FATAL_ERROR "${opt} is not allowed in maintainer mode.\nSet ${opt} to OFF, or disable DFK_MAINTAINER_MODE.")
+    endif()
+  endforeach()
+  set(not_recommended_options
+    DFK_MOCKS
+    DFK_DEBUG)
+  foreach(opt ${not_recommended_options})
+    if(${${opt}})
+      message(WARNING "${opt} is not recommended in maintainer mode.\nSet ${opt} to OFF, or disable DFK_MAINTAINER_MODE to suppress that warning.")
+    endif()
+  endforeach()
+endif()
+
+# Add compiler flags to satisfy user-provided configuration options.
+
+if(DFK_THREAD_SANITIZER)
+  fw_c_flags("-fsanitize=thread")
+endif()
+
+if(DFK_MEMORY_SANITIZER)
+  fw_c_flags("-fsanitize=memory")
+  fw_c_flags("-fno-omit-frame-pointer -fno-optimize-sibling-calls")
 endif()
 
 if(DFK_COVERAGE)
   fw_c_flags("--coverage -O0")
+endif()
+
+if(NOT DFK_MAINTAINER_MODE)
+  fw_c_flags("-Werror")
 endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"
@@ -128,12 +168,15 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 
 add_subdirectory(thirdparty)
 
+# Enable C11 for dfk code
 if(CMAKE_COMPILER_IS_GNUCC AND CMAKE_C_COMPILER_VERSION VERSION_LESS 4.7)
   fw_c_flags("-std=c1x")
 else()
   fw_c_flags("-std=c11")
 endif()
-fw_c_flags("-Werror -Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition")
+
+# Enable hardcore warnings mode.
+fw_c_flags("-Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition")
 
 if(NOT APPLE AND "${DFK_EVENT_LOOP}" STREQUAL LIBUV)
   add_definitions(-D_GNU_SOURCE)

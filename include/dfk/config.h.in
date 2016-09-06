@@ -100,13 +100,3 @@
 /** Size of sponge data structure initial size, in bytes. */
 #define DFK_SPONGE_INITIAL_SIZE @DFK_SPONGE_INITIAL_SIZE@
 
-/*
- * User-provided compile-time options verification goes below.
- * If desired options lead to unsatisfiable configuration, e.g.
- * required syscall is missing, report it here via #error macro.
- */
-
-#if DFK_STACK_GUARD_SIZE && (!DFK_HAVE_MPROTECT || !DFK_HAVE_SYS_MMAN_H)
-#error Can not emit guard pages without mprotect function and <sys/mman.h> header
-#endif
-
