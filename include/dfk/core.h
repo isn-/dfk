@@ -168,6 +168,12 @@ typedef struct dfk_buf_t {
 } dfk_buf_t;
 
 
+typedef struct dfk_buflist_item_t {
+  dfk_list_hook_t hook;
+  dfk_buf_t buf;
+} dfk_buflist_item_t;
+
+
 /**
  * A struct to associate client data with library object.
  *

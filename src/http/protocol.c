@@ -53,9 +53,9 @@ void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
 
     dfk_http_request_t req;
     /** @todo check return value */
-    dfk_http_request_init(&req, http->dfk, &request_arena, &connection_arena, sock);
+    dfk_http_request_init(&req, http, &request_arena, &connection_arena, sock);
 
-    if (dfk_http_request_prepare(&req) != dfk_err_ok) {
+    if (dfk_http_request_read_headers(&req) != dfk_err_ok) {
       goto connection_broken;
     }
 

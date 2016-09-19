@@ -52,6 +52,7 @@ typedef struct dfk_http_request_t {
   dfk_arena_t* _connection_arena;
   dfk_arena_t* _request_arena;
   dfk_tcp_socket_t* _sock;
+  dfk_list_t _buffers;
   dfk_buf_t _remainder;
   size_t _body_nread;
   http_parser _parser;
@@ -65,7 +66,7 @@ typedef struct dfk_http_request_t {
    * @publicsection
    */
 
-  dfk_t* dfk;
+  struct dfk_http_t* http;
 
   unsigned short major_version;
   unsigned short minor_version;
@@ -84,20 +85,30 @@ typedef struct dfk_http_request_t {
 
 
 /**
+ * Initialize dfk_http_request_t
  * @private
+ *
+ * dfk_http_request_t objects are created and initialized within
+ * dfk_http function, therefore this function is marked as private.
  */
-int dfk_http_request_init(dfk_http_request_t* req, dfk_t* dfk,
+int dfk_http_request_init(dfk_http_request_t* req, struct dfk_http_t* http,
                           dfk_arena_t* request_arena,
                           dfk_arena_t* connection_arena,
                           dfk_tcp_socket_t* sock);
 
+
 /**
+ * Cleanup resources allocated for dfk_http_request_t
  * @private
+ *
+ * dfk_http_request_t objects are created and free'd within
+ * dfk_http function, therefore this function is marked as private.
  */
 int dfk_http_request_free(dfk_http_request_t* req);
 
+
 /**
- * Prepare HTTP request.
+ * Read HTTP request headers.
  * @private
  *
  * Reads and parses url and headers.
@@ -107,9 +118,18 @@ int dfk_http_request_free(dfk_http_request_t* req);
  * dfk_http_request_t._remainder member and is accessible within
  * dfk_http_request_t lifetime.
  */
-int dfk_http_request_prepare(dfk_http_request_t* req);
+int dfk_http_request_read_headers(dfk_http_request_t* req);
 
+
+/**
+ * Read request body
+ */
 ssize_t dfk_http_request_read(dfk_http_request_t* req, char* buf, size_t size);
+
+
+/**
+ * Read request body into multiple buffers at once
+ */
 ssize_t dfk_http_request_readv(dfk_http_request_t* req, dfk_iovec_t* iov, size_t niov);
 
 

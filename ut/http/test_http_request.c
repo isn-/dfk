@@ -39,6 +39,7 @@ typedef struct fixture_t {
   dfk_t dfk;
   dfk_arena_t conn_arena;
   dfk_arena_t req_arena;
+  dfk_http_t http;
   dfk_tcp_socket_t sock;
   dfk_http_request_t req;
   dfk_sponge_t reqbuf;
@@ -48,9 +49,19 @@ typedef struct fixture_t {
 static void fixture_setup(fixture_t* f)
 {
   EXPECT_OK(dfk_init(&f->dfk));
+  /*
+   * We don't call dfk_http_init here because we are outside of
+   * dfk main loop. We initialize sensible dfk_http_t properties instead.
+   */
+  f->http.dfk = &f->dfk;
+  f->http.keepalive_requests = DFK_HTTP_KEEPALIVE_REQUESTS;
+  f->http.header_max_size = DFK_HTTP_HEADER_MAX_SIZE;
+  f->http.headers_buffer_size = DFK_HTTP_HEADERS_BUFFER_SIZE;
+  f->http.headers_buffer_count = DFK_HTTP_HEADERS_BUFFER_COUNT;
+
   EXPECT_OK(dfk_arena_init(&f->conn_arena, &f->dfk));
   EXPECT_OK(dfk_arena_init(&f->req_arena, &f->dfk));
-  EXPECT_OK(dfk_http_request_init(&f->req, &f->dfk, &f->req_arena,
+  EXPECT_OK(dfk_http_request_init(&f->req, &f->http, &f->req_arena,
                                   &f->conn_arena, &f->sock));
   dfk_sponge_init(&f->reqbuf, &f->dfk);
   f->req._sock_mocked = 1;
@@ -90,7 +101,7 @@ TEST_F(fixture, http_request, trivial)
 {
   char request[] = "GET / HTTP/1.0\r\n\r\n";
   dfk_sponge_write(&fixture->reqbuf, request, sizeof(request) - 1);
-  EXPECT_OK(dfk_http_request_prepare(&fixture->req));
+  EXPECT_OK(dfk_http_request_read_headers(&fixture->req));
   EXPECT(fixture->req.content_length == 0);
   EXPECT(fixture->req.method == DFK_HTTP_GET);
   EXPECT_BUFSTREQ(fixture->req.url, "/");
@@ -110,7 +121,7 @@ TEST_F(fixture, http_request, trivial_chunked_body)
                    ", world\r\n"
                    "0\r\n";
   dfk_sponge_write(&fixture->reqbuf, request, sizeof(request) - 1);
-  EXPECT_OK(dfk_http_request_prepare(&fixture->req));
+  EXPECT_OK(dfk_http_request_read_headers(&fixture->req));
   EXPECT(fixture->req.content_length == (uint64_t) -1);
   EXPECT(fixture->req.method == DFK_HTTP_POST);
   EXPECT_BUFSTREQ(fixture->req.url, "/");

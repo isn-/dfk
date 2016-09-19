@@ -60,9 +60,31 @@ typedef struct dfk_http_t {
    * Maximum number of requests for a single keepalive connection.
    *
    * Negative values means no limit.
-   * @note default: 100
+   * @note default: #DFK_HTTP_KEEPALIVE_REQUESTS
    */
   ssize_t keepalive_requests;
+
+  /**
+   * Size of the buffer allocated for HTTP header parsing.
+   *
+   * @note default: #DFK_HTTP_HEADERS_BUFFER_SIZE
+   */
+  size_t headers_buffer_size;
+
+  /**
+   * Maximum number of buffers of size #DFK_HTTP_HEADERS_BUFFER_SIZE
+   * consumed by HTTP request parser.
+   *
+   * @note default: #DFK_HTTP_HEADERS_BUFFER_COUNT
+   */
+  size_t headers_buffer_count;
+
+  /**
+   * Limit of the individual HTTP header line - url, "field: value".
+   *
+   * @note default: #DFK_HTTP_HEADER_MAX_SIZE
+   */
+  size_t header_max_size;
 } dfk_http_t;
 
 int dfk_http_init(dfk_http_t* http, dfk_t* dfk);

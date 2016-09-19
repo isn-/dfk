@@ -67,7 +67,10 @@ int dfk_http_init(dfk_http_t* http, dfk_t* dfk)
   }
   DFK_DBG(dfk, "{%p}", (void*) http);
   http->dfk = dfk;
-  http->keepalive_requests = 100;
+  http->keepalive_requests = DFK_HTTP_KEEPALIVE_REQUESTS;
+  http->header_max_size = DFK_HTTP_HEADER_MAX_SIZE;
+  http->headers_buffer_size = DFK_HTTP_HEADERS_BUFFER_SIZE;
+  http->headers_buffer_count = DFK_HTTP_HEADERS_BUFFER_COUNT;
   dfk_list_init(&http->_connections);
   dfk_event_init(&http->_stopped, dfk);
   return dfk_tcp_socket_init(&http->_listensock, dfk);

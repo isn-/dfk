@@ -91,9 +91,22 @@
 #cmakedefine01 DFK_THREAD_SANITIZER
 /** Enable Memory Sanitizer */
 #cmakedefine01 DFK_MEMORY_SANITIZER
-/** Buffer for HTTP headers, stack-allocated */
-#define DFK_HTTP_HEADERS_BUFFER @DFK_HTTP_HEADERS_BUFFER@
-/** Enable HTTP request pipelining */
+/**
+ * Maximum number of requests for a single keepalive connection.
+ *
+ * Negative values mean no limit.
+ */
+#define DFK_HTTP_KEEPALIVE_REQUESTS @DFK_HTTP_KEEPALIVE_REQUESTS@
+/** Size of the buffer allocated for HTTP header parsing. */
+#define DFK_HTTP_HEADERS_BUFFER_SIZE @DFK_HTTP_HEADERS_BUFFER_SIZE@
+/**
+ * Maximum number of buffers of size #DFK_HTTP_HEADERS_BUFFER_SIZE
+ * consumed by HTTP request parser.
+ */
+#define DFK_HTTP_HEADERS_BUFFER_COUNT @DFK_HTTP_HEADERS_BUFFER_COUNT@
+/** Limit of the individual HTTP header line - url, "field: value". */
+#define DFK_HTTP_HEADER_MAX_SIZE @DFK_HTTP_HEADER_MAX_SIZE@
+/** Enable HTTP requests pipelining */
 #cmakedefine01 DFK_HTTP_PIPELINING
 /** Ignore SIGPIPE when entering dfk loop */
 #cmakedefine01 DFK_IGNORE_SIGPIPE
