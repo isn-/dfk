@@ -93,6 +93,13 @@ int dfk_http_request_free(dfk_http_request_t* req)
 {
   DFK_CALL(req->http->dfk, dfk_strmap_free(&req->arguments));
   DFK_CALL(req->http->dfk, dfk_strmap_free(&req->headers));
+  dfk_list_hook_t* it = req->_buffers.head;
+  while (it) {
+    dfk_buflist_item_t* buflist_item = (dfk_buflist_item_t*) it;
+    DFK_FREE(req->http->dfk, buflist_item->buf.data);
+    it = it->next;
+  }
+  dfk_list_free(&req->_buffers);
   return dfk_err_ok;
 }
 
