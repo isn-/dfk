@@ -12,8 +12,15 @@ function build {
     fi
   fi
   VERSION=$(git describe --tags  --long)
-  ( cat Doxyfile ; echo "PROJECT_NUMBER=$VERSION" ) | $DOXYGEN -
-  ( cat Doxyfile ; echo "PROJECT_NUMBER=$VERSION" ; echo "HTML_OUTPUT=doc/html/internal" ; echo "INTERNAL_DOCS=YES" ) | $DOXYGEN -
+  ( cat Doxyfile ;
+    echo "PROJECT_NUMBER=$VERSION"
+  ) | $DOXYGEN -
+  ( cat Doxyfile ;
+    echo "PROJECT_NUMBER=$VERSION" ;
+    echo "HTML_OUTPUT=doc/html/internal" ;
+    echo "INTERNAL_DOCS=YES" ;
+    echo "EXTRACT_PRIVATE=YES"
+  ) | $DOXYGEN -
 
   if [ "$CLEANUP" == "yes" ]; then
     rm include/dfk/config.h
@@ -36,8 +43,6 @@ if [ "$TRAVIS" == "true" ]; then
   git config --global user.name "Travis CI"
 
   pushd doc/html
-# Documentation is now available at https://dfk.extrn.org
-#  echo dfk.extrn.org > CNAME
   git init
   git add .
   git commit -m "Deploy to Github Pages"

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Bootstrap thirdparty modules, which are not built inside dfk project
 # and are used as external dependencies. The script is supposed to be
-# used by dfk developers which don't want to install extra libraries
+# used by dfk developers who don't want to install extra libraries
 # into their system, or by CI system.
 # The script is not intended for distribution developers - libraries
 # from the distribution should be used in this case instead of
