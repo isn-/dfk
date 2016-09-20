@@ -197,6 +197,7 @@ add_library(dfk
   src/core.c
   src/sync.c
   src/tcp_socket.c
+  src/urlencoding.c
   src/strmap.c
   src/http/constants.c
   src/http/request.c

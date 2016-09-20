@@ -11,6 +11,7 @@ set(ut_sources
   test_misc.c
   test_sync.c
   test_tcp_socket.c
+  test_urlencoding.c
   http/test_http_constants.c
   test_http.c)
 
