@@ -33,7 +33,7 @@
 #include <dfk/internal/avltree.h>
 
 /**
- * @addtogroup util
+ * @addtogroup util util
  * @{
  */
 
@@ -52,6 +52,7 @@ typedef struct dfk_strmap_item_t {
  * Associative container, maps dfk_buf_t to dfk_buf_t
  */
 typedef struct dfk_strmap_t {
+  /** @private */
   dfk_avltree_t _cont;
 } dfk_strmap_t;
 

@@ -1,6 +1,6 @@
 /**
  * @file dfk.h
- * @brief Dfk - HTTP backend in C
+ * @brief dfk - HTTP backend in C
  *
  * @copyright
  * Copyright (c) 2015-2016 Stanislav Ivochkin

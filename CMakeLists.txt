@@ -109,7 +109,7 @@ endif()
 
 # User-provided compile-time options verification goes below.
 # If desired options lead to unsatisfiable configuration, e.g.
-# required syscall is missing, report it here via #error macro.
+# required syscall is missing, report it here via message(FATAL_ERROR ...)
 
 if(DFK_COVERAGE AND NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
   message(FATAL_ERROR "Code coverage can be computed only for Debug builds.\nDisable DFK_ENABLE_COVERAGE or change build type to Debug.")
