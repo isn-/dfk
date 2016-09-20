@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <dfk/http/server.h>
 #include <dfk/http/request.h>
+#include <dfk/urlencoding.h>
 #include <dfk/internal.h>
 #include <dfk/internal/misc.h>
 
@@ -377,7 +378,63 @@ int dfk_http_request_read_headers(dfk_http_request_t* req)
   DFK_DBG(dfk, "{%p} keepalive: %d, chunked encoding: %d",
       (void*) req, req->keepalive, req->chunked);
 
-  /** @todo parse url here */
+  /* Parse URL */
+  struct http_parser_url urlparser;
+  int err = http_parser_parse_url(req->url.data, req->url.size, 0, &urlparser);
+  if (err) {
+    DFK_ERROR(dfk, "{%p} url parser returned %d during parsing url \"%.*s\"",
+        (void*) req, err, (int) req->url.size, req->url.data);
+    return dfk_err_protocol;
+  }
+  dfk_buf_t* fields[] = {
+    &req->schema,
+    &req->host,
+    NULL,
+    &req->path,
+    &req->query,
+    &req->fragment,
+    &req->userinfo,
+  };
+  assert(DFK_SIZE(fields) == UF_MAX);
+  for (int i = 0; i < UF_MAX; ++i) {
+    if (fields[i] && urlparser.field_set & (1 << i)) {
+      fields[i]->data = req->url.data + urlparser.field_data[i].off;
+      fields[i]->size = urlparser.field_data[i].len;
+    }
+  }
+  req->port = urlparser.port;
+
+  /* Parse query */
+  char* decoded_query = dfk_arena_alloc(req->_request_arena, req->query.size);
+  size_t decoded_query_size;
+  size_t bytesdecoded = dfk_urldecode(req->query.data, req->query.size,
+      decoded_query, &decoded_query_size);
+  if (bytesdecoded != req->query.size) {
+    return dfk_err_protocol;
+  }
+
+  char* decoded_query_end = decoded_query + decoded_query_size;
+  char* key_begin = decoded_query;
+  char* key_end = NULL;
+  char* value_begin = NULL;
+
+  for (char* i = decoded_query; i != decoded_query_end; ++i) {
+    if (*i == '=') {
+      key_end = i - 1;
+      value_begin = i + 1;
+    } else if (*i == '&') {
+      key_begin = i + 1;
+      dfk_strmap_item_t* item = dfk_arena_alloc(req->_request_arena, sizeof(dfk_strmap_item_t));
+      if (!item) {
+        return dfk_err_nomem;
+      }
+      assert(key_begin <= key_end);
+      assert(value_begin <= i);
+      item->key = (dfk_buf_t) {(char*) key_begin, key_end - key_begin};
+      item->value = (dfk_buf_t) {(char*) value_begin, i - 1 - value_begin};
+      dfk_strmap_insert(&req->arguments, item);
+    }
+  }
   return dfk_err_ok;
 }
 
