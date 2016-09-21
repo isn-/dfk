@@ -72,13 +72,11 @@ typedef struct dfk_http_request_t {
   unsigned short minor_version;
   dfk_http_method_e method;
   dfk_buf_t url;
-  dfk_buf_t schema;
-  dfk_buf_t host;
-  uint16_t port;
   dfk_buf_t path;
   dfk_buf_t query;
   dfk_buf_t fragment;
   dfk_buf_t userinfo;
+  dfk_buf_t host;
   dfk_buf_t user_agent;
   dfk_buf_t accept;
   dfk_buf_t content_type;

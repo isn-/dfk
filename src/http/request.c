@@ -387,8 +387,8 @@ int dfk_http_request_read_headers(dfk_http_request_t* req)
     return dfk_err_protocol;
   }
   dfk_buf_t* fields[] = {
-    &req->schema,
-    &req->host,
+    NULL,
+    NULL,
     NULL,
     &req->path,
     &req->query,
@@ -402,7 +402,6 @@ int dfk_http_request_read_headers(dfk_http_request_t* req)
       fields[i]->size = urlparser.field_data[i].len;
     }
   }
-  req->port = urlparser.port;
 
   /* Parse query */
   if (req->query.size) {
