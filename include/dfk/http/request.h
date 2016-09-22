@@ -75,7 +75,6 @@ typedef struct dfk_http_request_t {
   dfk_buf_t path;
   dfk_buf_t query;
   dfk_buf_t fragment;
-  dfk_buf_t userinfo;
   dfk_buf_t host;
   dfk_buf_t user_agent;
   dfk_buf_t accept;

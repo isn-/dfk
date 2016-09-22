@@ -393,7 +393,7 @@ int dfk_http_request_read_headers(dfk_http_request_t* req)
     &req->path,
     &req->query,
     &req->fragment,
-    &req->userinfo,
+    NULL,
   };
   assert(DFK_SIZE(fields) == UF_MAX);
   for (int i = 0; i < UF_MAX; ++i) {
