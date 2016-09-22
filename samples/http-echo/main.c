@@ -47,6 +47,21 @@ static int echo(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* 
     CALL_DFK_API(dfk_http_response_bset(resp, name, value));
     CALL_DFK_API(dfk_strmap_it_next(&it));
   }
+  if (req->content_length > 0) {
+    char buf[4096] = {0};
+    ssize_t nread = 0;
+    while (nread >= 0) {
+      nread = dfk_http_request_read(req, buf, sizeof(buf));
+      if (nread < 0) {
+        return -1;
+      }
+      ssize_t nwritten = dfk_http_response_write(resp, buf, nread);
+      if (nwritten < 0) {
+        return -1;
+      }
+    }
+  }
+
   resp->code = DFK_HTTP_OK;
   return dfk_err_ok;;
 }
