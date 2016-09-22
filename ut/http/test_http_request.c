@@ -110,6 +110,42 @@ TEST_F(fixture, http_request, trivial)
 }
 
 
+TEST_F(fixture, http_request, http_version_1_1)
+{
+  char request[] = "GET / HTTP/1.1\r\n\r\n";
+  dfk_sponge_write(&fixture->reqbuf, request, sizeof(request) - 1);
+  EXPECT_OK(dfk_http_request_read_headers(&fixture->req));
+  EXPECT(fixture->req.major_version == 1);
+  EXPECT(fixture->req.minor_version == 1);
+}
+
+TEST_F(fixture, http_request, method_post)
+{
+    char request[] = "POST / HTTP/1.1\r\n\r\n";
+    dfk_sponge_write(&fixture->reqbuf, request, sizeof(request) - 1);
+    EXPECT_OK(dfk_http_request_read_headers(&fixture->req));
+    EXPECT(fixture->req.method == DFK_HTTP_POST);
+}
+
+
+TEST_F(fixture, http_request, method_head)
+{
+  char request[] = "HEAD / HTTP/1.1\r\n\r\n";
+  dfk_sponge_write(&fixture->reqbuf, request, sizeof(request) - 1);
+  EXPECT_OK(dfk_http_request_read_headers(&fixture->req));
+  EXPECT(fixture->req.method == DFK_HTTP_HEAD);
+}
+
+
+TEST_F(fixture, http_request, method_delete)
+{
+  char request[] = "DELETE / HTTP/1.1\r\n\r\n";
+  dfk_sponge_write(&fixture->reqbuf, request, sizeof(request) - 1);
+  EXPECT_OK(dfk_http_request_read_headers(&fixture->req));
+  EXPECT(fixture->req.method == DFK_HTTP_DELETE);
+}
+
+
 TEST_F(fixture, http_request, trivial_chunked_body)
 {
   char request[] = "POST / HTTP/1.0\r\n"
@@ -123,13 +159,46 @@ TEST_F(fixture, http_request, trivial_chunked_body)
   dfk_sponge_write(&fixture->reqbuf, request, sizeof(request) - 1);
   EXPECT_OK(dfk_http_request_read_headers(&fixture->req));
   EXPECT(fixture->req.content_length == (uint64_t) -1);
-  EXPECT(fixture->req.method == DFK_HTTP_POST);
-  EXPECT_BUFSTREQ(fixture->req.url, "/");
-  EXPECT(fixture->req.major_version == 1);
-  EXPECT(fixture->req.minor_version == 0);
   char buf[12] = {0};
   EXPECT(readall((dfk_read_f) dfk_http_request_read, &fixture->req, buf, sizeof(buf)) == 12);
   EXPECT(!strncmp(buf, "Hello, world", sizeof(buf)));
+}
+
+
+TEST_F(fixture, http_request, url_with_arguments)
+{
+  char request[] = "GET /foo/bar?opt1=value1&option2=value%202 HTTP/1.1\r\n"
+                   "\r\n";
+  dfk_sponge_write(&fixture->reqbuf, request, sizeof(request) - 1);
+  EXPECT_OK(dfk_http_request_read_headers(&fixture->req));
+  EXPECT_BUFSTREQ(fixture->req.url, "/foo/bar?opt1=value1&option2=value%202");
+  EXPECT_BUFSTREQ(fixture->req.path, "/foo/bar");
+  EXPECT(dfk_strmap_size(&fixture->req.arguments) == 2);
+  EXPECT_BUFSTREQ(dfk_strmap_get(&fixture->req.arguments, "opt1", 4), "value1");
+  EXPECT_BUFSTREQ(dfk_strmap_get(&fixture->req.arguments, "option2", 7), "value 2");
+}
+
+
+TEST_F(fixture, http_request, host)
+{
+  char request[] = "GET / HTTP/1.0\r\n"
+                   "Host: www.example.com\r\n"
+                   "\r\n";
+  dfk_sponge_write(&fixture->reqbuf, request, sizeof(request) - 1);
+  EXPECT_OK(dfk_http_request_read_headers(&fixture->req));
+  EXPECT_BUFSTREQ(fixture->req.host, "www.example.com");
+}
+
+
+TEST_F(fixture, http_request, url_with_fragment)
+{
+  char request[] = "GET /foo#fragment1 HTTP/1.1\r\n"
+                   "\r\n";
+  dfk_sponge_write(&fixture->reqbuf, request, sizeof(request) - 1);
+  EXPECT_OK(dfk_http_request_read_headers(&fixture->req));
+  EXPECT(fixture->req.content_length == 0);
+  EXPECT(fixture->req.method == DFK_HTTP_GET);
+  EXPECT_BUFSTREQ(fixture->req.fragment, "fragment1");
 }
 
 

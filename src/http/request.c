@@ -254,6 +254,25 @@ static http_parser_settings dfk_parser_settings = {
 };
 
 
+static int dfk_http_request_add_argument(dfk_http_request_t* req,
+    const char* key_begin, const char* key_end,
+    const char* value_begin, const char* value_end)
+{
+  assert(key_begin <= key_end);
+  assert(value_begin <= value_end);
+  DFK_DBG(req->http->dfk, "{%p} key:'%.*s', value:'%.*s'", (void*) req,
+      (int) (key_end - key_begin), key_begin,
+      (int) (value_end - value_begin), value_begin);
+  dfk_strmap_item_t* item = dfk_arena_alloc(req->_request_arena, sizeof(dfk_strmap_item_t));
+  if (!item) {
+    return dfk_err_nomem;
+  }
+  dfk_strmap_item_init(item, key_begin, key_end - key_begin, value_begin, value_end - value_begin);
+  dfk_strmap_insert(&req->arguments, item);
+  return dfk_err_ok;
+}
+
+
 int dfk_http_request_read_headers(dfk_http_request_t* req)
 {
   assert(req);
@@ -413,26 +432,60 @@ int dfk_http_request_read_headers(dfk_http_request_t* req)
       return dfk_err_protocol;
     }
 
+    /*
+     * State, can be one of
+     *  0 - initial state
+     *  1 - reading key
+     *  2 - observing '=' sign
+     *  3 - reading value
+     */
+    int state = 0;
+
     char* decoded_query_end = decoded_query + decoded_query_size;
-    char* key_begin = decoded_query;
+    char* key_begin = NULL;
     char* key_end = NULL;
     char* value_begin = NULL;
 
     for (char* i = decoded_query; i != decoded_query_end; ++i) {
-      if (*i == '=') {
-        key_end = i - 1;
-        value_begin = i + 1;
-      } else if (*i == '&') {
-        key_begin = i + 1;
-        dfk_strmap_item_t* item = dfk_arena_alloc(req->_request_arena, sizeof(dfk_strmap_item_t));
-        if (!item) {
-          return dfk_err_nomem;
-        }
-        assert(key_begin <= key_end);
-        assert(value_begin <= i);
-        item->key = (dfk_buf_t) {(char*) key_begin, key_end - key_begin};
-        item->value = (dfk_buf_t) {(char*) value_begin, i - 1 - value_begin};
-        dfk_strmap_insert(&req->arguments, item);
+      switch (state) {
+        case 0: /* Initial state */
+          key_begin = i;
+          state = 1;
+          break;
+        case 1: /* Reading key */
+          if (*i == '=') {
+            key_end = i;
+            state = 2;
+          }
+          break;
+        case 2: /* Observing '=' sign */
+          value_begin = i;
+          state = 3;
+          break;
+        case 3: /* Reading value */
+          if (*i == '&') {
+            err = dfk_http_request_add_argument(req, key_begin, key_end, value_begin, i);
+            if (err != dfk_err_ok) {
+              return err;
+            }
+            key_begin = NULL;
+            state = 0;
+          }
+          break;
+        default:
+          assert(0 && "Impossible state for HTTP query parsing");
+      }
+    }
+    if (state != 0 && state != 3) {
+      DFK_ERROR(dfk, "{%p} bad query string, final state after parsing is %d (0 or 3 expected)",
+          (void*) req, state);
+      return dfk_err_protocol;
+    }
+    if (state == 3) {
+      err = dfk_http_request_add_argument(req,
+          key_begin, key_end, value_begin, decoded_query_end);
+      if (err != dfk_err_ok) {
+        return err;
       }
     }
   }
