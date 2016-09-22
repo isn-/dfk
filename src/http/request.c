@@ -425,6 +425,9 @@ int dfk_http_request_read_headers(dfk_http_request_t* req)
   /* Parse query */
   if (req->query.size) {
     char* decoded_query = dfk_arena_alloc(req->_request_arena, req->query.size);
+    if (!decoded_query) {
+      return dfk_err_nomem;
+    }
     size_t decoded_query_size;
     size_t bytesdecoded = dfk_urldecode(req->query.data, req->query.size,
         decoded_query, &decoded_query_size);

@@ -55,15 +55,18 @@ TEST(urlencoding, decode_simple)
   UT_URLDECODE("%68%65%6C%6C%6F%2C%20%77%6F%72%6C%64", "hello, world");
 }
 
+
 TEST(urlencoding, decode_simple_mix)
 {
   UT_URLDECODE("%68ell%6F%2C%20%77%6F%72ld", "hello, world");
 }
 
+
 TEST(urlencoding, decode_simple_lower)
 {
   UT_URLDECODE("%68%65%6c%6c%6f%2c%20%77%6f%72%6c%64", "hello, world");
 }
+
 
 TEST(urlencoding, decode_coverage)
 {
@@ -102,6 +105,7 @@ TEST(urlencoding, decode_coverage)
     "\xf0\xf1\xf2\xf3\xf4\xf5\xf6\xf7\xf8\xf9\xfa\xfb\xfc\xfd\xfe\xff"
   );
 }
+
 
 TEST(urlencoding, decode_bad_input)
 {
