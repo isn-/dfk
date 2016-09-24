@@ -33,9 +33,6 @@ digraph "DFK Library Roadmap - Current" {
     trie -> router;
     re -> router;
 
-  sleep [label="core\nFunction dfk_sleep"];
-    sleep -> dfk010;
-
   dfk010 [label="dfk-0.1.0" shape=oval];
     http_server -> dfk010;
     keepalive -> dfk010;

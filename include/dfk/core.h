@@ -321,6 +321,12 @@ int dfk_stop(dfk_t* dfk);
 
 
 /**
+ * Suspend current coroutine for msec milliseconds
+ */
+int dfk_sleep(dfk_t* dfk, uint64_t msec);
+
+
+/**
  * Returns string representation of the error code @p err.
  *
  * If system error has occured (err == dfk_err_sys), strerror(dfk->sys_errno) is returned.

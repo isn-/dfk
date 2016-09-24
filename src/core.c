@@ -512,6 +512,38 @@ int dfk_work(dfk_t* dfk)
 }
 
 
+static void dfk__sleep_callback(uv_timer_t* timer)
+{
+  assert(timer);
+  dfk_coro_t* coro = (dfk_coro_t*) timer->data;
+  DFK_DBG(coro->dfk, "{%p} wake up", (void*) coro);
+  DFK_IO_RESUME(coro->dfk, coro);
+}
+
+
+int dfk_sleep(dfk_t* dfk, uint64_t msec)
+{
+  if (!dfk) {
+    return dfk_err_badarg;
+  }
+  DFK_DBG(dfk, "{%p} sleep for %llu millisecond", (void*) dfk, (unsigned long long) msec);
+  if (!msec) {
+    DFK_DBG(dfk, "{%p} sleep for 0 seconds, postpone current coroutine %p",
+        (void*) dfk, (void*) DFK_THIS_CORO(dfk));
+    DFK_POSTPONE(dfk);
+    return dfk_err_ok;
+  }
+  uv_timer_t timer;
+  uv_timer_init(dfk->_uvloop, &timer);
+  timer.data = DFK_THIS_CORO(dfk);
+  uv_timer_start(&timer, dfk__sleep_callback, msec, 0);
+  DFK_IO(dfk);
+  uv_timer_stop(&timer);
+  uv_close((uv_handle_t*) &timer, NULL);
+  return dfk_err_ok;
+}
+
+
 const char* dfk_strerr(dfk_t* dfk, int err)
 {
   switch(err) {
