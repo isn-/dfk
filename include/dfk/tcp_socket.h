@@ -101,6 +101,18 @@ int dfk_tcp_socket_close(dfk_tcp_socket_t* sock);
 
 
 /**
+ * Close the outgoing part of the socket.
+ */
+int dfk_tcp_socket_shutdown(dfk_tcp_socket_t* sock);
+
+
+/**
+ * Wait for other side of the socket to close connection.
+ */
+int dfk_tcp_socket_wait_disconnect(dfk_tcp_socket_t* sock, uint64_t timeout);
+
+
+/**
  * Read at most nbytes from the socket
  */
 ssize_t dfk_tcp_socket_read(

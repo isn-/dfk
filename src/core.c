@@ -585,6 +585,9 @@ const char* dfk_strerr(dfk_t* dfk, int err)
     case dfk_err_protocol: {
       return "dfk_err_protocol(11): Protocol violation";
     }
+    case dfk_err_timeout: {
+      return "dfk_err_timeout(12): Timeout has expired";
+    }
     default: {
       return "Unknown error";
     }

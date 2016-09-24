@@ -348,6 +348,162 @@ int dfk_tcp_socket_close(dfk_tcp_socket_t* sock)
 }
 
 
+typedef struct dfk__tcp_socket_shutdown_data {
+  dfk_coro_t* coro;
+  dfk_tcp_socket_t* sock;
+  int sys_errno;
+} dfk__tcp_socket_shutdown_data;
+
+
+static void dfk__tcp_socket_on_shutdown(uv_shutdown_t* req, int status)
+{
+  assert(req);
+  assert(req->data);
+  dfk__tcp_socket_shutdown_data* sd =
+    (dfk__tcp_socket_shutdown_data*) req->data;
+  assert(sd->coro);
+  DFK_DBG(sd->coro->dfk, "{%p}", (void*) sd->sock);
+  sd->sys_errno = status;
+  DFK_IO_RESUME(sd->coro->dfk, sd->coro);
+}
+
+
+int dfk_tcp_socket_shutdown(dfk_tcp_socket_t* sock)
+{
+  if (!sock) {
+    return dfk_err_badarg;
+  }
+  DFK_DBG(sock->dfk, "{%p}", (void*) sock);
+  uv_shutdown_t shutdown_req;
+  dfk__tcp_socket_shutdown_data sd = {
+    .coro = DFK_THIS_CORO(sock->dfk),
+    .sock = sock,
+    .sys_errno = 0
+  };
+  shutdown_req.data = &sd;
+  uv_shutdown(&shutdown_req, (uv_stream_t*) &sock->_socket, dfk__tcp_socket_on_shutdown);
+  DFK_IO(sock->dfk);
+  DFK_DBG(sock->dfk, "{%p} shutdown returned %d", (void*) sock, sd.sys_errno);
+  if (sd.sys_errno) {
+    sock->dfk->sys_errno = sd.sys_errno;
+    return dfk_err_sys;
+  }
+  return dfk_err_ok;
+}
+
+
+typedef struct dfk_tcp_socket_wait_disconnect_data {
+  dfk_coro_t* coro;
+  dfk_tcp_socket_t* sock;
+  int disconnected;
+  int sys_errno;
+} dfk_tcp_socket_wait_disconnect_data;
+
+
+static void dfk__tcp_socket_wait_disconnect_expired(uv_timer_t* timer)
+{
+  assert(timer);
+  assert(timer->data);
+  dfk_tcp_socket_wait_disconnect_data* pdata =
+    (dfk_tcp_socket_wait_disconnect_data*) timer->data;
+  DFK_IO_RESUME(pdata->coro->dfk, pdata->coro);
+}
+
+
+static void dfk__tcp_socket_wait_disconnect_callback(uv_poll_t* poll, int status, int events)
+{
+  assert(poll);
+  assert(poll->data);
+  dfk_tcp_socket_wait_disconnect_data *wddata =
+    (dfk_tcp_socket_wait_disconnect_data*) poll->data;
+  DFK_DBG(wddata->coro->dfk, "{%p} events: %d (%s|%s|%s)", (void*) wddata->sock, events,
+      (events & UV_DISCONNECT) ? "UV_DISCONNECT " : "",
+      (events & UV_READABLE) ? " UV_READABLE " : "",
+      (events & UV_WRITABLE) ? " UV_WRITABLE" : "");
+  if (status < 0) {
+    wddata->sys_errno = status;
+    DFK_IO_RESUME(wddata->coro->dfk, wddata->coro);
+  } else if (events & UV_DISCONNECT) {
+    wddata->disconnected = 1;
+    DFK_DBG(wddata->coro->dfk, "{%p} client disconnected, resume", (void*) wddata->sock);
+    DFK_IO_RESUME(wddata->coro->dfk, wddata->coro);
+  } else if (events & (UV_READABLE | UV_WRITABLE)) {
+    /* do nothing thus far */
+  }
+}
+
+
+typedef struct dfk_tcp_socket_wait_disconnect_close_data {
+  dfk_coro_t* coro;
+  dfk_tcp_socket_t* sock;
+  int nclosed;
+} dfk_tcp_socket_wait_disconnect_close_data;
+
+
+static void dfk__tcp_socket_wait_disconnect_on_close(uv_handle_t* handle)
+{
+  assert(handle);
+  dfk_tcp_socket_wait_disconnect_close_data* cd =
+    (dfk_tcp_socket_wait_disconnect_close_data*) handle->data;
+  DFK_DBG(cd->coro->dfk, "{%p} nclosed:%d", (void*) cd->sock, cd->nclosed);
+  if ((++cd->nclosed) == 2) {
+    DFK_IO_RESUME(cd->coro->dfk, cd->coro);
+  }
+}
+
+
+int dfk_tcp_socket_wait_disconnect(dfk_tcp_socket_t* sock, uint64_t timeout)
+{
+  if (!sock) {
+    return dfk_err_badarg;
+  }
+  if (!timeout) {
+    DFK_POSTPONE(sock->dfk);
+    return dfk_err_ok;
+  }
+  DFK_DBG(sock->dfk, "{%p}", (void*) sock);
+  dfk_tcp_socket_wait_disconnect_data wddata = {
+    .coro = DFK_THIS_CORO(sock->dfk),
+    .sock = sock,
+    .disconnected = 0,
+    .sys_errno = 0
+  };
+  uv_timer_t timer;
+  uv_timer_init(sock->dfk->_uvloop, &timer);
+  timer.data = &wddata;
+  uv_timer_start(&timer, dfk__tcp_socket_wait_disconnect_expired, timeout, 0);
+  uv_poll_t poll;
+  uv_os_fd_t fd;
+  uv_fileno((uv_handle_t*) &sock->_socket, &fd);
+  uv_poll_init(sock->dfk->_uvloop, &poll, fd);
+  poll.data = &wddata;
+  uv_poll_start(&poll, UV_DISCONNECT | UV_READABLE, dfk__tcp_socket_wait_disconnect_callback);
+  DFK_IO(sock->dfk);
+  DFK_DBG(sock->dfk, "{%p} returned, disconnected:%d", (void*) sock, wddata.disconnected);
+  uv_poll_stop(&poll);
+  uv_timer_stop(&timer);
+  dfk_tcp_socket_wait_disconnect_close_data cd = {
+    .coro = DFK_THIS_CORO(sock->dfk),
+    .sock = sock
+  };
+  poll.data = &cd;
+  timer.data = &cd;
+  uv_close((uv_handle_t*) &poll, dfk__tcp_socket_wait_disconnect_on_close);
+  uv_close((uv_handle_t*) &timer, dfk__tcp_socket_wait_disconnect_on_close);
+  DFK_DBG(sock->dfk, "{%p} close poll and timer", (void*) sock);
+  DFK_IO(sock->dfk);
+  if (wddata.sys_errno) {
+    sock->dfk->sys_errno = wddata.sys_errno;
+    return dfk_err_sys;
+  }
+  if (wddata.disconnected) {
+    return dfk_err_ok;
+  } else {
+    return dfk_err_timeout;
+  }
+}
+
+
 typedef struct dfk_tcp_socket_read_async_arg_t {
   dfk_coro_t* yieldback;
   size_t nbytes;

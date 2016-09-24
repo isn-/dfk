@@ -152,6 +152,11 @@ typedef enum dfk_error_e {
    */
   dfk_err_protocol,
 
+  /**
+   * Timeout has expired
+   */
+  dfk_err_timeout,
+
   _dfk_err_total
 } dfk_error_e;
 
