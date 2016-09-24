@@ -397,7 +397,8 @@ int dfk_http_request_read_headers(dfk_http_request_t* req)
   DFK_DBG(dfk, "{%p} keepalive: %d, chunked encoding: %d",
       (void*) req, req->keepalive, req->chunked);
 
-  /* Parse URL */
+  DFK_DBG(dfk, "{%p} parse url '%.*s'", (void*) req,
+      (int) req->url.size, req->url.data);
   struct http_parser_url urlparser;
   int err = http_parser_parse_url(req->url.data, req->url.size, 0, &urlparser);
   if (err) {
@@ -406,13 +407,13 @@ int dfk_http_request_read_headers(dfk_http_request_t* req)
     return dfk_err_protocol;
   }
   dfk_buf_t* fields[] = {
-    NULL,
-    NULL,
-    NULL,
+    NULL, /* ignore schema */
+    NULL, /* ignore host */
+    NULL, /* ignore port */
     &req->path,
     &req->query,
     &req->fragment,
-    NULL,
+    NULL, /* ignore userinfo */
   };
   assert(DFK_SIZE(fields) == UF_MAX);
   for (int i = 0; i < UF_MAX; ++i) {
@@ -423,6 +424,8 @@ int dfk_http_request_read_headers(dfk_http_request_t* req)
   }
 
   /* Parse query */
+  DFK_DBG(dfk, "{%p} parse query '%.*s'", (void*) req,
+      (int) req->query.size, req->query.data);
   if (req->query.size) {
     char* decoded_query = dfk_arena_alloc(req->_request_arena, req->query.size);
     if (!decoded_query) {
@@ -434,7 +437,8 @@ int dfk_http_request_read_headers(dfk_http_request_t* req)
     if (bytesdecoded != req->query.size) {
       return dfk_err_protocol;
     }
-
+    DFK_DBG(dfk, "{%p} url-decoded: '%.*s", (void*) req,
+        (int) decoded_query_size, decoded_query);
     /*
      * State, can be one of
      *  0 - initial state
@@ -443,7 +447,6 @@ int dfk_http_request_read_headers(dfk_http_request_t* req)
      *  3 - reading value
      */
     int state = 0;
-
     char* decoded_query_end = decoded_query + decoded_query_size;
     char* key_begin = NULL;
     char* key_end = NULL;
@@ -469,6 +472,8 @@ int dfk_http_request_read_headers(dfk_http_request_t* req)
           if (*i == '&') {
             err = dfk_http_request_add_argument(req, key_begin, key_end, value_begin, i);
             if (err != dfk_err_ok) {
+              DFK_ERROR(dfk, "{%p} dfk_http_request_add_argument failed with code %d",
+                  (void*) req, err);
               return err;
             }
             key_begin = NULL;
@@ -480,7 +485,8 @@ int dfk_http_request_read_headers(dfk_http_request_t* req)
       }
     }
     if (state != 0 && state != 3) {
-      DFK_ERROR(dfk, "{%p} bad query string, final state after parsing is %d (0 or 3 expected)",
+      DFK_ERROR(dfk, "{%p} bad query string, "
+          "final state after parsing is %d (0 or 3 expected)",
           (void*) req, state);
       return dfk_err_protocol;
     }
@@ -488,6 +494,8 @@ int dfk_http_request_read_headers(dfk_http_request_t* req)
       err = dfk_http_request_add_argument(req,
           key_begin, key_end, value_begin, decoded_query_end);
       if (err != dfk_err_ok) {
+        DFK_ERROR(dfk, "{%p} dfk_http_request_add_argument failed with code %d",
+            (void*) req, err);
         return err;
       }
     }
@@ -541,7 +549,8 @@ ssize_t dfk_http_request_read(dfk_http_request_t* req, char* buf, size_t size)
     }
 
     dfk_buf_t inbuf;
-    /* prepare inbuf - use either bytes cached in req->_remainder,
+    /*
+     * prepare inbuf - use either bytes cached in req->_remainder,
      * or read from req->_sock
      */
     if (req->_remainder.size) {

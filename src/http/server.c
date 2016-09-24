@@ -83,11 +83,11 @@ int dfk_http_stop(dfk_http_t* http)
     return dfk_err_badarg;
   }
   DFK_DBG(http->dfk, "{%p}", (void*) http);
-  dfk_list_erase(&http->dfk->_http_servers, &http->_hook);
   DFK_CALL(http->dfk, dfk_tcp_socket_close(&http->_listensock));
   DFK_DBG(http->dfk, "{%p} no longer accepts new connections, "
           "wait for running requests to terminate", (void*) http);
   DFK_CALL(http->dfk, dfk_event_wait(&http->_stopped));
+  dfk_list_erase(&http->dfk->_http_servers, &http->_hook);
   return dfk_err_ok;
 }
 
@@ -118,6 +118,8 @@ int dfk_http_serve(dfk_http_t* http,
   DFK_CALL(http->dfk, dfk_tcp_socket_listen(&http->_listensock, endpoint, port,
                                             dfk_http_connection, http, 0));
 
+  DFK_DBG(http->dfk, "{%p} stopped listening, wait for %llu connections to close",
+      (void*) http, (unsigned long long) http->_connections.size);
   dfk_list_hook_t* i = http->_connections.head;
   while (i) {
     dfk__event_list_item_t* it = (dfk__event_list_item_t*) i;

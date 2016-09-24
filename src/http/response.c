@@ -176,6 +176,8 @@ int dfk_http_response_set(
   if (!resp || (!name && namelen) || (!value && valuelen)) {
     return dfk_err_badarg;
   }
+  DFK_DBG(resp->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
+      (int) namelen, name, (int) valuelen, value);
   dfk_strmap_item_t* i = dfk_arena_alloc(resp->_request_arena, sizeof(dfk_strmap_item_t));
   if (!i) {
     return dfk_err_nomem;
@@ -195,6 +197,8 @@ int dfk_http_response_set_copy(
   if (!resp || (!name && namelen) || (!value && valuelen)) {
     return dfk_err_badarg;
   }
+  DFK_DBG(resp->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
+      (int) namelen, name, (int) valuelen, value);
   dfk_strmap_item_t* i = dfk_strmap_item_acopy(
       resp->_request_arena, name, namelen, value, valuelen);
   if (!i) {
@@ -211,6 +215,8 @@ int dfk_http_response_set_copy_name(
   if (!resp || (!name && namelen) || (!value && valuelen)) {
     return dfk_err_badarg;
   }
+  DFK_DBG(resp->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
+      (int) namelen, name, (int) valuelen, value);
   dfk_strmap_item_t* i = dfk_strmap_item_acopy_key(
       resp->_request_arena, name, namelen, value, valuelen);
   if (!i) {
@@ -227,6 +233,8 @@ int dfk_http_response_set_copy_value(
   if (!resp || (!name && namelen) || (!value && valuelen)) {
     return dfk_err_badarg;
   }
+  DFK_DBG(resp->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
+      (int) namelen, name, (int) valuelen, value);
   dfk_strmap_item_t* i = dfk_strmap_item_acopy_value(
       resp->_request_arena, name, namelen, value, valuelen);
   if (!i) {

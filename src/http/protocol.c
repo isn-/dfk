@@ -36,27 +36,41 @@ void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
   assert(http);
   dfk_t* dfk = coro->dfk;
 
-  DFK_DBG(dfk, "{%p} initialize connection arena", (void*) sock);
+  uv_os_fd_t fd;
+  uv_fileno((uv_handle_t*) &sock->_socket, &fd);
+  struct linger l = {
+    .l_onoff = 1,
+    .l_linger = 10
+  };
+  setsockopt(fd, SOL_SOCKET, SO_LINGER, &l, sizeof(l));
+
   /* Arena for per-connection data */
   dfk_arena_t connection_arena;
   dfk_arena_init(&connection_arena, http->dfk);
+  DFK_DBG(dfk, "{%p} initialize connection arena %p",
+      (void*) sock, (void*) &connection_arena);
 
   /* Requests processed within this connection */
   ssize_t nrequests = 0;
   int keepalive = 1;
 
   while (keepalive) {
-    DFK_DBG(dfk, "{%p} initialize request arena", (void*) sock);
     /* Arena for per-request data */
     dfk_arena_t request_arena;
     dfk_arena_init(&request_arena, http->dfk);
+    DFK_DBG(dfk, "{%p} initialize request arena %p",
+        (void*) sock, (void*) &request_arena);
 
     dfk_http_request_t req;
     /** @todo check return value */
     dfk_http_request_init(&req, http, &request_arena, &connection_arena, sock);
 
-    if (dfk_http_request_read_headers(&req) != dfk_err_ok) {
-      goto connection_broken;
+    int err = dfk_http_request_read_headers(&req);
+    if (err != dfk_err_ok) {
+      DFK_ERROR(dfk, "{%p} dfk_http_request_read_headers failed with code %d",
+          (void*) http, err);
+      keepalive = 0;
+      goto cleanup;
     }
 
     DFK_DBG(http->dfk, "{%p} request parsing done, "
@@ -74,35 +88,59 @@ void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
 
     DFK_DBG(http->dfk, "{%p} executing request handler", (void*) http);
     int hres = http->_handler(http, &req, &resp);
-    DFK_INFO(http->dfk, "{%p} http handler returned %d", (void*) http, hres);
+    DFK_INFO(http->dfk, "{%p} http handler returned %s",
+        (void*) http, dfk_strerr(http->dfk, hres));
     if (hres != dfk_err_ok) {
       resp.code = DFK_HTTP_INTERNAL_SERVER_ERROR;
     }
 
     if (http->keepalive_requests >= 0 && nrequests + 1 >= http->keepalive_requests) {
       DFK_INFO(http->dfk, "{%p} maximum number of keepalive requests (%llu) "
-               "for connection {%p} has reached, close connection",
-               (void*) http, (unsigned long long) http->keepalive_requests,
-               (void*) sock);
+          "for connection {%p} has reached, close connection",
+          (void*) http, (unsigned long long) http->keepalive_requests,
+          (void*) sock);
       keepalive = 0;
     }
 
-    dfk_buf_t connection = dfk_strmap_get(&resp.headers, DFK_HTTP_CONNECTION,
-                                          sizeof(DFK_HTTP_CONNECTION));
+    dfk_buf_t connection = dfk_strmap_get(&resp.headers,
+        DFK_HTTP_CONNECTION, sizeof(DFK_HTTP_CONNECTION));
     if (!strncmp(connection.data, "close", DFK_MIN(connection.size, 5))) {
       keepalive = 0;
     }
 
-    /**
-     * @todo Implement keepalive properly
-     */
-    keepalive = 0;
+    if (!keepalive) {
+      dfk_http_response_set(&resp,
+          DFK_HTTP_CONNECTION, sizeof(DFK_HTTP_CONNECTION), "close", 5);
+    }
 
     dfk_http_response_flush_headers(&resp);
 
+    /*
+     * If request handler hasn't read all bytes of the body, we have to
+     * skip them at this point.
+     */
+    if (req.content_length > 0 && req._body_nread < req.content_length) {
+      size_t bytesremain = req.content_length - req._body_nread;
+      DFK_DBG(dfk, "{%p} bytes read by handler %llu, need to flush %llu",
+          (void*) http, (unsigned long long ) req._body_nread,
+          (unsigned long long) bytesremain);
+      char buf[1024];
+      while (bytesremain) {
+        ssize_t nread = dfk_http_request_read(&req, buf,
+            DFK_MIN(bytesremain, sizeof(buf)));
+        if (nread < 0) {
+          DFK_ERROR(dfk, "{%p} failed to flush request body", (void*) http);
+          keepalive = 0;
+          goto cleanup;
+        }
+        bytesremain -= nread;
+      }
+    }
+
     ++nrequests;
 
-connection_broken:
+cleanup:
+    DFK_DBG(dfk, "{%p} cleaup per-request resources", (void*) http);
     /** @todo check for return value */
     dfk_http_response_free(&resp);
     dfk_http_request_free(&req);
@@ -111,6 +149,17 @@ connection_broken:
 
   dfk_arena_free(&connection_arena);
 
+  DFK_DBG(dfk, "{%p} wait for client to close connection", (void*) http);
+  DFK_CALL_RVOID(dfk, dfk_tcp_socket_shutdown(sock));
+  int err = dfk_tcp_socket_wait_disconnect(sock, 1000);
+  if (err == dfk_err_timeout) {
+    DFK_WARNING(dfk, "{%p} client has not closed connection, force close", (void*) http);
+  }
+  if (err != dfk_err_ok) {
+    DFK_ERROR(dfk, "{%p} dfk_tcp_socket_wait_disconnect returned %s",
+        (void*) http, dfk_strerr(dfk, err));
+  }
+  DFK_DBG(http->dfk, "{%p} close socket", (void*) http);
   DFK_CALL_RVOID(http->dfk, dfk_tcp_socket_close(sock));
 }
 

@@ -165,8 +165,9 @@ static void dfk__terminator(dfk_coro_t* coro, void* p)
   DFK_UNUSED(p);
   DFK_UNUSED(coro);
   {
+    DFK_DBG(dfk, "{%p} stop %llu http servers", (void*) dfk,
+        (unsigned long long) dfk->_http_servers.size);
     dfk_list_hook_t* i = dfk->_http_servers.head;
-    DFK_DBG(dfk, "{%p} stop http servers", (void*) dfk);
     while (i) {
       dfk_http_stop((dfk_http_t*) i);
       /* dfk_http_stop should remove self from _http_servers list */
