@@ -2,14 +2,9 @@ digraph "DFK Library Roadmap - Current" {
   node [shape=box];
   ratio="compress";
 
-  http_parser [label="http\nJoyent HTTP Parser" style=filled fillcolor="#F5F553"];
+  expect_100 [label="http\nHandle Expect: 100"];
 
-  http_server [label="http\nHTTP basic server" style=filled fillcolor="#F5F553"];
-    http_parser -> http_server
-    htbl -> http_server
-
-  keepalive [label="http\nKeepalive support"];
-    http_server -> keepalive;
+  deadlock [label="core\nDeadlock detector"];
 
   curl [label="curl\ncurl library wrapper"];
 
@@ -18,7 +13,6 @@ digraph "DFK Library Roadmap - Current" {
   libpq [label="pq\nlibpq library wrapper"];
 
   jwt [label="jwt\nJWT middleware"];
-    http_server -> jwt;
 
   mt [label="core\nMultithreading"];
 
@@ -29,13 +23,9 @@ digraph "DFK Library Roadmap - Current" {
   htbl [label="htbl\nHash table data structure"];
 
   router [label="http\nHTTP router"];
-    http_server -> router;
     trie -> router;
     re -> router;
-
-  dfk010 [label="dfk-0.1.0" shape=oval];
-    http_server -> dfk010;
-    keepalive -> dfk010;
+    htbl -> router;
 
   dfk020 [label="dfk-0.2.0" shape=oval];
     jwt -> dfk020;

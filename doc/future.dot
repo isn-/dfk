@@ -10,7 +10,7 @@ digraph "DFK Library Roadmap - Future" {
   ws [label="ws\nWebSocket server"];
 
   python [label="py\nPython native Glue"];
-  pythonffi [label="py-cffi\nPython CFFI Glue"];
+  pythonffi [label="py\nPython CFFI Glue"];
 
   lua [label="lua\nLua Glue"];
 
