@@ -477,7 +477,7 @@ int dfk_tcp_socket_wait_disconnect(dfk_tcp_socket_t* sock, uint64_t timeout)
   uv_fileno((uv_handle_t*) &sock->_socket, &fd);
   uv_poll_init(sock->dfk->_uvloop, &poll, fd);
   poll.data = &wddata;
-  uv_poll_start(&poll, UV_DISCONNECT | UV_READABLE, dfk__tcp_socket_wait_disconnect_callback);
+  uv_poll_start(&poll, UV_DISCONNECT, dfk__tcp_socket_wait_disconnect_callback);
   DFK_IO(sock->dfk);
   DFK_DBG(sock->dfk, "{%p} returned, disconnected:%d", (void*) sock, wddata.disconnected);
   uv_poll_stop(&poll);
