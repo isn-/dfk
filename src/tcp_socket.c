@@ -342,6 +342,7 @@ int dfk_tcp_socket_close(dfk_tcp_socket_t* sock)
   DFK_INFO(sock->dfk, "{%p} start close", (void*) sock);
   uv_close((uv_handle_t*) &sock->_socket, dfk__tcp_socket_on_close);
   DFK_IO(sock->dfk);
+  DFK_INFO(sock->dfk, "{%p} returned from on_close callback", (void*) sock);
   assert(STATE(sock) & TCP_SOCKET_CLOSING);
   TO_STATE(sock, TCP_SOCKET_CLOSED);
   return dfk_err_ok;

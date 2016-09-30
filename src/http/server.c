@@ -72,7 +72,9 @@ int dfk_http_init(dfk_http_t* http, dfk_t* dfk)
   http->headers_buffer_size = DFK_HTTP_HEADERS_BUFFER_SIZE;
   http->headers_buffer_count = DFK_HTTP_HEADERS_BUFFER_COUNT;
   dfk_list_init(&http->_connections);
-  dfk_event_init(&http->_stopped, dfk);
+  http->_state = 0;
+  dfk_mutex_init(&http->_state_mut, dfk);
+  dfk_cond_init(&http->_state_cv, dfk);
   return dfk_tcp_socket_init(&http->_listensock, dfk);
 }
 
@@ -83,11 +85,25 @@ int dfk_http_stop(dfk_http_t* http)
     return dfk_err_badarg;
   }
   DFK_DBG(http->dfk, "{%p}", (void*) http);
-  DFK_CALL(http->dfk, dfk_tcp_socket_close(&http->_listensock));
-  DFK_DBG(http->dfk, "{%p} no longer accepts new connections, "
-          "wait for running requests to terminate", (void*) http);
-  DFK_CALL(http->dfk, dfk_event_wait(&http->_stopped));
-  dfk_list_erase(&http->dfk->_http_servers, &http->_hook);
+  DFK_CALL(http->dfk, dfk_mutex_lock(&http->_state_mut));
+  if (http->_state == 3) {
+    DFK_CALL(http->dfk, dfk_mutex_unlock(&http->_state_mut));
+    return dfk_err_ok;
+  }
+  if (http->_state == 1) {
+    DFK_CALL(http->dfk, dfk_tcp_socket_close(&http->_listensock));
+    DFK_DBG(http->dfk, "{%p} no longer accepts new connections, "
+            "wait for running requests to terminate", (void*) http);
+    http->_state = 2;
+  }
+  DFK_DBG(http->dfk, "{%p} waiting for dfk_http_serve to terminate", (void*) http);
+  DFK_CALL(http->dfk, dfk_cond_wait(&http->_state_cv, &http->_state_mut));
+  if (http->_state == 2) {
+    DFK_DBG(http->dfk, "{%p} remove self from dfk->_http_servers list", (void*) http);
+    dfk_list_erase(&http->dfk->_http_servers, &http->_hook);
+    http->_state = 3;
+  }
+  DFK_CALL(http->dfk, dfk_mutex_unlock(&http->_state_mut));
   return dfk_err_ok;
 }
 
@@ -98,7 +114,8 @@ int dfk_http_free(dfk_http_t* http)
     return dfk_err_badarg;
   }
   DFK_DBG(http->dfk, "{%p}", (void*) http);
-  DFK_CALL(http->dfk, dfk_event_free(&http->_stopped));
+  DFK_CALL(http->dfk, dfk_mutex_free(&http->_state_mut));
+  DFK_CALL(http->dfk, dfk_cond_free(&http->_state_cv));
   dfk_list_free(&http->_connections);
   return dfk_tcp_socket_free(&http->_listensock);
 }
@@ -112,9 +129,12 @@ int dfk_http_serve(dfk_http_t* http,
   if (!http || !endpoint || !handler || !port) {
     return dfk_err_badarg;
   }
-  DFK_DBG(http->dfk, "{%p} serving at %s:%u", (void*) http, endpoint, port);
   http->_handler = handler;
+  DFK_CALL(http->dfk, dfk_mutex_lock(&http->_state_mut));
   dfk_list_append(&http->dfk->_http_servers, &http->_hook);
+  DFK_DBG(http->dfk, "{%p} serving at %s:%u", (void*) http, endpoint, port);
+  http->_state = 1;
+  DFK_CALL(http->dfk, dfk_mutex_unlock(&http->_state_mut));
   DFK_CALL(http->dfk, dfk_tcp_socket_listen(&http->_listensock, endpoint, port,
                                             dfk_http_connection, http, 0));
 
@@ -128,8 +148,8 @@ int dfk_http_serve(dfk_http_t* http,
     i = http->_connections.head;
   }
 
-  /* Wake up coroutine that called dfk_stop */
-  DFK_CALL(http->dfk, dfk_event_signal(&http->_stopped));
+  DFK_DBG(http->dfk, "{%p} wake up coroutines that called dfk_stop", (void*) http);
+  DFK_CALL(http->dfk, dfk_cond_broadcast(&http->_state_cv));
   return dfk_err_ok;
 }
 

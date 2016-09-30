@@ -466,7 +466,7 @@ static int ut_stop_during_request(dfk_http_t* http, dfk_http_request_t* req, dfk
 }
 
 
-DISABLED_TEST_F(http_fixture, http, stop_during_request)
+TEST_F(http_fixture, http, stop_during_request)
 {
   CURLcode res;
   http_fixture_set_handler(fixture, ut_stop_during_request);

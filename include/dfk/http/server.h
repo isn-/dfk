@@ -50,7 +50,26 @@ typedef struct dfk_http_t {
   dfk_tcp_socket_t _listensock;
   dfk_http_handler _handler;
   dfk_list_t _connections;
-  dfk_event_t _stopped;
+  /**
+   * Server state
+   *
+   * Can be one of
+   * @li 0 - initialized, idle
+   * @li 1 - serving
+   * @li 2 - stopping
+   * @li 3 - stopped
+   */
+  int _state;
+
+  /**
+   * Protects _state
+   */
+  dfk_mutex_t _state_mut;
+
+  /**
+   * Notifies about _state changes
+   */
+  dfk_cond_t _state_cv;
 
   /** @publicsection */
   dfk_t* dfk;
