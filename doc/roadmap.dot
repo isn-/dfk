@@ -2,6 +2,8 @@ digraph "DFK Library Roadmap - Current" {
   node [shape=box];
   ratio="compress";
 
+  cpp [label="cpp\nC++ Glue" style=filled fillcolor="#F5F553"];
+
   expect_100 [label="http\nHandle Expect: 100"];
 
   deadlock [label="core\nDeadlock detector"];

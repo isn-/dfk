@@ -9,3 +9,9 @@ if(DFK_HAVE_SIGALTSTACK)
 endif()
 add_library(coro STATIC
   libcoro/coro.c)
+
+if(BUILD_SHARED_LIBS)
+  set_target_properties(coro
+    PROPERTIES
+    COMPILE_FLAGS -fPIC)
+endif()

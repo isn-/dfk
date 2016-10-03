@@ -16,8 +16,6 @@ digraph "DFK Library Roadmap - Future" {
 
   static [label="http\nStatic files server"];
 
-  cpp [label="cpp\nC++ Glue"];
-
-  pipeling [label="http\nHTTP request pipeling"];
+  pipelining [label="http\nHTTP request pipelining"];
 
 }

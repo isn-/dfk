@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(dfk C)
+project(dfk C CXX)
 
 if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
   message(FATAL_ERROR "\nIn-source builds are not allowed.\nTry 'mkdir build && cd build && cmake ..'")
@@ -25,6 +25,7 @@ endif()
 set(DFK_BUILD_UNIT_TESTS TRUE CACHE BOOL "Build unit tests.")
 set(DFK_BUILD_AUTO_TESTS TRUE CACHE BOOL "Build auto tests.")
 set(DFK_BUILD_SAMPLES TRUE CACHE BOOL "Build code samples.")
+set(DFK_BUILD_CPP_BINDINGS TRUE CACHE BOOL "Build c++ bindings.")
 
 set(DFK_MAINTAINER_MODE FALSE CACHE BOOL "Enable binary package maintainer mode. Designed for deb/rpm packages maintainers. Disables -Werror and checks that neither of release-unfriendly options are set.")
 
@@ -193,6 +194,12 @@ add_library(dfkinternal STATIC
   src/internal/sponge.c
   src/internal/misc.c)
 
+if(BUILD_SHARED_LIBS)
+  set_target_properties(dfkinternal
+    PROPERTIES
+    COMPILE_FLAGS -fPIC)
+endif()
+
 add_library(dfk
   src/core.c
   src/sync.c
@@ -211,6 +218,21 @@ target_link_libraries(dfk
   ${LIBUV_LIBRARIES}
   ${HTTP_PARSER_LIBRARIES})
 
+set_target_properties(dfk
+  PROPERTIES
+  VERSION ${DFK_VERSION_MAJOR}.${DFK_VERSION_MINOR}.${DFK_VERSION_PATCH}
+  SOVERSION ${DFK_VERSION_MAJOR}.${DFK_VERSION_MINOR})
+
+install(TARGETS dfk DESTINATION lib)
+
+install(DIRECTORY include/dfk DESTINATION include FILES_MATCHING PATTERN "*.h")
+install(FILES
+  include/dfk.h
+  DESTINATION include)
+install(FILES
+  ${CMAKE_BINARY_DIR}/dfk/config.h
+  DESTINATION include/dfk)
+
 enable_testing()
 
 if(DFK_BUILD_UNIT_TESTS)
@@ -223,6 +245,10 @@ endif()
 
 if(DFK_BUILD_SAMPLES)
   add_subdirectory(samples)
+endif()
+
+if(DFK_BUILD_CPP_BINDINGS)
+  add_subdirectory(c++)
 endif()
 
 add_subdirectory(sandbox)
