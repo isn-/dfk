@@ -48,6 +48,7 @@ script:
 - pushd build
 - cmake $CMAKE_ARGS ..
 - VERBOSE=1 cmake --build . -- -j
+- ulimit -v unlimited
 - cmake --build . --target test
 - popd
 before_install:
