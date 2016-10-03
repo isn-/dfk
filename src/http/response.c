@@ -24,15 +24,19 @@
 
 #include <assert.h>
 #include <dfk/http/response.h>
+#include <dfk/http/server.h>
 #include <dfk/internal.h>
 
 
-int dfk_http_response_init(dfk_http_response_t* resp, dfk_t* dfk,
+int dfk_http_response_init(dfk_http_response_t* resp,
+                           dfk_http_request_t* req,
                            dfk_arena_t* request_arena,
                            dfk_arena_t* connection_arena,
-                           dfk_tcp_socket_t* sock)
+                           dfk_tcp_socket_t* sock,
+                           int keepalive)
 {
   assert(resp);
+  assert(req);
   assert(request_arena);
   assert(connection_arena);
   assert(sock);
@@ -40,19 +44,20 @@ int dfk_http_response_init(dfk_http_response_t* resp, dfk_t* dfk,
   resp->_request_arena = request_arena;
   resp->_connection_arena = connection_arena;
   resp->_sock = sock;
-  DFK_CALL(dfk, dfk_strmap_init(&resp->headers));
+  DFK_CALL(req->http->dfk, dfk_strmap_init(&resp->headers));
 #if DFK_MOCKS
   resp->_sock_mocked = 0;
   resp->_sock_mock = 0;
 #endif
   resp->_headers_flushed = 0;
 
-  resp->dfk = dfk;
-  resp->major_version = 1;
-  resp->minor_version = 0;
+  resp->http = req->http;
+  resp->major_version = req->major_version;
+  resp->minor_version = req->minor_version;
   resp->code = DFK_HTTP_OK;
   resp->content_length = (size_t) -1;
   resp->chunked = 0;
+  resp->keepalive = !!keepalive;
   return dfk_err_ok;
 }
 
@@ -139,7 +144,7 @@ ssize_t dfk_http_response_write(dfk_http_response_t* resp, char* buf, size_t nby
     return -1;
   }
   if (!buf && nbytes) {
-    resp->dfk->dfk_errno = dfk_err_badarg;
+    resp->http->dfk->dfk_errno = dfk_err_badarg;
     return -1;
   }
   dfk_iovec_t iov = {buf, nbytes};
@@ -153,7 +158,7 @@ ssize_t dfk_http_response_writev(dfk_http_response_t* resp, dfk_iovec_t* iov, si
     return -1;
   }
   if (!iov && niov) {
-    resp->dfk->dfk_errno = dfk_err_badarg;
+    resp->http->dfk->dfk_errno = dfk_err_badarg;
     return -1;
   }
   dfk_http_response_flush_headers(resp);
@@ -176,7 +181,7 @@ int dfk_http_response_set(
   if (!resp || (!name && namelen) || (!value && valuelen)) {
     return dfk_err_badarg;
   }
-  DFK_DBG(resp->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
+  DFK_DBG(resp->http->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
       (int) namelen, name, (int) valuelen, value);
   dfk_strmap_item_t* i = dfk_arena_alloc(resp->_request_arena, sizeof(dfk_strmap_item_t));
   if (!i) {
@@ -197,7 +202,7 @@ int dfk_http_response_set_copy(
   if (!resp || (!name && namelen) || (!value && valuelen)) {
     return dfk_err_badarg;
   }
-  DFK_DBG(resp->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
+  DFK_DBG(resp->http->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
       (int) namelen, name, (int) valuelen, value);
   dfk_strmap_item_t* i = dfk_strmap_item_acopy(
       resp->_request_arena, name, namelen, value, valuelen);
@@ -215,7 +220,7 @@ int dfk_http_response_set_copy_name(
   if (!resp || (!name && namelen) || (!value && valuelen)) {
     return dfk_err_badarg;
   }
-  DFK_DBG(resp->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
+  DFK_DBG(resp->http->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
       (int) namelen, name, (int) valuelen, value);
   dfk_strmap_item_t* i = dfk_strmap_item_acopy_key(
       resp->_request_arena, name, namelen, value, valuelen);
@@ -233,7 +238,7 @@ int dfk_http_response_set_copy_value(
   if (!resp || (!name && namelen) || (!value && valuelen)) {
     return dfk_err_badarg;
   }
-  DFK_DBG(resp->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
+  DFK_DBG(resp->http->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
       (int) namelen, name, (int) valuelen, value);
   dfk_strmap_item_t* i = dfk_strmap_item_acopy_value(
       resp->_request_arena, name, namelen, value, valuelen);

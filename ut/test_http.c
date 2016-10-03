@@ -54,6 +54,7 @@ static int http_fixture_dyn_handler(dfk_http_t* http, dfk_http_request_t* req, d
   if (handler) {
     return handler(http, req, resp);
   } else {
+    resp->keepalive = 0;
     return dfk_err_ok;
   }
 }
@@ -111,9 +112,12 @@ static void http_fixture_setup(http_fixture_t* f)
       CURLcode res;
       long http_code = 0;
       curl_easy_setopt(testcurl, CURLOPT_URL, "http://127.0.0.1:10000/");
+      printf("perform\n");
       res = curl_easy_perform(testcurl);
+      printf("after perform\n");
       curl_easy_getinfo(testcurl, CURLINFO_RESPONSE_CODE, &http_code);
       if (res == CURLE_OK && http_code == 200) {
+        printf("server ready\n");
         server_ready = 1;
       }
       curl_easy_cleanup(testcurl);
@@ -138,6 +142,7 @@ static int ut_errors_handler(dfk_http_t* http, dfk_http_request_t* req, dfk_http
   DFK_UNUSED(http);
   DFK_UNUSED(req);
   resp->code = 200;
+  resp->keepalive = 0;
   return 0;
 }
 
@@ -192,6 +197,7 @@ static int ut_parse_common_headers(dfk_http_t* http, dfk_http_request_t* req, df
   EXPECT(!req->content_type.size);
   EXPECT(req->content_length == 0);
   resp->code = 200;
+  resp->keepalive = 0;
   return 0;
 }
 
@@ -245,6 +251,7 @@ static int ut_iterate_headers(dfk_http_t* http, dfk_http_request_t* req, dfk_htt
     EXPECT(i == DFK_SIZE(expected_fields));
   }
   resp->code = 200;
+  resp->keepalive = 0;
   return 0;
 }
 
@@ -318,6 +325,7 @@ static int ut_content_length(dfk_http_t* http, dfk_http_request_t* req, dfk_http
   size_t nread = dfk_http_request_read(req, buf, req->content_length);
   EXPECT(nread == req->content_length);
   resp->code = 200;
+  resp->keepalive = 0;
   return 0;
 }
 
@@ -347,6 +355,7 @@ static int ut_post_9_bytes(dfk_http_t* http, dfk_http_request_t* req, dfk_http_r
   EXPECT(nread == req->content_length);
   EXPECT(memcmp(buf, "some data", 9) == 0);
   resp->code = 200;
+  resp->keepalive = 0;
   return 0;
 }
 
@@ -382,6 +391,7 @@ static int ut_post_10_mb(dfk_http_t* http, dfk_http_request_t* req, dfk_http_res
   }
   DFK_FREE(http->dfk, buf);
   resp->code = 200;
+  resp->keepalive = 0;
   return 0;
 }
 
@@ -416,6 +426,7 @@ static int ut_output_headers(dfk_http_t* http, dfk_http_request_t* req, dfk_http
   i = dfk_strmap_item_acopy(req->_request_arena, "Foo", 3, "bar", 3);
   dfk_strmap_insert(&resp->headers, i);
   resp->code = 200;
+  resp->keepalive = 0;
   return 0;
 }
 
@@ -462,6 +473,7 @@ static int ut_stop_during_request(dfk_http_t* http, dfk_http_request_t* req, dfk
   dfk_run(http->dfk, ut_stop_during_request_stopper, http, 0);
   DFK_POSTPONE(http->dfk);
   resp->code = 200;
+  resp->keepalive = 0;
   return dfk_err_ok;
 }
 
@@ -473,5 +485,46 @@ TEST_F(http_fixture, http, stop_during_request)
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   res = curl_easy_perform(fixture->curl);
   EXPECT(res == CURLE_OK);
+}
+
+
+static int ut_keepalive_some_requests_nsockets = 0;
+
+
+static curl_socket_t ut_keepalive_some_requests_opensocket_callback(
+    void* client, curlsocktype purpose, struct curl_sockaddr* addr)
+{
+  DFK_UNUSED(client);
+  DFK_UNUSED(purpose);
+  ++ut_keepalive_some_requests_nsockets;
+  return socket(addr->family, addr->socktype, addr->protocol);
+}
+
+
+static int ut_keepalive_some_requests(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+{
+  DFK_UNUSED(http);
+  DFK_UNUSED(req);
+  resp->code = 200;
+  return dfk_err_ok;
+}
+
+
+TEST_F(http_fixture, http, keepalive_some_requests)
+{
+  CURLcode res;
+  size_t nrequests = 2;
+  fixture->http.keepalive_requests = nrequests;
+  http_fixture_set_handler(fixture, ut_keepalive_some_requests);
+  curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
+  curl_easy_setopt(fixture->curl, CURLOPT_OPENSOCKETFUNCTION, ut_keepalive_some_requests_opensocket_callback);
+  for (size_t i = 0; i < nrequests; ++i) {
+    printf("here 1\n");
+    res = curl_easy_perform(fixture->curl);
+    printf("here 2\n");
+    EXPECT(res == CURLE_OK);
+  }
+  EXPECT(ut_keepalive_some_requests_nsockets == 1);
+  printf("here\n");
 }
 

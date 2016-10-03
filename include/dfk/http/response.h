@@ -30,6 +30,7 @@
 #include <dfk/tcp_socket.h>
 #include <dfk/strmap.h>
 #include <dfk/http/constants.h>
+#include <dfk/http/request.h>
 #include <dfk/internal/arena.h>
 #if DFK_MOCKS
 #include <dfk/internal/sponge.h>
@@ -57,20 +58,23 @@ typedef struct dfk_http_response_t {
   int _headers_flushed : 1;
 
   /** @publicsection */
-  dfk_t* dfk;
+  struct dfk_http_t* http;
   unsigned short major_version;
   unsigned short minor_version;
   dfk_http_status_e code;
   size_t content_length;
   int chunked : 1;
+  int keepalive : 1;
   dfk_strmap_t headers;
 } dfk_http_response_t;
 
 
-int dfk_http_response_init(dfk_http_response_t* resp, dfk_t* dfk,
+int dfk_http_response_init(dfk_http_response_t* resp,
+                           dfk_http_request_t* req,
                            dfk_arena_t* request_arena,
                            dfk_arena_t* connection_arena,
-                           dfk_tcp_socket_t* sock);
+                           dfk_tcp_socket_t* sock,
+                           int keepalive);
 
 int dfk_http_response_free(dfk_http_response_t* resp);
 

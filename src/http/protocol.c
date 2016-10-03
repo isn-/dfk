@@ -36,13 +36,15 @@ void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
   assert(http);
   dfk_t* dfk = coro->dfk;
 
-  uv_os_fd_t fd;
-  uv_fileno((uv_handle_t*) &sock->_socket, &fd);
-  struct linger l = {
-    .l_onoff = 1,
-    .l_linger = 10
-  };
-  setsockopt(fd, SOL_SOCKET, SO_LINGER, &l, sizeof(l));
+  {
+    uv_os_fd_t fd;
+    uv_fileno((uv_handle_t*) &sock->_socket, &fd);
+    struct linger l = {
+      .l_onoff = 1,
+      .l_linger = 10
+    };
+    setsockopt(fd, SOL_SOCKET, SO_LINGER, &l, sizeof(l));
+  }
 
   /* Arena for per-connection data */
   dfk_arena_t connection_arena;
@@ -67,8 +69,8 @@ void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
 
     int err = dfk_http_request_read_headers(&req);
     if (err != dfk_err_ok) {
-      DFK_ERROR(dfk, "{%p} dfk_http_request_read_headers failed with code %d",
-          (void*) http, err);
+      DFK_ERROR(dfk, "{%p} dfk_http_request_read_headers failed with %s",
+          (void*) http, dfk_strerr(dfk, err));
       keepalive = 0;
       goto cleanup;
     }
@@ -82,11 +84,27 @@ void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
         req.minor_version,
         (int) req.user_agent.size, req.user_agent.data);
 
+    /* Determine requested connection type */
+    dfk_buf_t connection = dfk_strmap_get(&req.headers,
+        DFK_HTTP_CONNECTION, sizeof(DFK_HTTP_CONNECTION) - 1);
+    if (connection.size) {
+      if (!strncmp(connection.data, "close", DFK_MIN(connection.size, 5))) {
+        keepalive = 0;
+      }
+      if (!strncmp(connection.data, "Keep-Alive", DFK_MIN(connection.size, 10))) {
+        keepalive = 1;
+      }
+    } else {
+      keepalive = !(req.major_version == 1 && req.minor_version == 0);
+    }
+    DFK_DBG(http->dfk, "{%p} client requested %skeepalive connection",
+        (void*) http, keepalive ? "" : "not ");
+
     dfk_http_response_t resp;
     /** @todo check return value */
-    dfk_http_response_init(&resp, http->dfk, &request_arena, &connection_arena, sock);
+    dfk_http_response_init(&resp, &req, &request_arena, &connection_arena, sock, keepalive);
 
-    DFK_DBG(http->dfk, "{%p} executing request handler", (void*) http);
+    DFK_DBG(http->dfk, "{%p} run request handler", (void*) http);
     int hres = http->_handler(http, &req, &resp);
     DFK_INFO(http->dfk, "{%p} http handler returned %s",
         (void*) http, dfk_strerr(http->dfk, hres));
@@ -94,7 +112,36 @@ void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
       resp.code = DFK_HTTP_INTERNAL_SERVER_ERROR;
     }
 
-    if (http->keepalive_requests >= 0 && nrequests + 1 >= http->keepalive_requests) {
+    /* Fix request handler possible protocol violations */
+    if (req.major_version < resp.major_version) {
+      DFK_WARNING(http->dfk,
+          "{%p} request handler attempted HTTP version upgrade from %d.%d to %d.%d",
+          (void*) http, req.major_version, req.minor_version,
+          resp.major_version, resp.minor_version);
+      resp.major_version = req.major_version;
+      resp.minor_version = req.minor_version;
+    } else if (req.minor_version < resp.minor_version) {
+      DFK_WARNING(http->dfk,
+          "{%p} request handler attempted HTTP version upgrade from %d.%d to %d.%d",
+          (void*) http, req.major_version, req.minor_version,
+          resp.major_version, resp.minor_version);
+      resp.minor_version = req.minor_version;
+    }
+
+    if (!keepalive && resp.keepalive) {
+      DFK_WARNING(http->dfk, "{%p} request handler enabled keepalive, although "
+          "client have not requested", (void*) http);
+    }
+
+    /*
+     * Keep connection alive only if it was requested by the client and request
+     * handler did not refuse.
+     */
+    keepalive = keepalive && resp.keepalive;
+
+    if (keepalive
+        && http->keepalive_requests >= 0
+        && nrequests + 1 >= http->keepalive_requests) {
       DFK_INFO(http->dfk, "{%p} maximum number of keepalive requests (%llu) "
           "for connection {%p} has reached, close connection",
           (void*) http, (unsigned long long) http->keepalive_requests,
@@ -102,16 +149,29 @@ void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
       keepalive = 0;
     }
 
-    dfk_buf_t connection = dfk_strmap_get(&resp.headers,
-        DFK_HTTP_CONNECTION, sizeof(DFK_HTTP_CONNECTION));
-    if (!strncmp(connection.data, "close", DFK_MIN(connection.size, 5))) {
-      keepalive = 0;
+#if DFK_DEBUG
+    {
+      dfk_buf_t connection = dfk_strmap_get(&req.headers,
+          DFK_HTTP_CONNECTION, sizeof(DFK_HTTP_CONNECTION) - 1);
+      if (connection.size) {
+        DFK_WARNING(http->dfk, "{%p} manually set header \""
+            DFK_HTTP_CONNECTION " : %.*s\" will be overwritten"
+            " use dfk_http_response_t.keepalive instead",
+            (void*) http, (int) connection.size, connection.data);
+      }
     }
+#endif
 
     if (!keepalive) {
       dfk_http_response_set(&resp,
-          DFK_HTTP_CONNECTION, sizeof(DFK_HTTP_CONNECTION), "close", 5);
+          DFK_HTTP_CONNECTION, sizeof(DFK_HTTP_CONNECTION) - 1, "close", 5);
+    } else {
+      dfk_http_response_set(&resp,
+          DFK_HTTP_CONNECTION, sizeof(DFK_HTTP_CONNECTION) - 1, "Keep-Alive", 10);
     }
+
+    /** @todo remove kludge */
+    dfk_http_response_set(&resp, "Content-Length", 14, "0", 1);
 
     dfk_http_response_flush_headers(&resp);
 

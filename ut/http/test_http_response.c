@@ -41,6 +41,8 @@ typedef struct fixture_t {
   dfk_arena_t conn_arena;
   dfk_arena_t req_arena;
   dfk_tcp_socket_t sock;
+  dfk_http_t http;
+  dfk_http_request_t req;
   dfk_http_response_t resp;
   dfk_sponge_t respbuf;
 } fixture_t;
@@ -51,13 +53,15 @@ static void fixture_setup(fixture_t* f)
   EXPECT_OK(dfk_init(&f->dfk));
   EXPECT_OK(dfk_arena_init(&f->conn_arena, &f->dfk));
   EXPECT_OK(dfk_arena_init(&f->req_arena, &f->dfk));
-  EXPECT_OK(dfk_http_response_init(&f->resp, &f->dfk, &f->req_arena,
-                                   &f->conn_arena, &f->sock));
+  f->http.dfk = &f->dfk;
+  f->req.http = &f->http;
+  f->req.minor_version = 0;
+  f->req.major_version = 1;
+  EXPECT_OK(dfk_http_response_init(&f->resp, &f->req, &f->req_arena,
+                                   &f->conn_arena, &f->sock, 0));
   dfk_sponge_init(&f->respbuf, &f->dfk);
   f->resp._sock_mocked = 1;
   f->resp._sock_mock = &f->respbuf;
-  f->resp.major_version = 1;
-  f->resp.minor_version = 0;
   f->resp.code = 200;
 }
 
@@ -76,13 +80,14 @@ static void expect_resp(dfk_http_response_t* resp, const char* expected)
 {
   dfk_http_response_flush_headers(resp);
   size_t actuallen = resp->_sock_mock->size;
-  char* actual = DFK_MALLOC(resp->dfk, actuallen);
+  char* actual = DFK_MALLOC(resp->http->dfk, actuallen);
   EXPECT(actual);
   EXPECT(dfk_sponge_read(resp->_sock_mock, actual, actuallen) == (ssize_t) actuallen);
   size_t expectedlen = strlen(expected);
   EXPECT(actuallen == expectedlen);
+  printf("%.*s vs %.*s\n", (int) actuallen, actual, (int) expectedlen, expected);
   EXPECT(!strncmp(actual, expected, expectedlen));
-  DFK_FREE(resp->dfk, actual);
+  DFK_FREE(resp->http->dfk, actual);
 }
 
 
