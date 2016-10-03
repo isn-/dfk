@@ -96,6 +96,7 @@ static void http_fixture_setup(http_fixture_t* f)
   dfk_init(&f->dfk);
   f->http.user.data = f;
   f->handler = NULL;
+  pthread_mutex_init(&f->handler_m, NULL);
   pthread_create(&f->dfkthread, NULL, &http_fixture_server_start, f);
   {
     int server_ready = 0;
