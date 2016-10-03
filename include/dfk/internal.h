@@ -189,5 +189,11 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
   DFK_RESUME((dfk), yieldback); \
 }
 
+#if DFK_THREAD_SANITIZER
+#define DFK_NO_SANITIZE_THREAD __attribute__((no_sanitize_thread))
+#else
+#define DFK_NO_SANITIZE_THREAD
+#endif
+
 #pragma GCC diagnostic pop
 

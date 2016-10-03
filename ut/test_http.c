@@ -508,11 +508,38 @@ static int ut_keepalive_some_requests(dfk_http_t* http, dfk_http_request_t* req,
 }
 
 
+/*
+ * TS complains on data race at the assignment below.
+ *
+ * However, there is no actual race here. Data flow is follows:
+ *
+ * dfk thread                    | main thread
+ *                               |
+ * initialize keepalive_requests | try send test HTTP request (10 times)
+ *                               | with exponential backoff timeouts
+ * start listen                  |
+ * accept incoming connection    |
+ * respond to HTTP request       |
+ *                               | check HTTP response from server
+ *                               | update keepalive_requests
+ *                               | run unit test
+ *
+ * Since syncronization is done via loopback HTTP request, TS does
+ * not recognize it.
+ *
+ * Maybe keepalive_requests should be marked volatile.
+ */
+DFK_NO_SANITIZE_THREAD static void set_keepalive_requests(dfk_http_t* http, size_t nrequests)
+{
+  http->keepalive_requests = nrequests;
+}
+
+
 TEST_F(http_fixture, http, keepalive_some_requests)
 {
   CURLcode res;
   size_t nrequests = 2;
-  fixture->http.keepalive_requests = nrequests;
+  set_keepalive_requests(&fixture->http, nrequests);
   http_fixture_set_handler(fixture, ut_keepalive_some_requests);
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   curl_easy_setopt(fixture->curl, CURLOPT_OPENSOCKETFUNCTION, ut_keepalive_some_requests_opensocket_callback);
