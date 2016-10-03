@@ -113,12 +113,9 @@ static void http_fixture_setup(http_fixture_t* f)
       CURLcode res;
       long http_code = 0;
       curl_easy_setopt(testcurl, CURLOPT_URL, "http://127.0.0.1:10000/");
-      printf("perform\n");
       res = curl_easy_perform(testcurl);
-      printf("after perform\n");
       curl_easy_getinfo(testcurl, CURLINFO_RESPONSE_CODE, &http_code);
       if (res == CURLE_OK && http_code == 200) {
-        printf("server ready\n");
         server_ready = 1;
       }
       curl_easy_cleanup(testcurl);
@@ -520,12 +517,9 @@ TEST_F(http_fixture, http, keepalive_some_requests)
   curl_easy_setopt(fixture->curl, CURLOPT_URL, "http://127.0.0.1:10000/");
   curl_easy_setopt(fixture->curl, CURLOPT_OPENSOCKETFUNCTION, ut_keepalive_some_requests_opensocket_callback);
   for (size_t i = 0; i < nrequests; ++i) {
-    printf("here 1\n");
     res = curl_easy_perform(fixture->curl);
-    printf("here 2\n");
     EXPECT(res == CURLE_OK);
   }
   EXPECT(ut_keepalive_some_requests_nsockets == 1);
-  printf("here\n");
 }
 
