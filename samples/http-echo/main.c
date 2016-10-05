@@ -62,7 +62,7 @@ static int echo(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* 
     }
   }
 
-  resp->code = DFK_HTTP_OK;
+  resp->status = DFK_HTTP_OK;
   return dfk_err_ok;;
 }
 

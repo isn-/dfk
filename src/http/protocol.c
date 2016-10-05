@@ -109,7 +109,7 @@ void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
     DFK_INFO(http->dfk, "{%p} http handler returned %s",
         (void*) http, dfk_strerr(http->dfk, hres));
     if (hres != dfk_err_ok) {
-      resp.code = DFK_HTTP_INTERNAL_SERVER_ERROR;
+      resp.status = DFK_HTTP_INTERNAL_SERVER_ERROR;
     }
 
     /* Fix request handler possible protocol violations */

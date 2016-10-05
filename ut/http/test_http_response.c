@@ -62,7 +62,7 @@ static void fixture_setup(fixture_t* f)
   dfk_sponge_init(&f->respbuf, &f->dfk);
   f->resp._sock_mocked = 1;
   f->resp._sock_mock = &f->respbuf;
-  f->resp.code = 200;
+  f->resp.status = 200;
 }
 
 
@@ -100,9 +100,9 @@ TEST_F(fixture, http_response, version)
 }
 
 
-TEST_F(fixture, http_response, code)
+TEST_F(fixture, http_response, status)
 {
-  fixture->resp.code = 404;
+  fixture->resp.status = 404;
   expect_resp(&fixture->resp,
       "HTTP/1.0 404 Not Found\r\n\r\n");
 }

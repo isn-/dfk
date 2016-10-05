@@ -54,7 +54,7 @@ int dfk_http_response_init(dfk_http_response_t* resp,
   resp->http = req->http;
   resp->major_version = req->major_version;
   resp->minor_version = req->minor_version;
-  resp->code = DFK_HTTP_OK;
+  resp->status = DFK_HTTP_OK;
   resp->content_length = (size_t) -1;
   resp->chunked = 0;
   resp->keepalive = !!keepalive;
@@ -93,13 +93,13 @@ int dfk_http_response_flush_headers(dfk_http_response_t* resp)
   size_t niov = 4 * totalheaders + 2;
   dfk_iovec_t* iov = dfk_arena_alloc(resp->_request_arena, niov * sizeof(dfk_iovec_t));
   if (!iov) {
-    resp->code = DFK_HTTP_INTERNAL_SERVER_ERROR;
+    resp->status = DFK_HTTP_INTERNAL_SERVER_ERROR;
   }
 
   char sbuf[128] = {0};
   int ssize = snprintf(sbuf, sizeof(sbuf), "HTTP/%d.%d %3d %s\r\n",
-                       resp->major_version, resp->minor_version, resp->code,
-                       dfk_http_reason_phrase(resp->code));
+                       resp->major_version, resp->minor_version, resp->status,
+                       dfk_http_reason_phrase(resp->status));
   if (!iov) {
 #if DFK_MOCKS
     if (resp->_sock_mocked) {

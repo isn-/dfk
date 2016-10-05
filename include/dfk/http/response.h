@@ -61,7 +61,7 @@ typedef struct dfk_http_response_t {
   struct dfk_http_t* http;
   unsigned short major_version;
   unsigned short minor_version;
-  dfk_http_status_e code;
+  dfk_http_status_e status;
   size_t content_length;
   int chunked : 1;
   int keepalive : 1;

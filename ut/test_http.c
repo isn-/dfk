@@ -139,7 +139,7 @@ static int ut_errors_handler(dfk_http_t* http, dfk_http_request_t* req, dfk_http
 {
   DFK_UNUSED(http);
   DFK_UNUSED(req);
-  resp->code = 200;
+  resp->status = 200;
   resp->keepalive = 0;
   return 0;
 }
@@ -194,7 +194,7 @@ static int ut_parse_common_headers(dfk_http_t* http, dfk_http_request_t* req, df
   EXPECT(!req->content_type.data);
   EXPECT(!req->content_type.size);
   EXPECT(req->content_length == 0);
-  resp->code = 200;
+  resp->status = 200;
   resp->keepalive = 0;
   return 0;
 }
@@ -248,7 +248,7 @@ static int ut_iterate_headers(dfk_http_t* http, dfk_http_request_t* req, dfk_htt
     }
     EXPECT(i == DFK_SIZE(expected_fields));
   }
-  resp->code = 200;
+  resp->status = 200;
   resp->keepalive = 0;
   return 0;
 }
@@ -322,7 +322,7 @@ static int ut_content_length(dfk_http_t* http, dfk_http_request_t* req, dfk_http
   char buf[9] = {0};
   size_t nread = dfk_http_request_read(req, buf, req->content_length);
   EXPECT(nread == req->content_length);
-  resp->code = 200;
+  resp->status = 200;
   resp->keepalive = 0;
   return 0;
 }
@@ -352,7 +352,7 @@ static int ut_post_9_bytes(dfk_http_t* http, dfk_http_request_t* req, dfk_http_r
   size_t nread = dfk_http_request_read(req, buf, req->content_length);
   EXPECT(nread == req->content_length);
   EXPECT(memcmp(buf, "some data", 9) == 0);
-  resp->code = 200;
+  resp->status = 200;
   resp->keepalive = 0;
   return 0;
 }
@@ -388,7 +388,7 @@ static int ut_post_10_mb(dfk_http_t* http, dfk_http_request_t* req, dfk_http_res
     totalread += nread;
   }
   DFK_FREE(http->dfk, buf);
-  resp->code = 200;
+  resp->status = 200;
   resp->keepalive = 0;
   return 0;
 }
@@ -423,7 +423,7 @@ static int ut_output_headers(dfk_http_t* http, dfk_http_request_t* req, dfk_http
   dfk_strmap_insert(&resp->headers, i);
   i = dfk_strmap_item_acopy(req->_request_arena, "Foo", 3, "bar", 3);
   dfk_strmap_insert(&resp->headers, i);
-  resp->code = 200;
+  resp->status = 200;
   resp->keepalive = 0;
   return 0;
 }
@@ -470,7 +470,7 @@ static int ut_stop_during_request(dfk_http_t* http, dfk_http_request_t* req, dfk
   DFK_UNUSED(req);
   dfk_run(http->dfk, ut_stop_during_request_stopper, http, 0);
   DFK_POSTPONE(http->dfk);
-  resp->code = 200;
+  resp->status = 200;
   resp->keepalive = 0;
   return dfk_err_ok;
 }
@@ -503,7 +503,7 @@ static int ut_keepalive_some_requests(dfk_http_t* http, dfk_http_request_t* req,
 {
   DFK_UNUSED(http);
   DFK_UNUSED(req);
-  resp->code = 200;
+  resp->status = 200;
   return dfk_err_ok;
 }
 
