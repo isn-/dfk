@@ -109,6 +109,14 @@ typedef struct dfk_http_t {
 int dfk_http_init(dfk_http_t* http, dfk_t* dfk);
 int dfk_http_stop(dfk_http_t* http);
 int dfk_http_free(dfk_http_t* http);
+
+/**
+ * Returns size of the dfk_http_t structure.
+ *
+ * @see dfk_sizeof
+ */
+size_t dfk_http_sizeof(void);
+
 int dfk_http_serve(dfk_http_t* http,
     const char* endpoint,
     uint16_t port,

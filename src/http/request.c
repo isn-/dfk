@@ -105,6 +105,12 @@ int dfk_http_request_free(dfk_http_request_t* req)
 }
 
 
+size_t dfk_http_request_sizeof(void)
+{
+  return sizeof(dfk_http_request_t);
+}
+
+
 typedef struct dfk_header_parser_data_t {
   dfk_http_request_t* req;
   dfk_strmap_item_t* cheader; /* current header */

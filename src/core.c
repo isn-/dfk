@@ -596,3 +596,27 @@ const char* dfk_strerr(dfk_t* dfk, int err)
   return "Unknown error";
 }
 
+
+size_t dfk_sizeof(void)
+{
+  return sizeof(dfk_t);
+}
+
+
+size_t dfk_buf_sizeof(void)
+{
+  return sizeof(dfk_buf_t);
+}
+
+
+size_t dfk_iovec_sizeof(void)
+{
+  return sizeof(dfk_iovec_t);
+}
+
+
+size_t dfk_coro_sizeof(void)
+{
+  return sizeof(dfk_coro_t);
+}
+

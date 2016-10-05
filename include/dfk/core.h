@@ -338,5 +338,36 @@ int dfk_sleep(dfk_t* dfk, uint64_t msec);
  */
 const char* dfk_strerr(dfk_t* dfk, int err);
 
+
+/**
+ * Returns size of the dfk_t structure.
+ *
+ * Useful for dynamic bindings' creators. dfk_t size may grow within minor version
+ * update preserving backward compatibility, so it's considered a better practice
+ * to allocate memory for dfk object dynamically.
+ */
+size_t dfk_sizeof(void);
+
+/**
+ * Returns size of the dfk_buf_t structure.
+ *
+ * @see dfk_sizeof
+ */
+size_t dfk_buf_sizeof(void);
+
+/**
+ * Returns size of the dfk_iovec_t structure.
+ *
+ * @see dfk_sizeof
+ */
+size_t dfk_iovec_sizeof(void);
+
+/**
+ * Returns size of the dfk_coro_t structure.
+ *
+ * @see dfk_sizeof
+ */
+size_t dfk_coro_sizeof(void);
+
 /** @} */
 

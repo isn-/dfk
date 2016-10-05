@@ -278,6 +278,12 @@ int dfk_strmap_free(dfk_strmap_t* map)
 }
 
 
+size_t dfk_strmap_sizeof(void)
+{
+  return sizeof(dfk_strmap_t);
+}
+
+
 dfk_buf_t dfk_strmap_get(dfk_strmap_t* map, const char* key, size_t keylen)
 {
   if (!map || (!key && keylen)) {

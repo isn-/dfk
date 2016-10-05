@@ -78,6 +78,13 @@ int dfk_http_response_init(dfk_http_response_t* resp,
 
 int dfk_http_response_free(dfk_http_response_t* resp);
 
+/**
+ * Returns size of the dfk_http_response_t structure.
+ *
+ * @see dfk_sizeof
+ */
+size_t dfk_http_response_sizeof(void);
+
 int dfk_http_response_flush_headers(dfk_http_response_t* resp);
 
 ssize_t dfk_http_response_write(dfk_http_response_t* resp, char* buf, size_t nbytes);

@@ -106,6 +106,13 @@ int dfk_strmap_item_free(dfk_strmap_item_t* item);
 
 int dfk_strmap_init(dfk_strmap_t* map);
 int dfk_strmap_free(dfk_strmap_t* map);
+
+/**
+ * Returns size of the dfk_strmap_t structure.
+ *
+ * @see dfk_sizeof
+ */
+size_t dfk_strmap_sizeof(void);
 size_t dfk_strmap_size(dfk_strmap_t* map);
 dfk_buf_t dfk_strmap_get(dfk_strmap_t* map, const char* key, size_t keylen);
 int dfk_strmap_insert(dfk_strmap_t* map, dfk_strmap_item_t* item);

@@ -121,6 +121,12 @@ int dfk_http_free(dfk_http_t* http)
 }
 
 
+size_t dfk_http_sizeof(void)
+{
+  return sizeof(dfk_http_t);
+}
+
+
 int dfk_http_serve(dfk_http_t* http,
     const char* endpoint,
     uint16_t port,

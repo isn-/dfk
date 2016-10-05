@@ -109,6 +109,13 @@ int dfk_http_request_init(dfk_http_request_t* req, struct dfk_http_t* http,
  */
 int dfk_http_request_free(dfk_http_request_t* req);
 
+/**
+ * Returns size of the dfk_http_request_t structure.
+ *
+ * @see dfk_sizeof
+ */
+size_t dfk_http_request_sizeof(void);
+
 
 /**
  * Read HTTP request headers.

@@ -71,6 +71,12 @@ int dfk_http_response_free(dfk_http_response_t* resp)
 }
 
 
+size_t dfk_http_response_sizeof(void)
+{
+  return sizeof(dfk_http_response_t);
+}
+
+
 int dfk_http_response_flush_headers(dfk_http_response_t* resp)
 {
   assert(resp);
