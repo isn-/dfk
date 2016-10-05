@@ -1,5 +1,5 @@
 /**
- * @file dfk.hpp
+ * @file dfk/buffer.hpp
  *
  * @copyright
  * Copyright (c) 2016 Stanislav Ivochkin
@@ -25,8 +25,19 @@
  */
 
 #pragma once
-#include <dfk/core.hpp>
-#include <dfk/context.hpp>
-#include <dfk/coroutine.hpp>
-#include <dfk/exception.hpp>
-#include <dfk/http.hpp>
+#include <cstddef>
+#include <dfk/core.h>
+#include <dfk/wrapper.hpp>
+
+namespace dfk {
+
+class Buffer : public Wrapper<dfk_buf_t, dfk_buf_sizeof>
+{
+public:
+  explicit Buffer(dfk_buf_t* buf);
+  explicit Buffer(const dfk_buf_t* buf);
+  const char* data() const;
+  std::size_t size() const;
+};
+
+} // namespace dfk

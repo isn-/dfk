@@ -1,5 +1,5 @@
 /**
- * @file dfk.hpp
+ * @file dfk/core.hpp
  *
  * @copyright
  * Copyright (c) 2016 Stanislav Ivochkin
@@ -25,8 +25,18 @@
  */
 
 #pragma once
-#include <dfk/core.hpp>
-#include <dfk/context.hpp>
-#include <dfk/coroutine.hpp>
-#include <dfk/exception.hpp>
-#include <dfk/http.hpp>
+#include <dfk/core.h>
+
+namespace dfk {
+
+enum LogLevel
+{
+  ERROR = dfk_log_error,
+  WARNING = dfk_log_warning,
+  INFO = dfk_log_info,
+  DEBUG = dfk_log_debug
+};
+
+typedef dfk_iovec_t IoVec;
+
+} // namespace dfk

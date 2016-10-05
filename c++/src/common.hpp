@@ -1,6 +1,4 @@
 /**
- * @file dfk.hpp
- *
  * @copyright
  * Copyright (c) 2016 Stanislav Ivochkin
  * Licensed under the MIT License:
@@ -25,8 +23,13 @@
  */
 
 #pragma once
-#include <dfk/core.hpp>
-#include <dfk/context.hpp>
-#include <dfk/coroutine.hpp>
+#include <dfk/core.h>
 #include <dfk/exception.hpp>
-#include <dfk/http.hpp>
+
+#define DFK_ENSURE_OK(ctx, expr) \
+{\
+  int err = (expr);\
+  if (err != dfk_err_ok) {\
+    throw dfk::Exception(ctx, err);\
+  }\
+}

@@ -1,5 +1,5 @@
 /**
- * @file dfk.hpp
+ * @file dfk/http/server.hpp
  *
  * @copyright
  * Copyright (c) 2016 Stanislav Ivochkin
@@ -25,8 +25,34 @@
  */
 
 #pragma once
-#include <dfk/core.hpp>
-#include <dfk/context.hpp>
-#include <dfk/coroutine.hpp>
-#include <dfk/exception.hpp>
-#include <dfk/http.hpp>
+#include <dfk/http/server.h>
+#include <dfk/wrapper.hpp>
+
+namespace dfk {
+
+class Context;
+
+} // namespace dfk
+
+namespace dfk {
+namespace http {
+
+class Request;
+class Response;
+
+class Server : public Wrapper<dfk_http_t, dfk_http_sizeof>
+{
+public:
+  explicit Server(Context* context);
+  ~Server();
+  const Context* context() const;
+  Context* context();
+  virtual int handleRequest(const Request&, Response&) = 0;
+  void serve(const char* endpoint, uint16_t port);
+  void stop();
+
+private:
+  static int handler(dfk_http_t*, dfk_http_request_t*, dfk_http_response_t*);
+};
+
+}} // namespace dfk::http

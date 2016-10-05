@@ -1,7 +1,15 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
 add_library(dfkcpp
-  src/core.cpp)
+  src/buffer.cpp
+  src/string_map.cpp
+  src/exception.cpp
+  src/context.cpp
+  src/coroutine.cpp
+  src/http/status.cpp
+  src/http/request.cpp
+  src/http/response.cpp
+  src/http/server.cpp)
 
 target_link_libraries(dfkcpp dfk)
 

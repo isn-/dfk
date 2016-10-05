@@ -1,5 +1,5 @@
 /**
- * @file dfk.hpp
+ * @file dfk/exception.hpp
  *
  * @copyright
  * Copyright (c) 2016 Stanislav Ivochkin
@@ -25,8 +25,24 @@
  */
 
 #pragma once
-#include <dfk/core.hpp>
-#include <dfk/context.hpp>
-#include <dfk/coroutine.hpp>
-#include <dfk/exception.hpp>
-#include <dfk/http.hpp>
+#include <stdexcept>
+
+namespace dfk {
+
+class Context;
+
+class Exception : public std::exception
+{
+public:
+  Exception(Context* context, int code);
+
+  const char* what() const throw();
+  int code() const;
+  Context* context() const;
+
+private:
+  Context* context_;
+  int code_;
+};
+
+} // namespace dfk

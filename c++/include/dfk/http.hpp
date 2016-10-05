@@ -1,5 +1,5 @@
 /**
- * @file dfk.hpp
+ * @file dfk/http.hpp
  *
  * @copyright
  * Copyright (c) 2016 Stanislav Ivochkin
@@ -25,8 +25,6 @@
  */
 
 #pragma once
-#include <dfk/core.hpp>
-#include <dfk/context.hpp>
-#include <dfk/coroutine.hpp>
-#include <dfk/exception.hpp>
-#include <dfk/http.hpp>
+#include <dfk/http/method.hpp>
+#include <dfk/http/request.hpp>
+#include <dfk/http/status.hpp>

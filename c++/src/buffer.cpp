@@ -1,6 +1,4 @@
 /**
- * @file dfk.hpp
- *
  * @copyright
  * Copyright (c) 2016 Stanislav Ivochkin
  * Licensed under the MIT License:
@@ -24,9 +22,28 @@
  * SOFTWARE.
  */
 
-#pragma once
-#include <dfk/core.hpp>
-#include <dfk/context.hpp>
-#include <dfk/coroutine.hpp>
-#include <dfk/exception.hpp>
-#include <dfk/http.hpp>
+#include <dfk/buffer.hpp>
+
+namespace dfk {
+
+Buffer::Buffer(dfk_buf_t* buf)
+  : Wrapper(buf)
+{
+}
+
+Buffer::Buffer(const dfk_buf_t* buf)
+  : Wrapper(const_cast<dfk_buf_t*>(buf))
+{
+}
+
+const char* Buffer::data() const
+{
+  return nativeHandle()->data;
+}
+
+std::size_t Buffer::size() const
+{
+  return nativeHandle()->size;
+}
+
+} // namespace dfk

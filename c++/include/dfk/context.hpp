@@ -1,5 +1,5 @@
 /**
- * @file dfk.hpp
+ * @file dfk/context.hpp
  *
  * @copyright
  * Copyright (c) 2016 Stanislav Ivochkin
@@ -25,8 +25,37 @@
  */
 
 #pragma once
+#include <cstddef>
+#include <dfk/core.h>
 #include <dfk/core.hpp>
-#include <dfk/context.hpp>
+#include <dfk/wrapper.hpp>
 #include <dfk/coroutine.hpp>
-#include <dfk/exception.hpp>
-#include <dfk/http.hpp>
+
+namespace dfk {
+
+class Context : public Wrapper<dfk_t, dfk_sizeof>
+{
+public:
+  Context();
+  ~Context();
+
+private:
+  Context(const Context&);
+  Context& operator=(const Context&);
+
+public:
+  virtual void* malloc(std::size_t nbytes);
+  virtual void free(void* p);
+  virtual void* realloc(void* p, std::size_t nbytes);
+  virtual void log(LogLevel level, const char* msg);
+
+  void setDefaultStackSize(std::size_t stackSize);
+  std::size_t defaultStackSize() const;
+  void work();
+  void stop();
+  void sleep(uint64_t msec);
+  /// @todo Refactor it. Need template method similar to boost::bind
+  Coroutine run(void (*func)(Coroutine, void*), void* arg, size_t argSize);
+};
+
+} // namespace dfk

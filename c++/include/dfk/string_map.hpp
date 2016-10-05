@@ -1,5 +1,5 @@
 /**
- * @file dfk.hpp
+ * @file dfk/string_map.hpp
  *
  * @copyright
  * Copyright (c) 2016 Stanislav Ivochkin
@@ -25,8 +25,16 @@
  */
 
 #pragma once
-#include <dfk/core.hpp>
-#include <dfk/context.hpp>
-#include <dfk/coroutine.hpp>
-#include <dfk/exception.hpp>
-#include <dfk/http.hpp>
+#include <dfk/strmap.h>
+#include <dfk/wrapper.hpp>
+
+namespace dfk {
+
+class StringMap : public Wrapper<dfk_strmap_t, dfk_strmap_sizeof>
+{
+public:
+  explicit StringMap(dfk_strmap_t* strmap);
+  explicit StringMap(const dfk_strmap_t* strmap);
+};
+
+} // namespace dfk

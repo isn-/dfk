@@ -1,6 +1,4 @@
 /**
- * @file dfk.hpp
- *
  * @copyright
  * Copyright (c) 2016 Stanislav Ivochkin
  * Licensed under the MIT License:
@@ -24,9 +22,30 @@
  * SOFTWARE.
  */
 
-#pragma once
-#include <dfk/core.hpp>
-#include <dfk/context.hpp>
+
 #include <dfk/coroutine.hpp>
-#include <dfk/exception.hpp>
-#include <dfk/http.hpp>
+#include "common.hpp"
+
+namespace dfk {
+
+Coroutine::Coroutine(dfk_coro_t* coro)
+  : Wrapper(coro)
+{
+}
+
+void Coroutine::setName(const char* name)
+{
+  DFK_ENSURE_OK(context(), dfk_coro_name(nativeHandle(), "%s", name));
+}
+
+Context* Coroutine::context()
+{
+  return static_cast<Context*>(nativeHandle()->dfk->user.data);
+}
+
+void Coroutine::yield(Coroutine* to)
+{
+  DFK_ENSURE_OK(context(), dfk_yield(this->nativeHandle(), to->nativeHandle()));
+}
+
+} // namespace dfk

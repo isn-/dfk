@@ -1,6 +1,4 @@
 /**
- * @file dfk.hpp
- *
  * @copyright
  * Copyright (c) 2016 Stanislav Ivochkin
  * Licensed under the MIT License:
@@ -24,9 +22,18 @@
  * SOFTWARE.
  */
 
-#pragma once
-#include <dfk/core.hpp>
-#include <dfk/context.hpp>
-#include <dfk/coroutine.hpp>
-#include <dfk/exception.hpp>
-#include <dfk/http.hpp>
+#include <dfk/string_map.hpp>
+
+namespace dfk {
+
+StringMap::StringMap(dfk_strmap_t* strmap)
+  : Wrapper(strmap)
+{
+}
+
+StringMap::StringMap(const dfk_strmap_t* strmap)
+  : Wrapper(const_cast<dfk_strmap_t*>(strmap))
+{
+}
+
+} // namespace dfk

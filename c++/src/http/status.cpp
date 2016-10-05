@@ -1,6 +1,4 @@
 /**
- * @file dfk.hpp
- *
  * @copyright
  * Copyright (c) 2016 Stanislav Ivochkin
  * Licensed under the MIT License:
@@ -24,9 +22,14 @@
  * SOFTWARE.
  */
 
-#pragma once
-#include <dfk/core.hpp>
-#include <dfk/context.hpp>
-#include <dfk/coroutine.hpp>
-#include <dfk/exception.hpp>
-#include <dfk/http.hpp>
+#include <dfk/http/status.hpp>
+
+namespace dfk {
+namespace http {
+
+const char* reasonPhrase(Status status)
+{
+  return dfk_http_reason_phrase(static_cast<dfk_http_status_e>(status));
+}
+
+}} // namespace dfk::http

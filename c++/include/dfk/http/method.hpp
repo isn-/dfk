@@ -1,5 +1,5 @@
 /**
- * @file dfk.hpp
+ * @file dfk/http/method.hpp
  *
  * @copyright
  * Copyright (c) 2016 Stanislav Ivochkin
@@ -25,8 +25,46 @@
  */
 
 #pragma once
-#include <dfk/core.hpp>
-#include <dfk/context.hpp>
-#include <dfk/coroutine.hpp>
-#include <dfk/exception.hpp>
-#include <dfk/http.hpp>
+#include <dfk/http/constants.h>
+
+namespace dfk {
+namespace http {
+
+enum Method
+{
+  DELETE = DFK_HTTP_DELETE,
+  GET = DFK_HTTP_GET,
+  HEAD = DFK_HTTP_HEAD,
+  POST = DFK_HTTP_POST,
+  PUT = DFK_HTTP_PUT,
+  CONNECT = DFK_HTTP_CONNECT,
+  OPTIONS = DFK_HTTP_OPTIONS,
+  TRACE = DFK_HTTP_TRACE,
+  COPY = DFK_HTTP_COPY,
+  LOCK = DFK_HTTP_LOCK,
+  MKCOL = DFK_HTTP_MKCOL,
+  MOVE = DFK_HTTP_MOVE,
+  PROPFIND = DFK_HTTP_PROPFIND,
+  PROPPATCH = DFK_HTTP_PROPPATCH,
+  SEARCH = DFK_HTTP_SEARCH,
+  UNLOCK = DFK_HTTP_UNLOCK,
+  BIND = DFK_HTTP_BIND,
+  REBIND = DFK_HTTP_REBIND,
+  UNBIND = DFK_HTTP_UNBIND,
+  ACL = DFK_HTTP_ACL,
+  REPORT = DFK_HTTP_REPORT,
+  MKACTIVITY = DFK_HTTP_MKACTIVITY,
+  CHECKOUT = DFK_HTTP_CHECKOUT,
+  MERGE = DFK_HTTP_MERGE,
+  MSEARCH = DFK_HTTP_MSEARCH,
+  NOTIFY = DFK_HTTP_NOTIFY,
+  SUBSCRIBE = DFK_HTTP_SUBSCRIBE,
+  UNSUBSCRIBE = DFK_HTTP_UNSUBSCRIBE,
+  PATCH = DFK_HTTP_PATCH,
+  PURGE = DFK_HTTP_PURGE,
+  MKCALENDAR = DFK_HTTP_MKCALENDAR,
+  LINK = DFK_HTTP_LINK,
+  UNLINK = DFK_HTTP_UNLINK
+};
+
+}} // namespace dfk::http
