@@ -12,6 +12,7 @@ include(CheckIncludeFiles)
 include(CheckSymbolExists)
 include(CheckFunctionExists)
 
+fw_version_from_file(version DFK_VERSION DFK_VERSION_MAJOR DFK_VERSION_MINOR DFK_VERSION_PATCH)
 fw_version_from_git(DFK_VERSION DFK_VERSION_MAJOR DFK_VERSION_MINOR DFK_VERSION_PATCH)
 fw_page_size(page_size)
 fw_stack_size(stack_size)

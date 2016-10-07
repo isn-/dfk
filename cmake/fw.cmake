@@ -34,6 +34,18 @@ function(fw_version_from_git out_version out_major out_minor out_patch)
   endforeach()
 endfunction()
 
+function(fw_version_from_file filename out_version out_major out_minor out_patch)
+  file(READ ${filename} content)
+  string(STRIP ${content} content)
+  set(version ${content})
+  string(REGEX REPLACE ".*([0-9]+)\\.[0-9]+\\.[0-9]+.*" "\\1" major ${content})
+  string(REGEX REPLACE ".*[0-9]+\\.([0-9]+)\\.[0-9]+.*" "\\1" minor ${content})
+  string(REGEX REPLACE ".*[0-9]+\\.[0-9]+\\.([0-9]+).*" "\\1" patch ${content})
+  foreach(i version major minor patch)
+    set(${out_${i}} ${${i}} PARENT_SCOPE)
+  endforeach()
+endfunction()
+
 function(fw_page_size out)
   set(getpagesize "
 #include <unistd.h>
