@@ -36,9 +36,10 @@ typedef struct args_t {
 #define CALL_DFK_API(c) if ((c) != dfk_err_ok) { return -1; }
 
 
-static int echo(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+static int echo(dfk_userdata_t ud, dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
   dfk_strmap_it it;
+  (void) ud;
   (void) http;
   CALL_DFK_API(dfk_strmap_begin(&req->headers, &it));
   while (dfk_strmap_it_valid(&it) == dfk_err_ok) {
@@ -70,11 +71,12 @@ static int echo(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* 
 static void dfk_main(dfk_coro_t* coro, void* p)
 {
   dfk_http_t srv;
+  dfk_userdata_t ud = {NULL};
   args_t* args = (args_t*) p;
   if (dfk_http_init(&srv, coro->dfk) != dfk_err_ok) {
     return;
   }
-  if (dfk_http_serve(&srv, args->argv[1], atoi(args->argv[2]), echo) != dfk_err_ok) {
+  if (dfk_http_serve(&srv, args->argv[1], atoi(args->argv[2]), echo, ud) != dfk_err_ok) {
     return;
   }
   dfk_http_free(&srv);

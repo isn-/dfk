@@ -55,7 +55,8 @@ Context* Server::context()
 
 void Server::serve(const char* endpoint, uint16_t port)
 {
-  DFK_ENSURE_OK(context(), dfk_http_serve(nativeHandle(), endpoint, port, handler));
+  dfk_userdata_t ud = {NULL};
+  DFK_ENSURE_OK(context(), dfk_http_serve(nativeHandle(), endpoint, port, handler, ud));
 }
 
 void Server::stop()
@@ -63,10 +64,10 @@ void Server::stop()
   DFK_ENSURE_OK(context(), dfk_http_stop(nativeHandle()));
 }
 
-int Server::handler(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+int Server::handler(dfk_userdata_t, dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
   // This method is called from the C code.
-  // Therefore, no exception should pass this method boundaries.
+  // Therefore, no exception should pass boundaries of this method.
   Server* self = static_cast<Server*>(http->user.data);
   Request request(req);
   Response response(resp);

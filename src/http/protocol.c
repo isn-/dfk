@@ -105,7 +105,7 @@ void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
     dfk_http_response_init(&resp, &req, &request_arena, &connection_arena, sock, keepalive);
 
     DFK_DBG(http->dfk, "{%p} run request handler", (void*) http);
-    int hres = http->_handler(http, &req, &resp);
+    int hres = http->_handler(http->_handler_ud, http, &req, &resp);
     DFK_INFO(http->dfk, "{%p} http handler returned %s",
         (void*) http, dfk_strerr(http->dfk, hres));
     if (hres != dfk_err_ok) {

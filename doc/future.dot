@@ -10,12 +10,10 @@ digraph "DFK Library Roadmap - Future" {
   ws [label="ws\nWebSocket server"];
 
   python [label="py\nPython native Glue"];
-  pythonffi [label="py\nPython CFFI Glue"];
 
   lua [label="lua\nLua Glue"];
 
-  static [label="http\nStatic files server"];
+  pipelinening [label="http\nHTTP request pipelinening"];
 
-  pipelining [label="http\nHTTP request pipelining"];
-
+  jwt [label="jwt\nJWT middleware"];
 }

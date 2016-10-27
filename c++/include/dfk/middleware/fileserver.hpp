@@ -1,9 +1,8 @@
 /**
- * @file dfk.h
- * @brief dfk - HTTP backend in C
+ * @file dfk/middleware/fileserver.hpp
  *
  * @copyright
- * Copyright (c) 2015-2016 Stanislav Ivochkin
+ * Copyright (c) 2016 Stanislav Ivochkin
  * Licensed under the MIT License:
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,19 +25,20 @@
  */
 
 #pragma once
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <dfk/config.h>
-#include <dfk/core.h>
-#include <dfk/sync.h>
-#include <dfk/tcp_socket.h>
-#include <dfk/http.h>
 #include <dfk/middleware/fileserver.h>
+#include <dfk/wrapper.hpp>
+#include <dfk/context.hpp>
+#include <dfk/buffer.hpp>
 
-#ifdef __cplusplus
-}
-#endif
+namespace dfk {
+namespace fileserver {
 
+class Server : public Wrapper<dfk_fileserver_t, dfk_fileserver_sizeof>
+{
+public:
+  explicit Server(Context* context, const Buffer& basepath);
+  void setAutoindex(bool enabled);
+  void setIOBufferSize(std::size_t size);
+};
+
+}} // namespace dfk::fileserver

@@ -4,6 +4,8 @@ digraph "DFK Library Roadmap - Current" {
 
   cpp [label="cpp\nC++ Glue" style=filled fillcolor="#F5F553"];
 
+  static [label="http\nStatic files server" style=filled fillcolor="#F5F553"];
+
   expect_100 [label="http\nHandle Expect: 100"];
 
   deadlock [label="core\nDeadlock detector"];
@@ -13,8 +15,6 @@ digraph "DFK Library Roadmap - Current" {
   redis [label="redis\nhiredis library wrapper"];
 
   libpq [label="pq\nlibpq library wrapper"];
-
-  jwt [label="jwt\nJWT middleware"];
 
   mt [label="core\nMultithreading"];
 

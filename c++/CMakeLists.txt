@@ -1,6 +1,6 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-add_library(dfkcpp
+set(dfkcpp_sources
   src/buffer.cpp
   src/string_map.cpp
   src/exception.cpp
@@ -10,6 +10,12 @@ add_library(dfkcpp
   src/http/request.cpp
   src/http/response.cpp
   src/http/server.cpp)
+
+if(DFK_FILESERVER)
+  list(APPEND dfkcpp_sources src/middleware/fileserver.cpp)
+endif()
+
+add_library(dfkcpp ${dfkcpp_sources})
 
 target_link_libraries(dfkcpp dfk)
 

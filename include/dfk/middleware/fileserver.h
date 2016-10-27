@@ -1,9 +1,9 @@
 /**
- * @file dfk.h
- * @brief dfk - HTTP backend in C
+ * @file dfk/middleware/fileserver.h
+ * Static files server
  *
  * @copyright
- * Copyright (c) 2015-2016 Stanislav Ivochkin
+ * Copyright (c) 2016 Stanislav Ivochkin
  * Licensed under the MIT License:
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -26,19 +26,38 @@
  */
 
 #pragma once
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #include <dfk/config.h>
 #include <dfk/core.h>
-#include <dfk/sync.h>
-#include <dfk/tcp_socket.h>
 #include <dfk/http.h>
-#include <dfk/middleware/fileserver.h>
 
-#ifdef __cplusplus
-}
+#if DFK_FILESERVER
+
+typedef struct dfk_fileserver_t {
+  /** @privatesection */
+  /**
+   * NULL-terminated base path
+   */
+  char* _basepath;
+  size_t _basepathlen;
+
+  /** @publicsection */
+  dfk_t* dfk;
+  size_t io_buf_size;
+  /** Generate index for directories */
+  int autoindex : 1;
+} dfk_fileserver_t;
+
+/**
+ * @param basepath Directory to serve files from
+ * @param basepathlen Size of the basepath, in bytes, excluding zero termination byte, if presented
+ */
+int dfk_fileserver_init(dfk_fileserver_t* fs, dfk_t* dfk, const char* basepath, ssize_t basepathlen);
+int dfk_fileserver_free(dfk_fileserver_t* fs);
+
+size_t dfk_fileserver_sizeof(void);
+
+int dfk_fileserver_handler(dfk_userdata_t ud, dfk_http_t* http,
+    dfk_http_request_t* request, dfk_http_response_t* response);
+
 #endif
 

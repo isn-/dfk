@@ -45,14 +45,14 @@ typedef struct http_fixture_t {
 } http_fixture_t;
 
 
-static int http_fixture_dyn_handler(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+static int http_fixture_dyn_handler(dfk_userdata_t ud, dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
   http_fixture_t* fixture = (http_fixture_t*) http->user.data;
   pthread_mutex_lock(&fixture->handler_m);
   dfk_http_handler handler = fixture->handler;
   pthread_mutex_unlock(&fixture->handler_m);
   if (handler) {
-    return handler(http, req, resp);
+    return handler(ud, http, req, resp);
   } else {
     resp->keepalive = 0;
     return dfk_err_ok;
@@ -73,7 +73,8 @@ static void http_fixture_dfkmain(dfk_coro_t* coro, void* p)
   http_fixture_t* f = (http_fixture_t*) p;
   DFK_UNUSED(coro);
   dfk_http_init(&f->http, &f->dfk);
-  dfk_http_serve(&f->http, "127.0.0.1", 10000, http_fixture_dyn_handler);
+  dfk_userdata_t ud = {NULL};
+  dfk_http_serve(&f->http, "127.0.0.1", 10000, http_fixture_dyn_handler, ud);
   dfk_http_free(&f->http);
 }
 
@@ -135,8 +136,9 @@ static void http_fixture_teardown(http_fixture_t* f)
 }
 
 
-static int ut_errors_handler(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+static int ut_errors_handler(dfk_userdata_t ud, dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
+  DFK_UNUSED(ud);
   DFK_UNUSED(http);
   DFK_UNUSED(req);
   resp->status = 200;
@@ -155,11 +157,12 @@ static void ut_errors(dfk_coro_t* coro, void* arg)
   EXPECT_OK(dfk_http_init(&http, coro->dfk));
   EXPECT(dfk_http_free(NULL) == dfk_err_badarg);
   EXPECT(dfk_http_stop(NULL) == dfk_err_badarg);
-  EXPECT(dfk_http_serve(NULL, NULL, 0, NULL) == dfk_err_badarg);
-  EXPECT(dfk_http_serve(&http, NULL, 0, NULL) == dfk_err_badarg);
-  EXPECT(dfk_http_serve(NULL, "127.0.0.1", 0, NULL) == dfk_err_badarg);
-  EXPECT(dfk_http_serve(NULL, NULL, 0, ut_errors_handler) == dfk_err_badarg);
-  EXPECT(dfk_http_serve(&http, "127.0.0.1", 10000, NULL) == dfk_err_badarg);
+  dfk_userdata_t ud = {NULL};
+  EXPECT(dfk_http_serve(NULL, NULL, 0, NULL, ud) == dfk_err_badarg);
+  EXPECT(dfk_http_serve(&http, NULL, 0, NULL, ud) == dfk_err_badarg);
+  EXPECT(dfk_http_serve(NULL, "127.0.0.1", 0, NULL, ud) == dfk_err_badarg);
+  EXPECT(dfk_http_serve(NULL, NULL, 0, ut_errors_handler, ud) == dfk_err_badarg);
+  EXPECT(dfk_http_serve(&http, "127.0.0.1", 10000, NULL, ud) == dfk_err_badarg);
   EXPECT_OK(dfk_http_free(&http));
 }
 
@@ -183,8 +186,9 @@ TEST_F(http_fixture, http, get_no_url_no_content)
 }
 
 
-static int ut_parse_common_headers(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+static int ut_parse_common_headers(dfk_userdata_t ud, dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
+  DFK_UNUSED(ud);
   DFK_UNUSED(http);
   EXPECT(req->method == DFK_HTTP_HEAD);
   EXPECT_BUFSTREQ(req->url, "/");
@@ -211,8 +215,9 @@ TEST_F(http_fixture, http, parse_common_headers)
 }
 
 
-static int ut_iterate_headers(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+static int ut_iterate_headers(dfk_userdata_t ud, dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
+  DFK_UNUSED(ud);
   DFK_UNUSED(http);
   EXPECT(req->method == DFK_HTTP_POST);
   EXPECT_BUFSTREQ(req->url, "/");
@@ -315,8 +320,9 @@ static size_t ut_read_callback(void* buffer, size_t size, size_t nitems, void* u
 }
 
 
-static int ut_content_length(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+static int ut_content_length(dfk_userdata_t ud, dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
+  DFK_UNUSED(ud);
   DFK_UNUSED(http);
   EXPECT(req->content_length == 9);
   char buf[9] = {0};
@@ -344,8 +350,9 @@ TEST_F(http_fixture, http, content_length)
 }
 
 
-static int ut_post_9_bytes(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+static int ut_post_9_bytes(dfk_userdata_t ud, dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
+  DFK_UNUSED(ud);
   DFK_UNUSED(http);
   EXPECT(req->content_length == 9);
   char buf[9] = {0};
@@ -374,8 +381,9 @@ TEST_F(http_fixture, http, post_9_bytes)
 }
 
 
-static int ut_post_10_mb(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+static int ut_post_10_mb(dfk_userdata_t ud, dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
+  DFK_UNUSED(ud);
   DFK_UNUSED(http);
   EXPECT(req->content_length == 10 * MiB);
   size_t bufsize = MiB;
@@ -415,8 +423,9 @@ TEST_F(http_fixture, http, post_10_mb)
 }
 
 
-static int ut_output_headers(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+static int ut_output_headers(dfk_userdata_t ud, dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
+  DFK_UNUSED(ud);
   DFK_UNUSED(http);
   DFK_UNUSED(req);
   dfk_strmap_item_t* i = dfk_strmap_item_acopy(req->_request_arena, "Server", 6, "rocks", 5);
@@ -464,8 +473,9 @@ static void ut_stop_during_request_stopper(dfk_coro_t* coro, void* arg)
 }
 
 
-static int ut_stop_during_request(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+static int ut_stop_during_request(dfk_userdata_t ud, dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
+  DFK_UNUSED(ud);
   DFK_UNUSED(http);
   DFK_UNUSED(req);
   dfk_run(http->dfk, ut_stop_during_request_stopper, http, 0);
@@ -499,8 +509,9 @@ static curl_socket_t ut_keepalive_some_requests_opensocket_callback(
 }
 
 
-static int ut_keepalive_some_requests(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+static int ut_keepalive_some_requests(dfk_userdata_t ud, dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
 {
+  DFK_UNUSED(ud);
   DFK_UNUSED(http);
   DFK_UNUSED(req);
   resp->status = 200;

@@ -55,6 +55,8 @@ set(DFK_HTTP_PIPELINING TRUE CACHE STRING "Enable HTTP requests pipelining.")
 set(DFK_IGNORE_SIGPIPE TRUE CACHE BOOL "Ignore SIGPIPE when entering dfk loop.")
 set(DFK_ARENA_SEGMENT_SIZE 40960 CACHE STRING "Size of arena's segment, in bytes.")
 set(DFK_SPONGE_INITIAL_SIZE 4096 CACHE STRING "Size of sponge data structure initial size, in bytes.")
+set(DFK_FILESERVER TRUE CACHE BOOL "Enable fileserver middleware")
+set(DFK_FILESERVER_BUFFER_SIZE 4096 CACHE STRING "Size of disk IO buffer for each connecion")
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
@@ -201,7 +203,7 @@ if(BUILD_SHARED_LIBS)
     COMPILE_FLAGS -fPIC)
 endif()
 
-add_library(dfk
+set(dfk_sources
   src/core.c
   src/sync.c
   src/tcp_socket.c
@@ -212,6 +214,12 @@ add_library(dfk
   src/http/response.c
   src/http/protocol.c
   src/http/server.c)
+
+if(DFK_FILESERVER)
+  list(APPEND dfk_sources src/middleware/fileserver.c)
+endif()
+
+add_library(dfk ${dfk_sources})
 
 target_link_libraries(dfk
   dfkinternal

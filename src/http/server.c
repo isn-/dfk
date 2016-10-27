@@ -130,12 +130,14 @@ size_t dfk_http_sizeof(void)
 int dfk_http_serve(dfk_http_t* http,
     const char* endpoint,
     uint16_t port,
-    dfk_http_handler handler)
+    dfk_http_handler handler,
+    dfk_userdata_t handler_ud)
 {
   if (!http || !endpoint || !handler || !port) {
     return dfk_err_badarg;
   }
   http->_handler = handler;
+  http->_handler_ud = handler_ud;
   DFK_CALL(http->dfk, dfk_mutex_lock(&http->_state_mut));
   dfk_list_append(&http->dfk->_http_servers, &http->_hook);
   DFK_DBG(http->dfk, "{%p} serving at %s:%u", (void*) http, endpoint, port);

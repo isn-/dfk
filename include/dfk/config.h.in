@@ -114,4 +114,8 @@
 #define DFK_ARENA_SEGMENT_SIZE @DFK_ARENA_SEGMENT_SIZE@
 /** Size of sponge data structure initial size, in bytes. */
 #define DFK_SPONGE_INITIAL_SIZE @DFK_SPONGE_INITIAL_SIZE@
+/** Enable fileserver middleware */
+#cmakedefine01 DFK_FILESERVER
+/** Size of disk IO buffer for each connection */
+#define DFK_FILESERVER_BUFFER_SIZE @DFK_FILESERVER_BUFFER_SIZE@
 

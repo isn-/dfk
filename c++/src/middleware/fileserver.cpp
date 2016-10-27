@@ -1,9 +1,6 @@
 /**
- * @file dfk.h
- * @brief dfk - HTTP backend in C
- *
  * @copyright
- * Copyright (c) 2015-2016 Stanislav Ivochkin
+ * Copyright (c) 2016 Stanislav Ivochkin
  * Licensed under the MIT License:
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,20 +22,25 @@
  * SOFTWARE.
  */
 
-#pragma once
+#include <dfk/middleware/fileserver.hpp>
+#include "../common.hpp"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+namespace dfk {
+namespace fileserver {
 
-#include <dfk/config.h>
-#include <dfk/core.h>
-#include <dfk/sync.h>
-#include <dfk/tcp_socket.h>
-#include <dfk/http.h>
-#include <dfk/middleware/fileserver.h>
-
-#ifdef __cplusplus
+Server::Server(Context* context, const Buffer& basepath)
+{
+  DFK_ENSURE_OK(context, dfk_fileserver_init(nativeHandle(), context->nativeHandle(), basepath.data(), basepath.size()));
 }
-#endif
 
+void Server::setAutoindex(bool enabled)
+{
+  nativeHandle()->autoindex = enabled;
+}
+
+void Server::setIOBufferSize(std::size_t size)
+{
+  nativeHandle()->io_buf_size = size;
+}
+
+}} // namespace dfk::fileserver

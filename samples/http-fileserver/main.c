@@ -1,9 +1,6 @@
 /**
- * @file dfk.h
- * @brief dfk - HTTP backend in C
- *
  * @copyright
- * Copyright (c) 2015-2016 Stanislav Ivochkin
+ * Copyright (c) 2016 Stanislav Ivochkin
  * Licensed under the MIT License:
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -25,20 +22,43 @@
  * SOFTWARE.
  */
 
-#pragma once
+#include <stdlib.h>
+#include <dfk.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+static const char* ip;
+static unsigned int port;
 
-#include <dfk/config.h>
-#include <dfk/core.h>
-#include <dfk/sync.h>
-#include <dfk/tcp_socket.h>
-#include <dfk/http.h>
-#include <dfk/middleware/fileserver.h>
-
-#ifdef __cplusplus
+static void dfk_main(dfk_coro_t* coro, void* p)
+{
+  (void) p;
+  dfk_http_t srv;
+  dfk_fileserver_t fs;
+  dfk_fileserver_init(&fs, coro->dfk, ".", 1);
+  dfk_userdata_t ud = {&fs};
+  if (dfk_http_init(&srv, coro->dfk) != dfk_err_ok) {
+    return;
+  }
+  if (dfk_http_serve(&srv, ip, port, dfk_fileserver_handler, ud) != dfk_err_ok) {
+    return;
+  }
+  dfk_fileserver_free(&fs);
+  dfk_http_free(&srv);
 }
-#endif
+
+int main(int argc, char** argv)
+{
+  if (argc != 3) {
+    fprintf(stderr, "usage: %s <ip> <port>\n", argv[0]);
+    return -1;
+  }
+  ip = argv[1];
+  port = atoi(argv[2]);
+  dfk_t dfk;
+  dfk_init(&dfk);
+  (void) dfk_run(&dfk, dfk_main, NULL, 0);
+  if (dfk_work(&dfk) != dfk_err_ok) {
+    return -1;
+  }
+  return dfk_free(&dfk);
+}
 

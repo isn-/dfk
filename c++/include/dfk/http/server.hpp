@@ -52,7 +52,7 @@ public:
   void stop();
 
 private:
-  static int handler(dfk_http_t*, dfk_http_request_t*, dfk_http_response_t*);
+  static int handler(dfk_userdata_t ud, dfk_http_t*, dfk_http_request_t*, dfk_http_response_t*);
 };
 
 }} // namespace dfk::http

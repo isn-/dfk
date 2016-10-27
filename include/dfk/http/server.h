@@ -41,7 +41,7 @@
 
 struct dfk_http_t;
 
-typedef int (*dfk_http_handler)(struct dfk_http_t*, dfk_http_request_t*,
+typedef int (*dfk_http_handler)(dfk_userdata_t ud, struct dfk_http_t*, dfk_http_request_t*,
                                 dfk_http_response_t*);
 
 typedef struct dfk_http_t {
@@ -49,6 +49,7 @@ typedef struct dfk_http_t {
   dfk_list_hook_t _hook;
   dfk_tcp_socket_t _listensock;
   dfk_http_handler _handler;
+  dfk_userdata_t _handler_ud;
   dfk_list_t _connections;
   /**
    * Server state
@@ -120,7 +121,8 @@ size_t dfk_http_sizeof(void);
 int dfk_http_serve(dfk_http_t* http,
     const char* endpoint,
     uint16_t port,
-    dfk_http_handler handler);
+    dfk_http_handler handler,
+    dfk_userdata_t handler_ud);
 
 /** @} */
 
