@@ -62,7 +62,7 @@ static int ignore_file(struct dirent* de)
     return 0;
   }
 #if __APPLE__
-  return (de->d_name[0] == '.') && (de->d_namlen == 1 || (de->d_name[1] == '.' && res->d_namlen == 2);
+  return (de->d_name[0] == '.') && (de->d_namlen == 1 || (de->d_name[1] == '.' && de->d_namlen == 2));
 #endif
 #if __linux__
   return (de->d_name[0] == '.') && (de->d_name[1] == '\0' || (de->d_name[1] == '.' && de->d_name[2] == '\0'));
