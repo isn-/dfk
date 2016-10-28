@@ -56,6 +56,19 @@ static const char autoindex_footer[] =
   "  </body>\n"
   "</html>\n";
 
+static int ignore_file(struct dirent* de)
+{
+  if (!(de->d_type & (DT_DIR | DT_REG))) {
+    return 0;
+  }
+#if __APPLE__
+  return (de->d_name[0] == '.') && (de->d_namlen == 1 || (de->d_name[1] == '.' && res->d_namlen == 2);
+#endif
+#if __linux__
+  return (de->d_name[0] == '.') && (de->d_name[1] == '\0' || (de->d_name[1] == '.' && de->d_name[2] == '\0'));
+#endif
+}
+
 int dfk_fileserver_init(dfk_fileserver_t* fs, dfk_t* dfk, const char* basepath, ssize_t basepathlen)
 {
   assert(fs);
@@ -69,7 +82,7 @@ int dfk_fileserver_init(dfk_fileserver_t* fs, dfk_t* dfk, const char* basepath, 
   fs->_basepathlen = basepathlen;
   fs->dfk = dfk;
   fs->io_buf_size = DFK_FILESERVER_BUFFER_SIZE;
-  fs->autoindex = 1;
+  fs->autoindex |= 1;
   return dfk_err_ok;
 }
 
@@ -139,9 +152,7 @@ int dfk_fileserver_handler(dfk_userdata_t ud, dfk_http_t* http,
               response->status = DFK_HTTP_INTERNAL_SERVER_ERROR;
               return dfk_err_ok;
             }
-            if (res && (res->d_type & (DT_DIR | DT_REG))
-                && !(res->d_name[0] == '.' && res->d_namlen == 1)
-                && !(res->d_name[0] == '.' && res->d_name[1] == '.' && res->d_namlen == 2)) {
+            if (res && !ignore_file(res)) {
               assert(res == &dei->de);
               dfk_list_append(&filelist, &dei->hook);
               break;
@@ -172,9 +183,14 @@ int dfk_fileserver_handler(dfk_userdata_t ud, dfk_http_t* http,
           if (add_separator_after_path) {
             iov[iiov++] = (dfk_iovec_t) {"/", 1};
           }
-          iov[iiov++] = (dfk_iovec_t) {i->de.d_name, i->de.d_namlen};
+#if __APPLE__
+          const size_t namelen = i->de.d_namlen;
+#else
+          const size_t namelen = strnlen(i->de.d_name, sizeof(i->de.d_name));
+#endif
+          iov[iiov++] = (dfk_iovec_t) {i->de.d_name, namelen};
           iov[iiov++] = (dfk_iovec_t) {"\">", 2};
-          iov[iiov++] = (dfk_iovec_t) {i->de.d_name, i->de.d_namlen};
+          iov[iiov++] = (dfk_iovec_t) {i->de.d_name, namelen};
           iov[iiov++] = (dfk_iovec_t) {"</a></li>\n", 10};
         }
         iov[iiov++] = (dfk_iovec_t) {(char*) autoindex_footer, DFK_SIZE(autoindex_footer)};
