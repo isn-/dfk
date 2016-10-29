@@ -260,4 +260,6 @@ if(DFK_BUILD_CPP_BINDINGS)
   add_subdirectory(c++)
 endif()
 
+# A directory for experimenting, no file from this directory except empty
+# CMakeLists.txt should be committed into the repository
 add_subdirectory(sandbox)
