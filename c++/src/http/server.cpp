@@ -55,7 +55,7 @@ Context* Server::context()
 
 void Server::serve(const char* endpoint, uint16_t port, IRequestHandler* handler)
 {
-  dfk_userdata_t user = {.data = handler};
+  dfk_userdata_t user = (dfk_userdata_t) {handler};
   DFK_ENSURE_OK(context(), dfk_http_serve(nativeHandle(), endpoint, port, Server::handler, user));
 }
 

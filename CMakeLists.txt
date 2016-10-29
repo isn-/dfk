@@ -150,20 +150,20 @@ endif()
 # Add compiler flags to satisfy user-provided configuration options.
 
 if(DFK_THREAD_SANITIZER)
-  fw_c_flags("-fsanitize=thread")
+  fw_c_cxx_flags("-fsanitize=thread")
 endif()
 
 if(DFK_MEMORY_SANITIZER)
-  fw_c_flags("-fsanitize=memory")
-  fw_c_flags("-fno-omit-frame-pointer -fno-optimize-sibling-calls")
+  fw_c_cxx_flags("-fsanitize=memory")
+  fw_c_cxx_flags("-fno-omit-frame-pointer -fno-optimize-sibling-calls")
 endif()
 
 if(DFK_COVERAGE)
-  fw_c_flags("--coverage -O0")
+  fw_c_cxx_flags("--coverage -O0")
 endif()
 
 if(NOT DFK_MAINTAINER_MODE)
-  fw_c_flags("-Werror")
+  fw_c_cxx_flags("-Werror")
 endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"

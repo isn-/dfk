@@ -50,7 +50,7 @@ void Server::setIOBufferSize(std::size_t size)
 
 int Server::handle(http::Server* server, http::Request& request, http::Response& response)
 {
-  dfk_userdata_t user = {.data = nativeHandle()};
+  dfk_userdata_t user = (dfk_userdata_t) {nativeHandle()};
   return dfk_fileserver_handler(user,
       server->nativeHandle(),
       request.nativeHandle(),
