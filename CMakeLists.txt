@@ -61,6 +61,9 @@ set(DFK_FILESERVER_BUFFER_SIZE 4096 CACHE STRING "Size of disk IO buffer for eac
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+if(DFK_BUILD_AUTO_TESTS)
+  include_directories("${CMAKE_CURRENT_SOURCE_DIR}/c++/include")
+endif()
 
 check_include_files(assert.h DFK_HAVE_ASSERT_H)
 check_include_files(stddef.h DFK_HAVE_STDDEF_H)
@@ -233,6 +236,8 @@ set_target_properties(dfk
   SOVERSION ${DFK_VERSION_MAJOR}.${DFK_VERSION_MINOR})
 
 install(TARGETS dfk DESTINATION lib)
+
+fw_exports(dfk dfk.exports)
 
 install(DIRECTORY include/dfk DESTINATION include FILES_MATCHING PATTERN "*.h")
 install(FILES
