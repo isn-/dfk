@@ -28,6 +28,10 @@
 #pragma once
 #pragma GCC diagnostic push
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stddef.h>
 #include <string.h>
 #include <stdio.h>
@@ -196,4 +200,8 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
 #endif
 
 #pragma GCC diagnostic pop
+
+#ifdef __cplusplus
+}
+#endif
 
