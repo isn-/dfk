@@ -30,3 +30,4 @@
 #include <dfk/coroutine.hpp>
 #include <dfk/exception.hpp>
 #include <dfk/http.hpp>
+#include <dfk/middleware/fileserver.hpp>

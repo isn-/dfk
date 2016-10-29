@@ -25,7 +25,7 @@
  */
 
 #pragma once
-#include <dfk/http/request.h>
+#include <dfk.h>
 #include <dfk/wrapper.hpp>
 #include <dfk/core.hpp>
 #include <dfk/http/method.hpp>

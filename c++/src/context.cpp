@@ -22,6 +22,7 @@
  * SOFTWARE.
  */
 
+#include <cstdlib>
 #include <dfk/context.hpp>
 #include "common.hpp"
 
@@ -53,17 +54,44 @@ static void logProxy(dfk_t* dfk, int level, const char* msg)
 
 Context::Context()
 {
-  DFK_ENSURE_OK(this, dfk_init(nativeHandle()));
-  nativeHandle()->user.data = this;
-  nativeHandle()->malloc = mallocProxy;
-  nativeHandle()->free = freeProxy;
-  nativeHandle()->realloc = reallocProxy;
-  nativeHandle()->log = logProxy;
+  dfk_t* dfk = nativeHandle();
+  DFK_ENSURE_OK(this, dfk_init(dfk));
+  dfk->user.data = this;
+  defaultMalloc = dfk->malloc;
+  defaultFree = dfk->free;
+  defaultRealloc = dfk->realloc;
+  defaultLog = dfk->log;
+  dfk->malloc = mallocProxy;
+  dfk->free = freeProxy;
+  dfk->realloc = reallocProxy;
+  dfk->log = logProxy;
 }
 
 Context::~Context()
 {
   DFK_ENSURE_OK(this, dfk_free(nativeHandle()));
+}
+
+void* Context::malloc(std::size_t nbytes)
+{
+  return defaultMalloc(nativeHandle(), nbytes);
+}
+
+void Context::free(void* p)
+{
+  defaultFree(nativeHandle(), p);
+}
+
+void* Context::realloc(void* p, std::size_t nbytes)
+{
+  return defaultRealloc(nativeHandle(), p, nbytes);
+}
+
+void Context::log(LogLevel level, const char* msg)
+{
+  if (defaultLog) {
+    defaultLog(nativeHandle(), static_cast<int>(level), msg);
+  }
 }
 
 void Context::setDefaultStackSize(std::size_t stackSize)

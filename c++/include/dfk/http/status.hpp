@@ -25,7 +25,7 @@
  */
 
 #pragma once
-#include <dfk/http/constants.h>
+#include <dfk.h>
 
 namespace dfk {
 namespace http {

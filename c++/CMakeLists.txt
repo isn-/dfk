@@ -8,6 +8,7 @@ set(dfkcpp_sources
   src/coroutine.cpp
   src/http/status.cpp
   src/http/request.cpp
+  src/http/request_handler.cpp
   src/http/response.cpp
   src/http/server.cpp)
 

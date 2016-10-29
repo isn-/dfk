@@ -23,7 +23,7 @@
  */
 
 #pragma once
-#include <dfk/core.h>
+#include <dfk.h>
 #include <dfk/exception.hpp>
 
 #define DFK_ENSURE_OK(ctx, expr) \

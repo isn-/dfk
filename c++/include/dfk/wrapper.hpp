@@ -66,7 +66,6 @@ public:
     return *this;
   }
 
-public:
   T* nativeHandle()
   {
     return obj_;

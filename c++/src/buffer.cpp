@@ -26,6 +26,12 @@
 
 namespace dfk {
 
+Buffer::Buffer(const char* data, std::size_t size)
+  : Wrapper()
+{
+  *nativeHandle() = (dfk_buf_t) {const_cast<char*>(data), size};
+}
+
 Buffer::Buffer(dfk_buf_t* buf)
   : Wrapper(buf)
 {

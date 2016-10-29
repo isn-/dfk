@@ -25,7 +25,7 @@
  */
 
 #pragma once
-#include <dfk/strmap.h>
+#include <dfk.h>
 #include <dfk/wrapper.hpp>
 
 namespace dfk {
