@@ -1,6 +1,7 @@
 digraph "DFK Library Roadmap - Future" {
   node [shape=box];
-  ratio="compress";
+  overlap=false;
+  layout=neato;
 
   udp_socket [label="net\nUDP socket"];
 

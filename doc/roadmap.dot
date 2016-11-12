@@ -1,6 +1,7 @@
 digraph "DFK Library Roadmap - Current" {
   node [shape=box];
-  ratio="compress";
+  overlap=false;
+  layout=neato;
 
   cpp [label="cpp\nC++ Glue" style=filled fillcolor="#F5F553"];
 
