@@ -65,8 +65,6 @@ while [[ $# -gt 0 ]]; do
 shift
 done
 
-echo WITH $WITH_CURL $WITH_LIBUV $WITH_HTTP_PARSER
-
 # Check for required programs
 for cmd in wget tar make; do
   echo -n "Checking for $cmd ... "
@@ -77,6 +75,16 @@ for cmd in wget tar make; do
     exit 1;
   fi;
 done
+
+function version_gt() {
+  test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1";
+}
+
+wget="wget --continue"
+wget_version=$(wget --version | head -n1 | awk '{print $3}')
+if version_gt $wget_version 1.17; then
+  wget="$wget --no-hsts"
+fi
 
 mkdir -p $PREFIX/tarball
 mkdir -p $PREFIX/src
@@ -93,7 +101,7 @@ LIBUV_BUILD_DIR=$PREFIX/build/libuv-$LIBUV_VERSION
 LIBUV_TARBALL=$PREFIX/tarball/libuv-v$LIBUV_VERSION.tar.gz
 LIBUV_URL=https://github.com/libuv/libuv/archive/v$LIBUV_VERSION.tar.gz
 
-[ -e $LIBUV_TARBALL ] || wget --continue -O $LIBUV_TARBALL $LIBUV_URL
+[ -e $LIBUV_TARBALL ] || $wget -O $LIBUV_TARBALL $LIBUV_URL
 [ -e $LIBUV_SOURCE_DIR ] || tar xzf $LIBUV_TARBALL -C $PREFIX/src
 cd $LIBUV_SOURCE_DIR
 ./autogen.sh
@@ -113,7 +121,7 @@ HTTP_PARSER_BUILD_DIR=$PREFIX/build/http-parser-$HTTP_PARSER_VERSION
 HTTP_PARSER_TARBALL=$PREFIX/tarball/http-parser-v$HTTP_PARSER_VERSION.tar.gz
 HTTP_PARSER_URL=https://github.com/nodejs/http-parser/archive/v$HTTP_PARSER_VERSION.tar.gz
 
-[ -e $HTTP_PARSER_TARBALL ] || wget --continue -O $HTTP_PARSER_TARBALL $HTTP_PARSER_URL
+[ -e $HTTP_PARSER_TARBALL ] || $wget -O $HTTP_PARSER_TARBALL $HTTP_PARSER_URL
 [ -e $HTTP_PARSER_SOURCE_DIR ] || tar xzf $HTTP_PARSER_TARBALL -C $PREFIX/src
 cd $HTTP_PARSER_SOURCE_DIR
 # CFLAGS replace built-in flags, while CPPFLAGS are appended
@@ -132,7 +140,7 @@ CURL_BUILD_DIR=$PREFIX/build/curl-$CURL_VERSION
 CURL_TARBALL=$PREFIX/tarball/curl-$CURL_VERSION.tar.gz
 CURL_URL=https://github.com/curl/curl/archive/curl-$CURL_VERSION.tar.gz
 
-[ -e $CURL_TARBALL ] || wget --continue -O $CURL_TARBALL $CURL_URL
+[ -e $CURL_TARBALL ] || $wget -O $CURL_TARBALL $CURL_URL
 [ -e $CURL_SOURCE_DIR ] || tar xzf $CURL_TARBALL -C $PREFIX/src
 cd $CURL_SOURCE_DIR
 bash buildconf
