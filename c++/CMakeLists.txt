@@ -1,5 +1,7 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
+fw_cxx_flags(-std=c++03)
+
 set(dfkcpp_sources
   src/buffer.cpp
   src/string_map.cpp
