@@ -15,3 +15,5 @@ if(BUILD_SHARED_LIBS)
     PROPERTIES
     COMPILE_FLAGS -fPIC)
 endif()
+
+install(FILES libcoro/coro.h DESTINATION include/dfk/thirdparty/)

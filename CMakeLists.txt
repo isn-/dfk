@@ -58,7 +58,6 @@ set(DFK_SPONGE_INITIAL_SIZE 4096 CACHE STRING "Size of sponge data structure ini
 set(DFK_FILESERVER TRUE CACHE BOOL "Enable fileserver middleware")
 set(DFK_FILESERVER_BUFFER_SIZE 4096 CACHE STRING "Size of disk IO buffer for each connecion")
 
-include_directories("${CMAKE_CURRENT_SOURCE_DIR}/thirdparty")
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
 if(DFK_BUILD_AUTO_TESTS)
@@ -168,6 +167,10 @@ endif()
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"
   ${CMAKE_CURRENT_BINARY_DIR}/dfk/config.h @ONLY)
+
+execute_process(
+  COMMAND "${CMAKE_COMMAND}" -E create_symlink "${CMAKE_SOURCE_DIR}/thirdparty" thirdparty
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/dfk")
 
 if("${DFK_COROUTINE}" STREQUAL ASM)
   add_definitions(-DCORO_ASM)
