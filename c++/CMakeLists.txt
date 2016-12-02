@@ -33,3 +33,6 @@ install(DIRECTORY include/dfk DESTINATION include)
 install(FILES
   include/dfk.hpp
   DESTINATION include)
+
+configure_file(dfkcpp.pc.in "${CMAKE_CURRENT_BINARY_DIR}/dfkcpp.pc" @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/dfkcpp.pc" DESTINATION lib/pkgconfig)

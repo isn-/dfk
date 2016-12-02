@@ -63,6 +63,7 @@
 #define DFK_TCP_BACKLOG @DFK_TCP_BACKLOG@
 /** Coroutine implementation */
 #define DFK_COROUTINE "@DFK_COROUTINE@"
+#cmakedefine01 CORO_ASM
 /** Enable user-provided names for coroutines */
 #cmakedefine01 DFK_NAMED_COROUTINES
 /** Maximum size of coroutine name, including zero termination byte */

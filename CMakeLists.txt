@@ -5,6 +5,7 @@ if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
   message(FATAL_ERROR "\nIn-source builds are not allowed.\nTry 'mkdir build && cd build && cmake ..'")
 endif()
 
+set(CMAKE_MACOSX_RPATH ON)
 set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cpm_packages)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 include(fw)
@@ -165,16 +166,18 @@ if(NOT DFK_MAINTAINER_MODE)
   fw_c_cxx_flags("-Werror")
 endif()
 
+if("${DFK_COROUTINE}" STREQUAL ASM)
+  # CORO_ASM variable is needed for dfk/config.h
+  set(CORO_ASM true)
+  add_definitions(-DCORO_ASM)
+endif()
+
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"
   ${CMAKE_CURRENT_BINARY_DIR}/dfk/config.h @ONLY)
 
 execute_process(
   COMMAND "${CMAKE_COMMAND}" -E create_symlink "${CMAKE_SOURCE_DIR}/thirdparty" thirdparty
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/dfk")
-
-if("${DFK_COROUTINE}" STREQUAL ASM)
-  add_definitions(-DCORO_ASM)
-endif()
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
@@ -271,3 +274,6 @@ endif()
 # A directory for experimenting, no file from this directory except empty
 # CMakeLists.txt should be committed into the repository
 add_subdirectory(sandbox)
+
+configure_file(dfk.pc.in "${CMAKE_CURRENT_BINARY_DIR}/dfk.pc" @ONLY)
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/dfk.pc" DESTINATION lib/pkgconfig)

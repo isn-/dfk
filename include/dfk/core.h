@@ -29,8 +29,8 @@
 #include <stddef.h>
 #include <pthread.h>
 #include <uv.h>
-#include <dfk/thirdparty/libcoro/coro.h>
 #include <dfk/config.h>
+#include <dfk/thirdparty/libcoro/coro.h>
 #include <dfk/internal/list.h>
 
 /**
