@@ -52,5 +52,5 @@ if [ "$TRAVIS" == "true" ]; then
 else
   build
   echo
-  echo Open $(pwd)/doc/html/index.html in your browser for the generated documentation
+  echo Open file://$(pwd)/doc/html/index.html in your browser for the generated documentation
 fi
