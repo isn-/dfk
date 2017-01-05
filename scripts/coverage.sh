@@ -25,6 +25,6 @@ else
   pushd doc/coverage
   genhtml lcov.info
   echo
-  echo Open $(pwd)/index.html in your browser for the coverage report
+  echo Open file://$(pwd)/index.html in your browser for the coverage report
   popd >/dev/null
 fi
