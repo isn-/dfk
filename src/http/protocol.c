@@ -197,6 +197,15 @@ void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http)
       }
     }
 
+    DFK_INFO(http->dfk,
+        "{%p} %s %.*s HTTP/%hu.%hu \"%.*s\"",
+        (void*) http,
+        http_method_str((enum http_method) req.method),
+        (int) req.url.size, req.url.data,
+        req.major_version,
+        req.minor_version,
+        (int) req.user_agent.size, req.user_agent.data);
+
     ++nrequests;
 
 cleanup:
