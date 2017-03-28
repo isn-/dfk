@@ -23,6 +23,9 @@
  */
 
 #include <assert.h>
+#include <errno.h>
+#include <sys/epoll.h>
+#include <arpa/inet.h>
 #include <dfk.h>
 #include <dfk/internal.h>
 
@@ -72,8 +75,14 @@ int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk)
     return dfk_err_badarg;
   }
   DFK_DBG(dfk, "{%p}", (void*) sock);
-  DFK_SYSCALL(dfk, uv_tcp_init(dfk->_uvloop, &sock->_socket));
-  sock->_socket.data = sock;
+
+  sock->_socket = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+  if (sock->_socket == -1) {
+    DFK_ERROR(dfk, "socket() call failed with code %d: %s", errno, strerror(errno));
+    dfk->sys_errno = errno;
+    return dfk_err_sys;
+  }
+
   sock->_arg.func = NULL;
   sock->_flags = TCP_SOCKET_SPARE;
   sock->dfk = dfk;
@@ -94,36 +103,36 @@ int dfk_tcp_socket_free(dfk_tcp_socket_t* sock)
 }
 
 
-typedef struct dfk_tcp_socket_connect_async_arg_t {
-  int err;
-  dfk_coro_t* yieldback;
-} dfk_tcp_socket_connect_async_arg_t;
-
-
 /**
  * Sets connect result and yields back to dfk_tcp_socket_connect caller
  */
-static void dfk__tcp_socket_on_connect(uv_connect_t* p, int status)
+static void dfk__tcp_socket_on_connect(
+    int status,
+    dfk_epoll_cb_arg_t arg0,
+    dfk_epoll_cb_arg_t arg1,
+    dfk_epoll_cb_arg_t arg2,
+    dfk_epoll_cb_arg_t arg3)
 {
-  dfk_tcp_socket_t* sock = (dfk_tcp_socket_t*) p->data;
-  dfk_tcp_socket_connect_async_arg_t* arg;
+  dfk_tcp_socket_t* sock = (dfk_tcp_socket_t*) arg0.ptr;
+  int* err = (int*) arg1.ptr;
+  dfk_coro_t* yieldback = (dfk_coro_t*) arg2.ptr;
+  DFK_UNUSED(arg3);
 
-  assert(p);
   assert(sock);
   assert(STATE(sock) == TCP_SOCKET_CONNECTING);
 
   DFK_DBG(sock->dfk, "{%p} connected with status %d (%s)",
       (void*) sock, status, status ? "error" : "no error");
 
-  arg = (dfk_tcp_socket_connect_async_arg_t*) sock->_arg.data;
-  assert(arg);
+  epoll_ctl(sock->dfk->_epollfd, EPOLL_CTL_DEL, sock->_socket, NULL);
+
   if (status != 0) {
     sock->dfk->sys_errno = status;
-    arg->err = dfk_err_sys;
+    *err = dfk_err_sys;
   } else {
-    arg->err = dfk_err_ok;
+    *err = dfk_err_ok;
   }
-  DFK_IO_RESUME(sock->dfk, arg->yieldback);
+  DFK_IO_RESUME(sock->dfk, yieldback);
 }
 
 
@@ -144,36 +153,37 @@ int dfk_tcp_socket_connect(
 
   DFK_DBG(sock->dfk, "{%p} connect to %s:%d", (void*) sock, endpoint, port);
 
-  {
-    struct sockaddr_in dest;
-    uv_connect_t connect;
-    dfk_tcp_socket_connect_async_arg_t arg;
+  struct sockaddr_in dest;
+  memset(&dest, 0, sizeof(dest));
+  dest.sin_family = AF_INET;
+  dest.sin_port = htons(port);
+  inet_aton(endpoint, (struct in_addr*) &dest.sin_addr.s_addr);
 
-    DFK_SYSCALL(sock->dfk, uv_ip4_addr(endpoint, port, &dest));
-
-    arg.err = dfk_err_ok;
-    arg.yieldback = DFK_THIS_CORO(sock->dfk);
-    assert(sock->_arg.data == NULL);
-    sock->_arg.data = &arg;
-    connect.data = sock;
-
-    DFK_SYSCALL(sock->dfk, uv_tcp_connect(
-        &connect,
-        &sock->_socket,
-        (const struct sockaddr*) &dest,
-        dfk__tcp_socket_on_connect));
-
-    TO_STATE(sock, TCP_SOCKET_CONNECTING);
-    DFK_IO(sock->dfk);
-
-    sock->_arg.data = NULL;
-    if (arg.err == dfk_err_ok) {
-      TO_STATE(sock, TCP_SOCKET_CONNECTED);
-    } else {
-      TO_STATE(sock, TCP_SOCKET_SPARE);
-    }
-    return arg.err;
+  if (connect(sock->_socket, &dest, sizeof(dest)) == -1) {
+    DFK_ERROR(sock->dfk, "connect() failed with code %d: %s", errno, strerror(errno));
+    sock->dfk->sys_errno = errno;
+    return dfk_err_sys;
   }
+
+  int err = dfk_err_ok;
+  dfk_epoll_arg_t arg = {
+    .callback = dfk__tcp_socket_on_connect,
+    .arg0 = {.ptr = sock},
+    .arg1 = {.ptr = &err},
+    .arg2 = {.ptr = DFK_THIS_CORO(sock->dfk)},
+    .arg3 = {.ptr = NULL}
+  };
+
+  struct epoll_event event;
+  event.data.ptr = &arg;
+  event.events = EPOLLOUT;
+  epoll_ctl(sock->dfk->_epollfd, EPOLL_CTL_ADD, sock->_socket, &event);
+
+  TO_STATE(sock, TCP_SOCKET_CONNECTING);
+  DFK_IO(sock->dfk);
+  TO_STATE(sock, err = dfk_err_ok ? TCP_SOCKET_CONNECTED : TCP_SOCKET_SPARE);
+
+  return err;
 }
 
 

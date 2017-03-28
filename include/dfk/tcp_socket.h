@@ -25,7 +25,6 @@
 #pragma once
 #include <stdint.h>
 #include <sys/types.h>
-#include <uv.h>
 #include <dfk/core.h>
 
 
@@ -45,8 +44,7 @@ typedef struct dfk_tcp_socket_t {
    * @privatesection
    */
 
-  uv_tcp_t _socket;
-  dfk_userdata_t _arg;
+  int _socket;
   int32_t _flags;
 
   /**
