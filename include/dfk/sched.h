@@ -5,7 +5,6 @@
  * @copyright
  * Copyright (c) 2017 Stanislav Ivochkin
  * Licensed under the MIT License (see LICENSE)
- *
  */
 
 #include <dfk/core.h>

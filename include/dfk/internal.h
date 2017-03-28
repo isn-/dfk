@@ -3,7 +3,7 @@
  * Miscellaneous functions and macros for internal use only.
  *
  * @copyright
- * Copyright (c) 2015-2016 Stanislav Ivochkin
+ * Copyright (c) 2015-2017 Stanislav Ivochkin
  * Licensed under the MIT License (see LICENSE)
  */
 

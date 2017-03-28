@@ -3,7 +3,7 @@
  * HTTP server
  *
  * @copyright
- * Copyright (c) 2016 Stanislav Ivochkin
+ * Copyright (c) 2016-2017 Stanislav Ivochkin
  * Licensed under the MIT License (see LICENSE)
  */
 
