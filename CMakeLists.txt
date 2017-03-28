@@ -40,7 +40,6 @@ set(DFK_STACK FIXED CACHE STRING "Stack growth strategy, options are: FIXED.")
 set(DFK_STACK_SIZE ${stack_size} CACHE STRING "Default stack size, in bytes.")
 set(DFK_STACK_ALIGNMENT 16 CACHE STRING "Stack alignment, in bytes.")
 set(DFK_STACK_GUARD_SIZE ${guard_size} CACHE STRING "Emit N guard bytes to protect against stack overflow.")
-set(DFK_EVENT_LOOP LIBUV CACHE STRING "Event loop implementation, options are: LIBUV.")
 set(DFK_DEBUG FALSE CACHE BOOL "Emit debug log messages.")
 set(DFK_MOCKS TRUE CACHE BOOL "Enable object mocking for unit testing. If set to OFF, some tests will be unavailable.")
 set(DFK_THREADS FALSE CACHE BOOL "Enable multithreading support.")
@@ -99,11 +98,6 @@ check_function_exists(mprotect DFK_HAVE_MPROTECT)
 if(DFK_VALGRIND)
   find_program(VALGRIND valgrind REQUIRED)
   mark_as_advanced(VALGRIND)
-endif()
-
-if("${DFK_EVENT_LOOP}" STREQUAL LIBUV)
-  find_package(libuv REQUIRED)
-  include_directories(${LIBUV_INCLUDE_DIRS})
 endif()
 
 find_package(http-parser REQUIRED)
@@ -195,10 +189,6 @@ endif()
 # Enable hardcore warnings mode.
 fw_c_flags("-Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition")
 
-if(NOT APPLE AND "${DFK_EVENT_LOOP}" STREQUAL LIBUV)
-  add_definitions(-D_GNU_SOURCE)
-endif()
-
 add_library(dfkinternal STATIC
   src/internal/list.c
   src/internal/avltree.c
@@ -233,7 +223,6 @@ add_library(dfk ${dfk_sources})
 target_link_libraries(dfk
   dfkinternal
   coro
-  ${LIBUV_LIBRARIES}
   ${HTTP_PARSER_LIBRARIES})
 
 set_target_properties(dfk

@@ -4,20 +4,18 @@ ROOT=$(pwd -P)
 PREFIX=$ROOT/cpm_packages
 
 WITH_CURL=1
-WITH_LIBUV=1
 WITH_HTTP_PARSER=1
+
+REQUIRED_PROGRAMS="wget tar make"
 
 function usage {
   cat <<EOT
 Usage: bootstrap.sh [--with-curl] [--without-curl]
-  [--with-libuv] [--without-libuv] [--with-http-parser]
-  [--without-http-parser]
+  [--with-http-parser] [--without-http-parser]
 
 Options:
  --with-curl
  --without-curl
- --with-libuv
- --without-libuv
  --with-http-parser
  --without-http-parser
 
@@ -45,19 +43,13 @@ while [[ $# -gt 0 ]]; do
       WITH_CURL=1
     ;;
     --without-curl)
-      WITH_CURL=0
-    ;;
-    --with-libuv)
-      WITH_LIBUV=1
-    ;;
-    --without-libuv)
-      WITH_LIBUV=0
+      WITH_CURL=
     ;;
     --with-http-parser)
       WITH_HTTP_PARSER=1
     ;;
     --without-http-parser)
-      WITH_HTTP_PARSER=0
+      WITH_HTTP_PARSER=
     ;;
     *)
     ;;
@@ -65,8 +57,12 @@ while [[ $# -gt 0 ]]; do
 shift
 done
 
+if [[ $WITH_CURL ]]; then
+  REQUIRED_PROGRAMS="$REQUIRED_PROGRAMS autoconf"
+fi
+
 # Check for required programs
-for cmd in wget tar make; do
+for cmd in $REQUIRED_PROGRAMS; do
   echo -n "Checking for $cmd ... "
   if command -v $cmd >/dev/null 2>&1; then
     echo "OK"
@@ -92,28 +88,8 @@ mkdir -p $PREFIX/include
 mkdir -p $PREFIX/lib
 mkdir -p $PREFIX/build
 
-# ---------- libuv ----------
-if [[ $WITH_LIBUV == 1 ]] ; then
-
-LIBUV_VERSION=1.9.1
-LIBUV_SOURCE_DIR=$PREFIX/src/libuv-$LIBUV_VERSION
-LIBUV_BUILD_DIR=$PREFIX/build/libuv-$LIBUV_VERSION
-LIBUV_TARBALL=$PREFIX/tarball/libuv-v$LIBUV_VERSION.tar.gz
-LIBUV_URL=https://github.com/libuv/libuv/archive/v$LIBUV_VERSION.tar.gz
-
-[ -e $LIBUV_TARBALL ] || $wget -O $LIBUV_TARBALL $LIBUV_URL
-[ -e $LIBUV_SOURCE_DIR ] || tar xzf $LIBUV_TARBALL -C $PREFIX/src
-cd $LIBUV_SOURCE_DIR
-./autogen.sh
-mkdir -r $LIBUV_BUILD_DIR && cd $LIBUV_BUILD_DIR
-CFLAGS=-fPIC CPPFLAGS=-fPIC ./configure --prefix=$PREFIX --enable-shared=no --enable-static=yes
-make -j
-make install
-
-fi
-
 # ---------- http-parser ----------
-if [[ $WITH_HTTP_PARSER == 1 ]] ; then
+if [[ $WITH_HTTP_PARSER ]] ; then
 
 HTTP_PARSER_VERSION=2.7.1
 HTTP_PARSER_SOURCE_DIR=$PREFIX/src/http-parser-$HTTP_PARSER_VERSION
@@ -132,9 +108,9 @@ cp http_parser.h $PREFIX/include
 fi
 
 # ---------- curl ----------
-if [[ $WITH_CURL  == 1 ]] ; then
+if [[ $WITH_CURL  ]] ; then
 
-CURL_VERSION=7_50_1
+CURL_VERSION=7_53_1
 CURL_SOURCE_DIR=$PREFIX/src/curl-curl-$CURL_VERSION
 CURL_BUILD_DIR=$PREFIX/build/curl-$CURL_VERSION
 CURL_TARBALL=$PREFIX/tarball/curl-$CURL_VERSION.tar.gz
