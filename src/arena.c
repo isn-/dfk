@@ -6,7 +6,7 @@
 
 #include <assert.h>
 #include <dfk/internal.h>
-#include <dfk/internal/arena.h>
+#include <dfk/arena.h>
 
 
 typedef struct segment_t {
@@ -16,6 +16,9 @@ typedef struct segment_t {
 } segment_t;
 
 
+/**
+ * A structure to hold Object With Cleanup (OWC)
+ */
 typedef struct owc_t {
   dfk_list_hook_t hook;
   dfk_arena_cleanup cleanup;
@@ -27,8 +30,8 @@ int dfk_arena_init(dfk_arena_t* arena, dfk_t* dfk)
   assert(arena);
   assert(dfk);
   arena->dfk = dfk;
-  dfk_list_init(&arena->_.segments);
-  dfk_list_init(&arena->_.owc);
+  dfk_list_init(&arena->_segments);
+  dfk_list_init(&arena->_owc);
   return dfk_err_ok;
 }
 
@@ -37,10 +40,10 @@ int dfk_arena_free(dfk_arena_t* arena)
 {
   assert(arena);
   {
-    dfk_list_hook_t* i = arena->_.owc.head;
+    dfk_list_hook_t* i = arena->_owc._head;
     while (i) {
       ((owc_t*) i)->cleanup(arena, ((char*) i) + sizeof(owc_t));
-      i = i->next;
+      i = i->_next;
     }
   }
   dfk_list_hook_t* i = arena->_.segments.head;
@@ -108,17 +111,27 @@ void* dfk_arena_alloc_copy(dfk_arena_t* arena, const char* data, size_t size)
 }
 
 
-void* dfk_arena_alloc_ex(dfk_arena_t* arena, size_t size, dfk_arena_cleanup cleanup)
+void* dfk_arena_alloc_ex(dfk_arena_t* arena, size_t size,
+    dfk_arena_cleanup cleanup)
 {
   assert(arena);
   assert(size);
   assert(cleanup);
-  {
-    owc_t* owc = dfk_arena_alloc(arena, sizeof(owc_t) + size);
-    dfk_list_hook_init(&owc->hook);
-    dfk_list_append(&arena->_.owc, &owc->hook);
-    owc->cleanup = cleanup;
-    return ((char*) owc) + sizeof(owc_t);
-  }
+  owc_t* owc = dfk_arena_alloc(arena, sizeof(owc_t) + size);
+  dfk_list_hook_init(&owc->hook);
+  dfk_list_append(&arena->_.owc, &owc->hook);
+  owc->cleanup = cleanup;
+  return ((char*) owc) + sizeof(owc_t);
+}
+
+
+void* dfk_arena_alloc_ex_copy(dfk_arena_t* arena, const char* data, size_t size,
+    dfk_arena_cleanup clean)
+{
+  assert(arena);
+  assert(data);
+  assert(size);
+  assert(cleanup);
+  void* c = dfk_arena_alloc_copy(data, size);
 }
 

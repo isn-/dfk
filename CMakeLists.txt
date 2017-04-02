@@ -53,6 +53,9 @@ set(DFK_HTTP_HEADERS_BUFFER_COUNT 8 CACHE STRING "Maximum number of buffers of s
 set(DFK_HTTP_HEADER_MAX_SIZE 8192 CACHE STRING "Limit of the individual HTTP header line - url, \"field: value\".")
 set(DFK_HTTP_PIPELINING TRUE CACHE STRING "Enable HTTP requests pipelining.")
 set(DFK_IGNORE_SIGPIPE TRUE CACHE BOOL "Ignore SIGPIPE when entering dfk loop.")
+set(DFK_LIST_CONSTANT_TIME_SIZE TRUE CACHE BOOL "Store size of the dfk_list_t")
+set(DFK_LIST_MEMORY_OPTIMIZED FALSE CACHE BOOL
+  "Enable XOR'ed pointers optimization for doubly linked list.")
 set(DFK_ARENA_SEGMENT_SIZE 40960 CACHE STRING "Size of arena's segment, in bytes.")
 set(DFK_SPONGE_INITIAL_SIZE 4096 CACHE STRING "Size of sponge data structure initial size, in bytes.")
 set(DFK_FILESERVER TRUE CACHE BOOL "Enable fileserver middleware")
@@ -60,6 +63,7 @@ set(DFK_FILESERVER_BUFFER_SIZE 4096 CACHE STRING "Size of disk IO buffer for eac
 
 include_directories("${CMAKE_CURRENT_SOURCE_DIR}/include")
 include_directories("${CMAKE_CURRENT_BINARY_DIR}")
+include_directories("${CMAKE_CURRENT_SOURCE_DIR}/src/include")
 if(DFK_BUILD_AUTO_TESTS)
   include_directories("${CMAKE_CURRENT_SOURCE_DIR}/c++/include")
 endif()
@@ -106,6 +110,7 @@ include_directories(${HTTP_PARSER_INCLUDE_DIR})
 if(DFK_BUILD_UNIT_TESTS)
   find_package(CURL REQUIRED)
   include_directories(${CURL_INCLUDE_DIR})
+  find_package(Threads REQUIRED)
 endif()
 
 # User-provided compile-time options verification goes below.
@@ -189,39 +194,32 @@ endif()
 # Enable hardcore warnings mode.
 fw_c_flags("-Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition")
 
-add_library(dfkinternal STATIC
-  src/internal/list.c
-  src/internal/avltree.c
-  src/internal/arena.c
-  src/internal/sponge.c
-  src/internal/misc.c)
-
-if(BUILD_SHARED_LIBS)
-  set_target_properties(dfkinternal
-    PROPERTIES
-    COMPILE_FLAGS -fPIC)
-endif()
-
 set(dfk_sources
-  src/core.c
-  src/sync.c
-  src/tcp_socket.c
-  src/urlencoding.c
-  src/strmap.c
-  src/http/constants.c
-  src/http/request.c
-  src/http/response.c
-  src/http/protocol.c
-  src/http/server.c)
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/list.c"
+  #  "${CMAKE_CURRENT_SOURCE_DIR}/src/avltree.c"
+  #  "${CMAKE_CURRENT_SOURCE_DIR}/src/arena.c"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/src/strmap.c"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/src/sponge.c"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/src/misc.c"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/src/core.c"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/src/sync.c"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/src/tcp_socket.c"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/src/urlencoding.c"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/constants.c"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/request.c"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/response.c"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/protocol.c"
+  # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/server.c"
+)
 
-if(DFK_FILESERVER)
-  list(APPEND dfk_sources src/middleware/fileserver.c)
-endif()
+#if(DFK_FILESERVER)
+#  list(APPEND dfk_sources
+#    "${CMAKE_CURRENT_SOURCE_DIR}/src/middleware/fileserver.c")
+#endif()
 
 add_library(dfk ${dfk_sources})
 
 target_link_libraries(dfk
-  dfkinternal
   coro
   ${HTTP_PARSER_LIBRARIES})
 

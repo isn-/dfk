@@ -22,7 +22,7 @@ typedef struct dfk_avltree_hook_t {
 } dfk_avltree_hook_t;
 
 typedef int (*dfk_avltree_cmp)(dfk_avltree_hook_t*, dfk_avltree_hook_t*);
-typedef int (*dfk_avltree_lookup_cmp)(dfk_avltree_hook_t*, void*);
+typedef int (*dfk_avltree_find_cmp)(dfk_avltree_hook_t*, void*);
 
 typedef struct dfk_avltree_t {
   dfk_avltree_hook_t* root;
@@ -31,10 +31,9 @@ typedef struct dfk_avltree_t {
 } dfk_avltree_t;
 
 
-/** @todo rename to dfk_avltree_it */
-typedef struct dfk_avltree_it_t {
+typedef struct dfk_avltree_it {
   dfk_avltree_hook_t* value;
-} dfk_avltree_it_t;
+} dfk_avltree_it;
 
 void dfk_avltree_init(dfk_avltree_t* tree, dfk_avltree_cmp cmp);
 void dfk_avltree_free(dfk_avltree_t* tree);
@@ -42,15 +41,17 @@ void dfk_avltree_free(dfk_avltree_t* tree);
 void dfk_avltree_hook_init(dfk_avltree_hook_t* h);
 void dfk_avltree_hook_free(dfk_avltree_hook_t* h);
 
-dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* e);
+dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree,
+    dfk_avltree_hook_t* e);
 void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e);
-/** @todo rename to dfk_avltree_find */
-dfk_avltree_hook_t* dfk_avltree_lookup(dfk_avltree_t* tree, void* e, dfk_avltree_lookup_cmp cmp);
+dfk_avltree_hook_t* dfk_avltree_find(dfk_avltree_t* tree, void* e,
+    dfk_avltree_find_cmp cmp);
 size_t dfk_avltree_size(dfk_avltree_t* tree);
+size_t dfk_avltree_sizeof(void);
 
-/** @todo rename to dfk_avltree_begin */
-void dfk_avltree_it_init(dfk_avltree_t* tree, dfk_avltree_it_t* it);
-void dfk_avltree_it_free(dfk_avltree_it_t* it);
-void dfk_avltree_it_next(dfk_avltree_it_t* it);
-int dfk_avltree_it_valid(dfk_avltree_it_t* it);
+void dfk_avltree_it_begin(dfk_avltree_t* tree, dfk_avltree_it* it);
+void dfk_avltree_it_free(dfk_avltree_it* it);
+void dfk_avltree_it_next(dfk_avltree_it* it);
+int dfk_avltree_it_valid(dfk_avltree_it* it);
+size_t dfk_avltree_it_sizeof(void);
 

@@ -6,7 +6,7 @@
 
 #include <assert.h>
 #include <dfk/internal.h>
-#include <dfk/internal/avltree.h>
+#include <dfk/avltree.h>
 
 
 #ifdef NDEBUG
@@ -649,7 +649,8 @@ size_t dfk_avltree_size(dfk_avltree_t* tree)
 }
 
 
-dfk_avltree_hook_t* dfk_avltree_lookup(dfk_avltree_t* tree, void* e, dfk_avltree_lookup_cmp cmp)
+dfk_avltree_hook_t* dfk_avltree_find(dfk_avltree_t* tree, void* e,
+    dfk_avltree_find_cmp cmp)
 {
   assert(tree);
   assert(e);
@@ -672,7 +673,7 @@ dfk_avltree_hook_t* dfk_avltree_lookup(dfk_avltree_t* tree, void* e, dfk_avltree
 }
 
 
-void dfk_avltree_it_init(dfk_avltree_t* tree, dfk_avltree_it_t* it)
+void dfk_avltree_it_begin(dfk_avltree_t* tree, dfk_avltree_it* it)
 {
   assert(tree);
   assert(it);
@@ -685,14 +686,14 @@ void dfk_avltree_it_init(dfk_avltree_t* tree, dfk_avltree_it_t* it)
 }
 
 
-void dfk_avltree_it_free(dfk_avltree_it_t* it)
+void dfk_avltree_it_free(dfk_avltree_it* it)
 {
   assert(it);
   it->value = NULL;
 }
 
 
-void dfk_avltree_it_next(dfk_avltree_it_t* it)
+void dfk_avltree_it_next(dfk_avltree_it* it)
 {
   assert(it->value); /* can not increment end iterator */
   if (it->value->right) {
@@ -713,9 +714,21 @@ void dfk_avltree_it_next(dfk_avltree_it_t* it)
 }
 
 
-int dfk_avltree_it_valid(dfk_avltree_it_t* it)
+int dfk_avltree_it_valid(dfk_avltree_it* it)
 {
   assert(it);
   return it->value != NULL;
+}
+
+
+size_t dfk_avltree_sizeof(void)
+{
+  return sizeof(dfk_avltree_t);
+}
+
+
+size_t dfk_avltree_it_sizeof(void)
+{
+  return sizeof(dfk_avltree_it);
 }
 

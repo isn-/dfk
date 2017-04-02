@@ -21,3 +21,8 @@ typedef struct dfk_sched_t {
 int dfk_sched_init(dfk_sched_t* sched);
 int dfk_sched_free(dfk_sched_t* sched);
 
+/**
+ * Scheduler entry point
+ */
+void dfk_scheduler(dfk_coro_t* coro, void* arg);
+

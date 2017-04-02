@@ -9,11 +9,12 @@
 
 #pragma once
 #include <stddef.h>
+#include <stdint.h>
 #include <pthread.h>
 #include <signal.h>
-#include <dfk/config.h>
 #include <dfk/thirdparty/libcoro/coro.h>
-#include <dfk/internal/list.h>
+#include <dfk/config.h>
+#include <dfk/list.h>
 
 /**
  * @defgroup core core
@@ -181,16 +182,10 @@ typedef struct dfk_t {
    * @privatesection
    */
 
-  dfk_list_t _pending_coros;
-  dfk_list_t _iowait_coros;
-  dfk_list_t _terminated_coros;
   struct dfk_coro_t* _current;
-
-  dfk_list_t _http_servers;
-
   struct dfk_coro_t* _scheduler;
   struct dfk_coro_t* _eventloop;
-  int _epollfd;
+  struct dfk_coro_t* _terminator;
   sig_atomic_t _stopped;
 
   /**

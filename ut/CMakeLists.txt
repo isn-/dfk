@@ -2,42 +2,46 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
 set(ut_sources
-  test_core.c
+  #  test_core.c
   test_list.c
-  test_avltree.c
-  test_arena.c
-  test_sponge.c
-  test_strmap.c
-  test_misc.c
-  test_sync.c
-  test_tcp_socket.c
-  test_urlencoding.c
-  http/test_http_constants.c
-  test_http.c)
+  #  test_avltree.c
+  #  test_arena.c
+  #  test_sponge.c
+  #  test_strmap.c
+  #  test_misc.c
+  #  test_sync.c
+  #  test_tcp_socket.c
+  #  test_urlencoding.c
+  #  http/test_http_constants.c
+  #  test_http.c
+)
 
-if(DFK_MOCKS)
-  list(APPEND ut_sources
-    http/test_http_request.c
-    http/test_http_response.c)
-endif()
+#if(DFK_MOCKS)
+#  list(APPEND ut_sources
+#    http/test_http_request.c
+#    http/test_http_response.c)
+#endif()
 
 set(ut_init_c "${CMAKE_CURRENT_BINARY_DIR}/ut_init.c")
 set(ut_init_h "${CMAKE_CURRENT_BINARY_DIR}/ut_init.h")
 
 add_executable(ut-dfk
+  ${dfk_sources}
   ${ut_sources}
   ${ut_init_h}
   ${ut_init_c}
   ut.h
   ut.c
-  naivetp/naivetp.h
-  naivetp/naivetp.c
+  #  naivetp/naivetp.h
+  #  naivetp/naivetp.c
   main.c)
 
 target_link_libraries(ut-dfk
-  dfk
-  dfkinternal
-  ${CURL_LIBRARIES})
+  coro
+  ${HTTP_PARSER_LIBRARIES}
+  ${CURL_LIBRARIES}
+  ${CMAKE_THREAD_LIBS_INIT}
+)
 
 file(WRITE ${ut_init_h}
 "/*

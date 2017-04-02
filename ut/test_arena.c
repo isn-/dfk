@@ -5,8 +5,7 @@
  */
 
 #include <dfk.h>
-#include <dfk/internal.h>
-#include <dfk/internal/arena.h>
+#include <dfk/arena.h>
 #include <ut.h>
 
 

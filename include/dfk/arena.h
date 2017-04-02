@@ -9,17 +9,25 @@
 
 #pragma once
 #include <stddef.h>
-#include <dfk/config.h>
 #include <dfk/core.h>
-#include <dfk/internal/list.h>
+#include <dfk/list.h>
 
 
 typedef struct dfk_arena_t {
-  struct {
-    dfk_list_t segments;
-    dfk_list_t owc; /* objects with cleanup */
-  } _;
   dfk_t* dfk;
+
+  /**
+   * Data segments
+   * @private
+   */
+  dfk_list_t _segments;
+
+  /**
+   * Objects with cleanup
+   * @private
+   */
+  dfk_list_t _owc;
+
 } dfk_arena_t;
 
 
@@ -30,5 +38,10 @@ void* dfk_arena_alloc(dfk_arena_t* arena, size_t size);
 void* dfk_arena_alloc_copy(dfk_arena_t* arena, const char* data, size_t size);
 
 typedef void (*dfk_arena_cleanup)(dfk_arena_t*, void*);
-void* dfk_arena_alloc_ex(dfk_arena_t* arena, size_t size, dfk_arena_cleanup clean);
+
+void* dfk_arena_alloc_ex(dfk_arena_t* arena, size_t size,
+    dfk_arena_cleanup clean);
+
+void* dfk_arena_alloc_ex_copy(dfk_arena_t* arena, const char* data, size_t size,
+    dfk_arena_cleanup clean);
 

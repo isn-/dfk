@@ -116,6 +116,36 @@
 /** Ignore SIGPIPE when entering dfk loop */
 #cmakedefine01 DFK_IGNORE_SIGPIPE
 
+/**
+ * Store size of the dfk_list_t.
+ *
+ * It makes dfk_list_size() function constant-time, but adds overhead to
+ * insert/erase operations and increases dfk_list_t size by `sizeof(size_t)`.
+ * Dfk internals do not rely on dfk_list_size() function, so if your code also
+ * doesn't, option can be set to OFF to slightly improve performance.
+ *
+ * @par Rule of thumb
+ * Set to OFF, if dfk_list_size() function is not used in the application's code
+ */
+#cmakedefine01 DFK_LIST_CONSTANT_TIME_SIZE
+
+
+/**
+ * Enable XOR'ed pointers optimization for dfk_list_t.
+ *
+ * It saves 1 pointer per list element though makes list traversal
+ * more CPU-consuming.
+ *
+ * @par Rule of thumb
+ * Set to ON if there are troubles with memory consumption due
+ * to large amount of data (clients, connections, requests, etc), or
+ * restricting execution environment.
+ *
+ * @see https://en.wikipedia.org/wiki/XOR_linked_list
+ */
+#cmakedefine01 DFK_LIST_MEMORY_OPTIMIZED
+
+
 /** Size of arena's segment, in bytes */
 #define DFK_ARENA_SEGMENT_SIZE @DFK_ARENA_SEGMENT_SIZE@
 

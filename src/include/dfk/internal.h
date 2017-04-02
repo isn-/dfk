@@ -122,7 +122,7 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
   } \
 }
 
-/* Same as DFK_CALL, but jump to label instead of return */
+/* Same as DFK_SYSCALL, but jump to label instead of return */
 #define DFK_SYSCALL_GOTO(dfk, c, label) \
 { \
   int err; \
@@ -198,6 +198,16 @@ typedef struct dfk_epoll_arg_t {
   void* arg2;
   void* arg3;
 } dfk_epoll_arg_t;
+
+
+#define DFK_PDEADBEEF ((void*) 0xDEADBEEF)
+#define DFK_DEADBEEF 0xDEADBEEF
+
+#if DFK_DEBUG
+#define DFK_IF_DEBUG(expr) expr
+#else
+#define DFK_IF_DEBUG(...)
+#endif
 
 #ifdef __cplusplus
 }
