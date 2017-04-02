@@ -52,6 +52,8 @@ while [[ $# -gt 0 ]]; do
       WITH_HTTP_PARSER=
     ;;
     *)
+      echo "Did not understand being called with '$@'"
+      exit 1
     ;;
   esac
 shift
@@ -72,13 +74,17 @@ for cmd in $REQUIRED_PROGRAMS; do
   fi;
 done
 
+
+function version {
+  echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'
+}
 function version_gt() {
   test "$(printf '%s\n' "$@" | sort -V | head -n 1)" != "$1";
 }
 
 wget="wget --continue"
 wget_version=$(wget --version | head -n1 | awk '{print $3}')
-if version_gt $wget_version 1.17; then
+if [ $(version $wget_version) -ge $(version 1.17) ]; then
   wget="$wget --no-hsts"
 fi
 
