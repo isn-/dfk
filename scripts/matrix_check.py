@@ -101,7 +101,7 @@ def main():
             print("Run to reproduce:")
             print()
             print("cmake",
-                    format_parameters(params, "-D{key}={value}:{type}", " "),
+                    format_parameters(params, "-D{key}:{type}={value}", " "),
                     source_dir, "&& make -j && make test")
             return 1
 
