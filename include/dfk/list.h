@@ -58,10 +58,19 @@ void dfk_list_hook_init(dfk_list_hook_t* hook);
 
 void dfk_list_append(dfk_list_t* list, dfk_list_hook_t* hook);
 void dfk_list_prepend(dfk_list_t* list, dfk_list_hook_t* hook);
+
+/**
+ * Insert a new element before the element at the specified position
+ */
 void dfk_list_insert(dfk_list_t* list, dfk_list_hook_t* hook,
-    dfk_list_it* it);
+    dfk_list_it* position);
+
+/**
+ * Insert a new element before the element at the specified position
+ */
 void dfk_list_rinsert(dfk_list_t* list, dfk_list_hook_t* hook,
-    dfk_list_rit* rit);
+    dfk_list_rit* position);
+
 void dfk_list_clear(dfk_list_t* list);
 void dfk_list_erase(dfk_list_t* list, dfk_list_it* it);
 void dfk_list_rerase(dfk_list_t* list, dfk_list_rit* rit);

@@ -245,3 +245,125 @@ TEST_F(myint_fixture, list, pop_front)
   EXPECT(((myint_t*) it.value)->value == 12);
 }
 
+
+TEST_F(myint_fixture, list, insert_empty)
+{
+  dfk_list_t* l = &fixture->l;
+  dfk_list_it end;
+  dfk_list_end(l, &end);
+  dfk_list_insert(l, &fixture->values[0].hook, &end);
+  EXPECT(dfk_list_size(l) == 1);
+  dfk_list_it it;
+  dfk_list_begin(l, &it);
+  EXPECT(((myint_t*) it.value)->value == 10);
+}
+
+
+TEST_F(myint_fixture, list, insert_1_begin)
+{
+  dfk_list_t* l = &fixture->l;
+  dfk_list_append(l, &fixture->values[0].hook);
+  {
+    dfk_list_it it;
+    dfk_list_begin(l, &it);
+    dfk_list_insert(l, &fixture->values[1].hook, &it);
+  }
+  EXPECT(dfk_list_size(l) == 2);
+  dfk_list_it it;
+  dfk_list_begin(l, &it);
+  EXPECT(((myint_t*) it.value)->value == 11);
+  dfk_list_it_next(&it);
+  EXPECT(((myint_t*) it.value)->value == 10);
+}
+
+
+TEST_F(myint_fixture, list, insert_1_end)
+{
+  dfk_list_t* l = &fixture->l;
+  dfk_list_append(l, &fixture->values[0].hook);
+  {
+    dfk_list_it it;
+    dfk_list_end(l, &it);
+    dfk_list_insert(l, &fixture->values[1].hook, &it);
+  }
+  EXPECT(dfk_list_size(l) == 2);
+  dfk_list_it it;
+  dfk_list_begin(l, &it);
+  EXPECT(((myint_t*) it.value)->value == 10);
+  dfk_list_it_next(&it);
+  EXPECT(((myint_t*) it.value)->value == 11);
+}
+
+
+TEST_F(myint_fixture, list, insert_begin)
+{
+  dfk_list_t* l = &fixture->l;
+  for (size_t i = 0; i < DFK_SIZE(fixture->values); ++i) {
+    dfk_list_append(l, &fixture->values[i].hook);
+  }
+  myint_t new;
+  myint_init(&new, 6);
+  {
+    dfk_list_it it;
+    dfk_list_begin(l, &it);
+    dfk_list_insert(l, &new.hook, &it);
+  }
+  EXPECT(dfk_list_size(l) == 4);
+  int expected_values[] = {6, 10, 11, 12};
+  dfk_list_it it;
+  dfk_list_begin(l, &it);
+  for (size_t i = 0; i < DFK_SIZE(expected_values); ++i) {
+    EXPECT(((myint_t*) it.value)->value == expected_values[i]);
+    dfk_list_it_next(&it);
+  }
+}
+
+
+TEST_F(myint_fixture, list, insert_end)
+{
+  dfk_list_t* l = &fixture->l;
+  for (size_t i = 0; i < DFK_SIZE(fixture->values); ++i) {
+    dfk_list_append(l, &fixture->values[i].hook);
+  }
+  myint_t new;
+  myint_init(&new, 6);
+  {
+    dfk_list_it it;
+    dfk_list_end(l, &it);
+    dfk_list_insert(l, &new.hook, &it);
+  }
+  EXPECT(dfk_list_size(l) == 4);
+  int expected_values[] = {10, 11, 12, 6};
+  dfk_list_it it;
+  dfk_list_begin(l, &it);
+  for (size_t i = 0; i < DFK_SIZE(expected_values); ++i) {
+    EXPECT(((myint_t*) it.value)->value == expected_values[i]);
+    dfk_list_it_next(&it);
+  }
+}
+
+
+TEST_F(myint_fixture, list, insert_mid)
+{
+  dfk_list_t* l = &fixture->l;
+  for (size_t i = 0; i < DFK_SIZE(fixture->values); ++i) {
+    dfk_list_append(l, &fixture->values[i].hook);
+  }
+  myint_t new;
+  myint_init(&new, 6);
+  {
+    dfk_list_it it;
+    dfk_list_begin(l, &it);
+    dfk_list_it_next(&it);
+    dfk_list_insert(l, &new.hook, &it);
+  }
+  EXPECT(dfk_list_size(l) == 4);
+  int expected_values[] = {10, 6, 11, 12};
+  dfk_list_it it;
+  dfk_list_begin(l, &it);
+  for (size_t i = 0; i < DFK_SIZE(expected_values); ++i) {
+    EXPECT(((myint_t*) it.value)->value == expected_values[i]);
+    dfk_list_it_next(&it);
+  }
+}
+
