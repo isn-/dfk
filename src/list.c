@@ -350,7 +350,36 @@ void dfk_list_rinsert(dfk_list_t* list, dfk_list_hook_t* hook,
   DFK_LIST_CHECK_INVARIANTS(list);
   DFK_LIST_HOOK_CHECK_INVARIANTS(hook);
   DFK_LIST_RIT_CHECK_INVARIANTS(position);
+#if DFK_LIST_MEMORY_OPTIMIZED
   /** @todo implement */
+#else
+  dfk_list_hook_t* before = NULL; /* Points at the element before `position' */
+  if (position->value) {
+    before = position->value->_next;
+    position->value->_next = hook;
+  } else if (list->_tail) {
+    /*
+     * Iterator `positition' points at end, list is not empty,
+     * therefore, we append to the end
+     */
+    before = list->_head;
+  }
+  if (before) {
+    before->_prev = hook;
+  }
+  hook->_next = before;
+  hook->_prev = position->value;
+  if (!hook->_prev) {
+    list->_head = hook;
+  }
+  if (!hook->_next) {
+    list->_tail = hook;
+  }
+#endif
+#if DFK_LIST_CONSTANT_TIME_SIZE
+  list->_size++;
+#endif
+  DFK_IF_DEBUG(hook->_list = list);
   DFK_LIST_CHECK_INVARIANTS(list);
   DFK_LIST_HOOK_CHECK_INVARIANTS(hook);
   DFK_LIST_RIT_CHECK_INVARIANTS(position);
