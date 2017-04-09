@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
+"""Configure, compile and test dfk in all possible configurations
+"""
+
 from __future__ import print_function
+import argparse
 import sys
 import uuid
 import os
@@ -8,6 +12,7 @@ import os.path
 import stat
 import shutil
 import subprocess
+import random
 
 
 CMAKE_OPTIONS = {
@@ -36,14 +41,14 @@ BUILD_SCRIPT = (
 "make test\n"
 )
 
-def all_parameters(options):
+def all_configurations(options):
     if not options:
         return
     name, values = options[0]
     for val in values:
         params = {name: val}
         tail_is_empty = True
-        for tail in all_parameters(options[1:]):
+        for tail in all_configurations(options[1:]):
             tail_is_empty = False
             tail.update(params)
             yield tail
@@ -83,25 +88,31 @@ def run_job(parameters, source_dir):
         shutil.rmtree(scriptwd, ignore_errors=True)
 
 def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--randomize", action="store_true",
+            help="reorder configurations randomly")
+    args = parser.parse_args()
     script_dir = os.path.dirname(os.path.realpath(__file__))
     source_dir = os.path.realpath(os.path.join(script_dir, os.path.pardir))
     paramlist = sorted([(k, v) for k, v in CMAKE_OPTIONS.items()])
-    njobs = len(list(all_parameters(paramlist)))
-    for i, params in enumerate(all_parameters(paramlist), start=1):
+    configurations = list(all_configurations(paramlist))
+    if args.randomize:
+        random.shuffle(configurations)
+    for i, config in enumerate(configurations, start=1):
         try:
-            print("Run {}/{} job ...".format(i, njobs))
-            run_job(params, source_dir)
+            print("Run {}/{} job ...".format(i, len(configurations)))
+            run_job(config, source_dir)
         except Exception as ex:
-            params_strlist = ["{} = {}".format(k, v) for k, v in params.items()]
+            params_strlist = ["{} = {}".format(k, v) for k, v in config.items()]
             indent = "  "
             print("Failed with parameters:")
-            print(indent + format_parameters(params, "{key} = {value}",
+            print(indent + format_parameters(config, "{key} = {value}",
                 os.linesep + indent))
             print()
             print("Run to reproduce:")
             print()
             print("cmake",
-                    format_parameters(params, "-D{key}:{type}={value}", " "),
+                    format_parameters(config, "-D{key}:{type}={value}", " "),
                     source_dir, "&& make -j && make test")
             return 1
 
