@@ -15,8 +15,26 @@
  * Intrusive doubly linked list
  */
 typedef struct dfk_list_hook_t {
+#if DFK_LIST_MEMORY_OPTIMIZED
+  /**
+   * A "magic" pointer that does not point at actual memory chunk.
+   *
+   * The value of _p is equal to
+   * (address of the element next to hook)
+   *   XOR
+   * (address of the element previous to hook)
+   *
+   * If one of both adjacent elements do not exist, it is assumed that it's
+   * address is NULL.
+   *
+   * With one of the addresses known (next or previous), one can compute address
+   * of the remaining element, therefore be able to traverse the list.
+   */
+  struct dfk_list_hook_t* _p;
+#else
   struct dfk_list_hook_t* _next;
   struct dfk_list_hook_t* _prev;
+#endif
 #if DFK_DEBUG
   struct dfk_list_t* _list;
 #endif
@@ -40,6 +58,9 @@ typedef struct dfk_list_t {
 } dfk_list_t;
 
 typedef struct dfk_list_it {
+#if DFK_LIST_MEMORY_OPTIMIZED
+  dfk_list_hook_t* _prev;
+#endif
   dfk_list_hook_t* value;
 #if DFK_DEBUG
   dfk_list_t* _list;
@@ -47,6 +68,9 @@ typedef struct dfk_list_it {
 } dfk_list_it;
 
 typedef struct dfk_list_rit {
+#if DFK_LIST_MEMORY_OPTIMIZED
+  dfk_list_hook_t* _prev;
+#endif
   dfk_list_hook_t* value;
 #if DFK_DEBUG
   dfk_list_t* _list;
