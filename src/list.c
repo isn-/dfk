@@ -13,6 +13,21 @@
 #define DFK_PTR_XOR3(x, y, z) \
   ((void*) ((ptrdiff_t) (x) ^ (ptrdiff_t) (y) ^ (ptrdiff_t) (z)))
 
+
+#if DFK_LIST_CONSTANT_TIME_SIZE
+#define DFK_IF_LIST_CONSTANT_TIME_SIZE(expr) (expr)
+#else
+#define DFK_IF_LIST_CONSTANT_TIME_SIZE(expr)
+#endif
+
+
+#if DFK_LIST_MEMORY_OPTIMIZED
+#define DFK_IF_LIST_MEMORY_OPTIMIZED(expr) (expr)
+#else
+#define DFK_IF_LIST_MEMORY_OPTIMIZED(expr)
+#endif
+
+
 #ifdef NDEBUG
 
 #define DFK_LIST_CHECK_INVARIANTS(list) DFK_UNUSED(list)
@@ -21,18 +36,6 @@
 #define DFK_LIST_RIT_CHECK_INVARIANTS(rit) DFK_UNUSED(rit)
 
 #else
-
-#if DFK_LIST_CONSTANT_TIME_SIZE
-#define DFK_IF_LIST_CONSTANT_TIME_SIZE(expr) (expr)
-#else
-#define DFK_IF_LIST_CONSTANT_TIME_SIZE(expr)
-#endif
-
-#if DFK_LIST_MEMORY_OPTIMIZED
-#define DFK_IF_LIST_MEMORY_OPTIMIZED(expr) (expr)
-#else
-#define DFK_IF_LIST_MEMORY_OPTIMIZED(expr)
-#endif
 
 static void dfk__list_check_invariants(dfk_list_t* list)
 {
