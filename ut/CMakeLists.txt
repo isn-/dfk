@@ -4,7 +4,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 set(ut_sources
   #  test_core.c
   test_list.c
-  #  test_avltree.c
+  test_avltree.c
   #  test_arena.c
   #  test_sponge.c
   #  test_strmap.c

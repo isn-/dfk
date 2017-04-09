@@ -62,12 +62,9 @@ static void tree_fixture_setup(tree_fixture_t* f)
 
 static void tree_fixture_teardown(tree_fixture_t* f)
 {
-  dfk_avltree_free(&f->in_tree);
-  dfk_avltree_hook_free((dfk_avltree_hook_t*) &f->new_node);
   if (f->in_nodes) {
     free(f->in_nodes);
   }
-  dfk_avltree_free(&f->expected_tree);
   if (f->expected_nodes) {
     free(f->expected_nodes);
   }
@@ -101,18 +98,16 @@ static node_t* ut_parse_avltree(dfk_avltree_t* tree, const char* definition)
   }
 
   if (!nnodes) {
-    tree->size = 0;
-    tree->root = NULL;
+    tree->_size = 0;
+    tree->_root = NULL;
     return NULL;
   }
 
   nodes = malloc(nnodes * sizeof(node_t));
   EXPECT(nodes);
   for (size_t i = 0; i < nnodes; ++i) {
-    nodes[i].hook.parent = NULL;
-#if DFK_DEBUG
-    nodes[i].hook.tree = tree;
-#endif
+    nodes[i].hook._parent = NULL;
+    DFK_IF_DEBUG(nodes[i].hook._tree = tree);
   }
   {
     const char* p = definition;
@@ -121,19 +116,19 @@ static node_t* ut_parse_avltree(dfk_avltree_t* tree, const char* definition)
     while (p < end) {
       int lindex, rindex;
       int scanned = sscanf(p, "%d %hhd %d %d\n",
-          &nodes[i].value, &nodes[i].hook.bal, &lindex, &rindex);
+          &nodes[i].value, &nodes[i].hook._bal, &lindex, &rindex);
       EXPECT(scanned == 4);
       if (lindex < 0) {
-        nodes[i].hook.left = NULL;
+        nodes[i].hook._left = NULL;
       } else {
-        nodes[i].hook.left = (dfk_avltree_hook_t*) (nodes + lindex);
-        ((dfk_avltree_hook_t*) (nodes + lindex))->parent = &nodes[i].hook;
+        nodes[i].hook._left = (dfk_avltree_hook_t*) (nodes + lindex);
+        ((dfk_avltree_hook_t*) (nodes + lindex))->_parent = &nodes[i].hook;
       }
       if (rindex < 0) {
-        nodes[i].hook.right = NULL;
+        nodes[i].hook._right = NULL;
       } else {
-        nodes[i].hook.right = (dfk_avltree_hook_t*) (nodes + rindex);
-        ((dfk_avltree_hook_t*) (nodes + rindex))->parent = &nodes[i].hook;
+        nodes[i].hook._right = (dfk_avltree_hook_t*) (nodes + rindex);
+        ((dfk_avltree_hook_t*) (nodes + rindex))->_parent = &nodes[i].hook;
       }
       while ((p < end) && (*p != '\n')) {
         ++p;
@@ -142,14 +137,15 @@ static node_t* ut_parse_avltree(dfk_avltree_t* tree, const char* definition)
       ++i;
     }
   }
-  tree->root = (dfk_avltree_hook_t*) (nodes + nnodes - 1);
-  tree->root->parent = NULL;
-  tree->size = nnodes;
+  tree->_root = (dfk_avltree_hook_t*) (nodes + nnodes - 1);
+  tree->_root->_parent = NULL;
+  tree->_size = nnodes;
   return nodes;
 }
 
 
-static int ut_trees_equal(dfk_avltree_hook_t* l, dfk_avltree_hook_t* r, dfk_avltree_cmp cmp)
+static int ut_trees_equal(dfk_avltree_hook_t* l, dfk_avltree_hook_t* r,
+    dfk_avltree_cmp cmp)
 {
   if (!l && !r) {
     return 1;
@@ -157,8 +153,8 @@ static int ut_trees_equal(dfk_avltree_hook_t* l, dfk_avltree_hook_t* r, dfk_avlt
 
   return l && r
       && (cmp(l, r) == 0)
-      && ut_trees_equal(l->left, r->left, cmp)
-      && ut_trees_equal(l->right, r->right, cmp);
+      && ut_trees_equal(l->_left, r->_left, cmp)
+      && ut_trees_equal(l->_right, r->_right, cmp);
 }
 
 
@@ -185,7 +181,7 @@ TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_1a)
 
   fixture->new_node.value = 15;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -221,7 +217,7 @@ TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_2a)
 
   fixture->new_node.value = 15;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -272,7 +268,7 @@ TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_3a)
 
   fixture->new_node.value = 15;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -299,7 +295,7 @@ TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_1b)
 
   fixture->new_node.value = 8;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -335,7 +331,7 @@ TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_2b)
 
   fixture->new_node.value = 8;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -386,7 +382,7 @@ TEST_F(tree_fixture, avltree, stackoverflow_3955680_insert_3b)
 
   fixture->new_node.value = 8;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -429,7 +425,7 @@ TEST_F(tree_fixture, avltree, insert_double_left_rotation)
 
   fixture->new_node.value = 17;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -476,7 +472,7 @@ TEST_F(tree_fixture, avltree, insert_double_left_rotation_with_child)
 
   fixture->new_node.value = 7;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -519,7 +515,7 @@ TEST_F(tree_fixture, avltree, insert_double_right_rotation)
 
   fixture->new_node.value = 9;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -544,7 +540,7 @@ TEST_F(tree_fixture, avltree, insert_single_left_rotation)
 
   fixture->new_node.value = 17;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -578,7 +574,7 @@ TEST_F(tree_fixture, avltree, insert_single_left_rotation_with_child)
 
   fixture->new_node.value = 6;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -603,7 +599,7 @@ TEST_F(tree_fixture, avltree, insert_single_right_rotation)
 
   fixture->new_node.value = 7;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -637,7 +633,7 @@ TEST_F(tree_fixture, avltree, insert_single_right_rotation_with_child)
 
   fixture->new_node.value = 1;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -670,7 +666,7 @@ TEST_F(tree_fixture, avltree, insert_no_rotation)
 
   fixture->new_node.value = 3;
   dfk_avltree_insert(&fixture->in_tree, (dfk_avltree_hook_t*) &fixture->new_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -716,10 +712,10 @@ TEST(avltree, insert_empty)
   dfk_avltree_hook_init(&node.hook);
   node.value = 10;
   dfk_avltree_insert(&tree, (dfk_avltree_hook_t*) &node);
-  EXPECT(tree.root == (dfk_avltree_hook_t*) &node);
-  EXPECT(tree.root->bal == 0);
-  EXPECT(tree.root->left == NULL);
-  EXPECT(tree.root->right == NULL);
+  EXPECT(tree._root == (dfk_avltree_hook_t*) &node);
+  EXPECT(tree._root->_bal == 0);
+  EXPECT(tree._root->_left == NULL);
+  EXPECT(tree._root->_right == NULL);
 }
 
 
@@ -763,7 +759,7 @@ TEST_F(tree_fixture, avltree, insert_algcourse_cs_msu_su)
       /* 6 */ "4  0  5  2\n"
   );
 
-  EXPECT(ut_trees_equal(tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -840,7 +836,6 @@ static void tree_traversal_fixture_setup(tree_traversal_fixture_t* f)
 
 static void tree_traversal_fixture_teardown(tree_traversal_fixture_t* f)
 {
-  dfk_avltree_free(&f->tree);
   if (f->nodes) {
     free(f->nodes);
   }
@@ -849,10 +844,10 @@ static void tree_traversal_fixture_teardown(tree_traversal_fixture_t* f)
 
 TEST_F(tree_traversal_fixture, avltree, traversal_empty)
 {
-  dfk_avltree_it it;
-  dfk_avltree_it_begin(&fixture->tree, &it);
-  EXPECT(!dfk_avltree_it_valid(&it));
-  dfk_avltree_it_free(&it);
+  dfk_avltree_it begin, end;
+  dfk_avltree_begin(&fixture->tree, &begin);
+  dfk_avltree_end(&fixture->tree, &end);
+  EXPECT(dfk_avltree_it_equal(&begin, &end));
 }
 
 
@@ -875,7 +870,6 @@ TEST_F(tree_traversal_fixture, avltree, traversal_complete)
    *   └─2
    *     └─1
    */
-  dfk_avltree_it it;
   fixture->nodes = ut_parse_avltree(&fixture->tree,
       /*  0 */ " 1  0 -1 -1\n"
       /*  1 */ " 3  0 -1 -1\n"
@@ -893,16 +887,16 @@ TEST_F(tree_traversal_fixture, avltree, traversal_complete)
       /* 13 */ "12  0  9 12\n"
       /* 14 */ " 8  0  6 13\n"
   );
-  dfk_avltree_it_begin(&fixture->tree, &it);
-  {
-    int i = 0;
-    for (i = 1; i < 20 && dfk_avltree_it_valid(&it); ++i) {
-      EXPECT(((node_t*) it.value)->value == i);
-      dfk_avltree_it_next(&it);
-    }
-    EXPECT(i == 16);
+  dfk_avltree_it it, end;
+  dfk_avltree_begin(&fixture->tree, &it);
+  dfk_avltree_end(&fixture->tree, &end);
+  int i = 1;
+  for (; i < 20 && !dfk_avltree_it_equal(&it, &end); ++i) {
+    EXPECT(((node_t*) it.value)->value == i);
+    dfk_avltree_it_next(&it);
   }
-  dfk_avltree_it_free(&it);
+  EXPECT(dfk_avltree_it_equal(&it, &end));
+  EXPECT(i == 16);
 }
 
 
@@ -921,7 +915,7 @@ TEST_F(tree_fixture, avltree, erase_last)
   int erase_value = 10;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -944,7 +938,7 @@ TEST_F(tree_fixture, avltree, erase_two_nodes_left_child)
   int erase_value = 1;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -967,7 +961,7 @@ TEST_F(tree_fixture, avltree, erase_two_nodes_right_child)
   int erase_value = 11;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -990,7 +984,7 @@ TEST_F(tree_fixture, avltree, erase_two_nodes_left_root)
   int erase_value = 10;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1013,7 +1007,7 @@ TEST_F(tree_fixture, avltree, erase_two_nodes_right_root)
   int erase_value = 10;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1039,7 +1033,7 @@ TEST_F(tree_fixture, avltree, erase_three_nodes_left)
   int erase_value = 1;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1065,7 +1059,7 @@ TEST_F(tree_fixture, avltree, erase_three_nodes_right)
   int erase_value = 15;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1091,7 +1085,7 @@ TEST_F(tree_fixture, avltree, erase_three_nodes_root)
   int erase_value = 10;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1150,7 +1144,7 @@ TEST_F(tree_fixture, avltree, erase_case3)
   int erase_value = 5;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1188,7 +1182,7 @@ TEST_F(tree_fixture, avltree, erase_left_double_rotation)
   int erase_value = 5;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1226,7 +1220,7 @@ TEST_F(tree_fixture, avltree, erase_left_double_rotation_symmetric)
   int erase_value = 3;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1264,7 +1258,7 @@ TEST_F(tree_fixture, avltree, erase_right_double_rotation)
   int erase_value = 1;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1302,7 +1296,7 @@ TEST_F(tree_fixture, avltree, erase_right_double_rotation_symmetric)
   int erase_value = 7;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1341,7 +1335,7 @@ TEST_F(tree_fixture, avltree, erase_left_single_rotation)
   int erase_value = 5;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1379,7 +1373,7 @@ TEST_F(tree_fixture, avltree, erase_right_single_rotation)
   int erase_value = 1;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1420,7 +1414,7 @@ TEST_F(tree_fixture, avltree, erase_left_single_rotation_stop)
   int erase_value = 6;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1461,7 +1455,7 @@ TEST_F(tree_fixture, avltree, erase_right_single_rotation_stop)
   int erase_value = 1;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1502,7 +1496,7 @@ TEST_F(tree_fixture, avltree, erase_right_single_rotation_in_left_subtree)
   int erase_value = 1;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1543,7 +1537,7 @@ TEST_F(tree_fixture, avltree, erase_right_single_rotation_in_right_subtree)
   int erase_value = 4;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1584,7 +1578,7 @@ TEST_F(tree_fixture, avltree, erase_left_single_rotation_in_left_subtree)
   int erase_value = 4;
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree, &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root, node_cmp));
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root, node_cmp));
 }
 
 
@@ -1626,7 +1620,7 @@ TEST_F(tree_fixture, avltree, erase_left_single_rotation_in_right_subtree)
   dfk_avltree_hook_t* erase_node = dfk_avltree_find(&fixture->in_tree,
       &erase_value, node_int_find_cmp);
   dfk_avltree_erase(&fixture->in_tree, erase_node);
-  EXPECT(ut_trees_equal(fixture->in_tree.root, fixture->expected_tree.root,
+  EXPECT(ut_trees_equal(fixture->in_tree._root, fixture->expected_tree._root,
       node_cmp));
 }
 
