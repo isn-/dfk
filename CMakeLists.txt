@@ -26,8 +26,8 @@ endif()
 
 set(DFK_BUILD_UNIT_TESTS TRUE CACHE BOOL "Build unit tests.")
 set(DFK_BUILD_AUTO_TESTS TRUE CACHE BOOL "Build auto tests.")
-set(DFK_BUILD_SAMPLES TRUE CACHE BOOL "Build code samples.")
-set(DFK_BUILD_CPP_BINDINGS TRUE CACHE BOOL "Build c++ bindings.")
+set(DFK_BUILD_SAMPLES FALSE CACHE BOOL "Build code samples.")
+set(DFK_BUILD_CPP_BINDINGS FALSE CACHE BOOL "Build c++ bindings.")
 
 set(DFK_MAINTAINER_MODE FALSE CACHE BOOL "Enable binary package maintainer mode. Designed for deb/rpm packages maintainers. Disables -Werror and checks that neither of release-unfriendly options are set.")
 
@@ -196,7 +196,7 @@ fw_c_flags("-Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wo
 
 set(dfk_sources
   "${CMAKE_CURRENT_SOURCE_DIR}/src/list.c"
-  #  "${CMAKE_CURRENT_SOURCE_DIR}/src/avltree.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/avltree.c"
   #  "${CMAKE_CURRENT_SOURCE_DIR}/src/arena.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/strmap.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/sponge.c"
