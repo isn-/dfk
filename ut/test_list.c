@@ -501,3 +501,48 @@ TEST_F(myint_fixture, list, rinsert_mid)
   EXPECT(dfk_list_it_equal(&it, &end));
 }
 
+
+TEST_F(myint_fixture, list, empty)
+{
+  dfk_list_t* l = &fixture->l;
+  EXPECT(dfk_list_empty(l));
+  dfk_list_prepend(l, &fixture->values[2].hook);
+  EXPECT(!dfk_list_empty(l));
+}
+
+
+TEST_F(myint_fixture, list, iteration_forward)
+{
+  dfk_list_t* l = &fixture->l;
+  for (size_t i = 0; i < DFK_SIZE(fixture->values); ++i) {
+    dfk_list_append(l, &fixture->values[i].hook);
+  }
+  int expected_values[] = {10, 11, 12};
+  dfk_list_it it, end;
+  dfk_list_begin(l, &it);
+  dfk_list_end(l, &end);
+  for (size_t i = 0; i < DFK_SIZE(expected_values); ++i) {
+    EXPECT(((myint_t*) it.value)->value == expected_values[i]);
+    dfk_list_it_next(&it);
+  }
+  EXPECT(dfk_list_it_equal(&it, &end));
+}
+
+
+TEST_F(myint_fixture, list, iteration_backward)
+{
+  dfk_list_t* l = &fixture->l;
+  for (size_t i = 0; i < DFK_SIZE(fixture->values); ++i) {
+    dfk_list_prepend(l, &fixture->values[i].hook);
+  }
+  int expected_values[] = {10, 11, 12};
+  dfk_list_rit rit, end;
+  dfk_list_rbegin(l, &rit);
+  dfk_list_rend(l, &end);
+  for (size_t i = 0; i < DFK_SIZE(expected_values); ++i) {
+    EXPECT(((myint_t*) rit.value)->value == expected_values[i]);
+    dfk_list_rit_next(&rit);
+  }
+  EXPECT(dfk_list_rit_equal(&rit, &end));
+}
+
