@@ -56,6 +56,7 @@ set(DFK_IGNORE_SIGPIPE TRUE CACHE BOOL "Ignore SIGPIPE when entering dfk loop.")
 set(DFK_LIST_CONSTANT_TIME_SIZE TRUE CACHE BOOL "Store size of the dfk_list_t")
 set(DFK_LIST_MEMORY_OPTIMIZED FALSE CACHE BOOL
   "Enable XOR'ed pointers optimization for doubly linked list.")
+set(DFK_AVLTREE_CONSTANT_TIME_SIZE TRUE CACHE BOOL "Store size of the dfk_avltree_t")
 set(DFK_ARENA_SEGMENT_SIZE 40960 CACHE STRING "Size of arena's segment, in bytes.")
 set(DFK_SPONGE_INITIAL_SIZE 4096 CACHE STRING "Size of sponge data structure initial size, in bytes.")
 set(DFK_FILESERVER TRUE CACHE BOOL "Enable fileserver middleware")

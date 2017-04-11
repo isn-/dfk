@@ -145,6 +145,21 @@
  */
 #cmakedefine01 DFK_LIST_MEMORY_OPTIMIZED
 
+/**
+ * Store size of the dfk_avltree_t.
+ *
+ * It makes dfk_avltree_size() function constant-time, but adds slight overhead
+ * to insert/erase operations and increases dfk_avltree_t size by
+ * `sizeof(size_t)`. Dfk internals do not rely on dfk_avltree_size() function,
+ * so if your code also doesn't, option can be set to OFF to slightly improve
+ * performance.
+ *
+ * @par Rule of thumb
+ * Set to OFF, if dfk_avltree_size() function is not used in the application's
+ * code.
+ */
+#cmakedefine01 DFK_AVLTREE_CONSTANT_TIME_SIZE
+
 
 /** Size of arena's segment, in bytes */
 #define DFK_ARENA_SEGMENT_SIZE @DFK_ARENA_SEGMENT_SIZE@

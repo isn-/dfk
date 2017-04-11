@@ -98,7 +98,9 @@ static node_t* ut_parse_avltree(dfk_avltree_t* tree, const char* definition)
   }
 
   if (!nnodes) {
+#if DFK_AVLTREE_CONSTANT_TIME_SIZE
     tree->_size = 0;
+#endif
     tree->_root = NULL;
     return NULL;
   }
@@ -139,7 +141,9 @@ static node_t* ut_parse_avltree(dfk_avltree_t* tree, const char* definition)
   }
   tree->_root = (dfk_avltree_hook_t*) (nodes + nnodes - 1);
   tree->_root->_parent = NULL;
+#if DFK_AVLTREE_CONSTANT_TIME_SIZE
   tree->_size = nnodes;
+#endif
   return nodes;
 }
 

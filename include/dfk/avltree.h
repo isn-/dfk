@@ -27,7 +27,9 @@ typedef int (*dfk_avltree_find_cmp)(dfk_avltree_hook_t*, void*);
 typedef struct dfk_avltree_t {
   dfk_avltree_hook_t* _root;
   dfk_avltree_cmp _cmp;
+#if DFK_AVLTREE_CONSTANT_TIME_SIZE
   size_t _size;
+#endif
 } dfk_avltree_t;
 
 

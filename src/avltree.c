@@ -8,9 +8,19 @@
 #include <dfk/internal.h>
 #include <dfk/avltree.h>
 
+#if DFK_AVLTREE_CONSTANT_TIME_SIZE
+#define DFK_IF_AVLTREE_CONSTANT_TIME_SIZE(expr) (expr)
+#else
+#define DFK_IF_AVLTREE_CONSTANT_TIME_SIZE(expr)
+#endif
+
 
 #ifdef NDEBUG
+
 #define DFK_AVLTREE_CHECK_INVARIANTS(tree) DFK_UNUSED(tree)
+#define DFK_AVLTREE_HOOK_CHECK_INVARIANTS(hook) DFK_UNUSED(hook)
+#define DFK_AVLTREE_IT_CHECK_INVARIANTS(it) DFK_UNUSED(it)
+
 #else
 
 #include <stdint.h>
@@ -92,7 +102,27 @@ static void dfk__avltree_check_invariants(dfk_avltree_t* tree)
   assert(tree->_cmp);
 }
 
-#define DFK_AVLTREE_CHECK_INVARIANTS(tree) dfk__avltree_check_invariants((tree))
+
+static void dfk__avltree_hook_check_invariants(dfk_avltree_hook_t* hook)
+{
+  assert(hook);
+}
+
+
+static void dfk__avltree_it_check_invariants(dfk_avltree_it* it)
+{
+  assert(it);
+}
+
+#define DFK_AVLTREE_CHECK_INVARIANTS(tree) \
+  dfk__avltree_check_invariants((tree))
+
+#define DFK_AVLTREE_HOOK_CHECK_INVARIANTS(hook) \
+  dfk__avltree_hook_check_invariants((hook))
+
+#define DFK_AVLTREE_IT_CHECK_INVARIANTS(it) \
+  dfk__avltree_it_check_invariants((it))
+
 #endif /* NDEBUG */
 
 
@@ -102,7 +132,8 @@ void dfk_avltree_init(dfk_avltree_t* tree, dfk_avltree_cmp cmp)
   assert(cmp);
   tree->_cmp = cmp;
   tree->_root = NULL;
-  tree->_size = 0;
+  DFK_IF_AVLTREE_CONSTANT_TIME_SIZE(tree->_size = 0);
+  DFK_AVLTREE_CHECK_INVARIANTS(tree);
 }
 
 
@@ -114,6 +145,7 @@ void dfk_avltree_hook_init(dfk_avltree_hook_t* hook)
   hook->_parent = NULL;
   hook->_bal = 0;
   DFK_IF_DEBUG(hook->_tree = NULL);
+  DFK_AVLTREE_HOOK_CHECK_INVARIANTS(hook);
 }
 
 
@@ -282,19 +314,19 @@ static dfk_avltree_hook_t* dfk__avltree_double_rot(dfk_avltree_hook_t* prime)
 }
 
 
-dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
+dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree,
+    dfk_avltree_hook_t* e)
 {
-  assert(tree);
-  assert(e);
+  DFK_AVLTREE_CHECK_INVARIANTS(tree);
+  DFK_AVLTREE_HOOK_CHECK_INVARIANTS(e);
   assert(e->_left == NULL);
   assert(e->_right == NULL);
   assert(e->_parent == NULL);
   assert(e->_bal == 0);
-  DFK_AVLTREE_CHECK_INVARIANTS(tree);
 
   if (tree->_root == NULL) {
     tree->_root = e;
-    tree->_size = 1;
+    DFK_IF_AVLTREE_CONSTANT_TIME_SIZE(tree->_size = 1);
     return tree->_root;
   }
 
@@ -380,19 +412,22 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree, dfk_avltree_hook_t* 
       }
     }
   }
+
+  DFK_IF_AVLTREE_CONSTANT_TIME_SIZE(tree->_size += 1);
   DFK_AVLTREE_CHECK_INVARIANTS(tree);
-  tree->_size += 1;
+
   return e;
 }
 
 
 void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
 {
-  assert(tree);
-  assert(e);
-  assert(tree->_size);
-  DFK_IF_DEBUG(assert(tree == e->_tree));
   DFK_AVLTREE_CHECK_INVARIANTS(tree);
+  DFK_AVLTREE_HOOK_CHECK_INVARIANTS(e);
+
+  DFK_IF_AVLTREE_CONSTANT_TIME_SIZE(assert(tree->_size));
+  DFK_IF_DEBUG(assert(tree == e->_tree));
+
   /* Stores a pointer to node that should take e's place, may be NULL */
   dfk_avltree_hook_t* newe;
   /* Node to start rebalancing from */
@@ -436,7 +471,8 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
     r->_bal = e->_bal;
     /* Since e's right subtree replaces e on it's position,
      * height of R subtree after removal proceudre decreases
-     * only if height(R) > heigth(A), or, in terms of nodes' balance, if e->_bal == 1
+     * only if height(R) > heigth(A), or, in terms of nodes' balance, if
+     * e->_bal == 1
      */
     newe = r;
     prime = r;
@@ -508,10 +544,11 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
        * height of the parent subtree might have been changed
        */
       if (prime->_bal == 1) {
-        /* Before deletion balance was 0, so left and right subtrees were of the same
-         * height. After node deletion height of the left subtree decrased by 1, but
-         * overall height of the prime remained the same = height of the right subtree
-         * plus 1
+        /*
+         * Before deletion balance was 0, so left and right subtrees were of the
+         * same height. After node deletion height of the left subtree decrased
+         * by 1, but overall height of the prime remained the same = height of
+         * the right subtree plus 1
          */
         break;
       }
@@ -588,19 +625,20 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
     prime = prime->_parent;
   }
 
-  tree->_size--;
-  DFK_AVLTREE_CHECK_INVARIANTS(tree);
+  DFK_IF_AVLTREE_CONSTANT_TIME_SIZE(tree->_size--);
   DFK_IF_DEBUG(e->_tree = NULL);
+
+  DFK_AVLTREE_CHECK_INVARIANTS(tree);
 }
 
 
 dfk_avltree_hook_t* dfk_avltree_find(dfk_avltree_t* tree, void* e,
     dfk_avltree_find_cmp cmp)
 {
-  assert(tree);
+
+  DFK_AVLTREE_CHECK_INVARIANTS(tree);
   assert(e);
   assert(cmp);
-  DFK_AVLTREE_CHECK_INVARIANTS(tree);
   {
     dfk_avltree_hook_t* i = tree->_root;
     while (i) {
@@ -620,8 +658,20 @@ dfk_avltree_hook_t* dfk_avltree_find(dfk_avltree_t* tree, void* e,
 
 size_t dfk_avltree_size(dfk_avltree_t* tree)
 {
-  assert(tree);
+  DFK_AVLTREE_CHECK_INVARIANTS(tree);
+#if DFK_AVLTREE_CONSTANT_TIME_SIZE
   return tree->_size;
+#else
+  size_t size = 0;
+  dfk_avltree_it it, end;
+  dfk_avltree_begin(tree, &it);
+  dfk_avltree_end(tree, &end);
+  while (!dfk_avltree_it_equal(&it, &end)) {
+    ++size;
+    dfk_avltree_it_next(&it);
+  }
+  return size;
+#endif
 }
 
 
@@ -633,7 +683,7 @@ size_t dfk_avltree_sizeof(void)
 
 void dfk_avltree_begin(dfk_avltree_t* tree, dfk_avltree_it* it)
 {
-  assert(tree);
+  DFK_AVLTREE_CHECK_INVARIANTS(tree);
   assert(it);
   it->value = tree->_root;
   if (it->value) {
@@ -642,21 +692,25 @@ void dfk_avltree_begin(dfk_avltree_t* tree, dfk_avltree_it* it)
     }
   }
   DFK_IF_DEBUG(it->_tree = tree);
+  DFK_AVLTREE_CHECK_INVARIANTS(tree);
+  DFK_AVLTREE_IT_CHECK_INVARIANTS(it);
 }
 
 
 void dfk_avltree_end(dfk_avltree_t* tree, dfk_avltree_it* it)
 {
-  DFK_UNUSED(tree);
-  assert(tree);
-  assert(it);
+  DFK_AVLTREE_CHECK_INVARIANTS(tree);
+  DFK_AVLTREE_IT_CHECK_INVARIANTS(it);
   it->value = NULL;
   DFK_IF_DEBUG(it->_tree = tree);
+  DFK_AVLTREE_CHECK_INVARIANTS(tree);
+  DFK_AVLTREE_IT_CHECK_INVARIANTS(it);
 }
 
 
 void dfk_avltree_it_next(dfk_avltree_it* it)
 {
+  DFK_AVLTREE_IT_CHECK_INVARIANTS(it);
   assert(it->value); /* can not increment end iterator */
   if (it->value->_right) {
     it->value = it->value->_right;
@@ -678,8 +732,8 @@ void dfk_avltree_it_next(dfk_avltree_it* it)
 
 int dfk_avltree_it_equal(dfk_avltree_it* lhs, dfk_avltree_it* rhs)
 {
-  assert(lhs);
-  assert(rhs);
+  DFK_AVLTREE_IT_CHECK_INVARIANTS(lhs);
+  DFK_AVLTREE_IT_CHECK_INVARIANTS(rhs);
   DFK_IF_DEBUG(assert(lhs->_tree == rhs->_tree));
   return lhs->value == rhs->value;
 }

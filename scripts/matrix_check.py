@@ -24,6 +24,7 @@ CMAKE_OPTIONS = {
     "DFK_HTTP_PIPELINING": ("ON", "OFF"),
     "DFK_LIST_CONSTANT_TIME_SIZE": ("ON", "OFF"),
     "DFK_LIST_MEMORY_OPTIMIZED": ("ON", "OFF"),
+    "DFK_AVLTREE_CONSTANT_TIME_SIZE": ("ON", "OFF"),
     # Temporary disable those, until build is broken
     "DFK_BUILD_SAMPLES": ("OFF",),
     "DFK_BUILD_CPP_BINDINGS": ("OFF",),
