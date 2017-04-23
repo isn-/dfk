@@ -904,6 +904,32 @@ TEST_F(tree_traversal_fixture, avltree, traversal_complete)
 }
 
 
+TEST_F(tree_traversal_fixture, avltree, traversal_1k)
+{
+  size_t nnodes = 1000;
+  fixture->nodes = malloc(nnodes * sizeof(node_t));
+  for (size_t i = 0; i < nnodes; ++i) {
+    dfk_avltree_hook_init((dfk_avltree_hook_t*) (fixture->nodes + i));
+    fixture->nodes[i].value = (223 * i + 1046527) % 16769023;
+    dfk_avltree_insert(&fixture->tree,
+        (dfk_avltree_hook_t*) (fixture->nodes + i));
+  }
+  dfk_avltree_it it, end;
+  dfk_avltree_begin(&fixture->tree, &it);
+  dfk_avltree_end(&fixture->tree, &end);
+  size_t i = 1;
+  int prev_value = ((node_t*) it.value)->value;
+  for (; i < (nnodes + 2) && !dfk_avltree_it_equal(&it, &end); ++i) {
+    int current_value = ((node_t*) it.value)->value;
+    dfk_avltree_it_next(&it);
+    EXPECT(current_value >= prev_value);
+    prev_value = current_value;
+  }
+  EXPECT(dfk_avltree_it_equal(&it, &end));
+  EXPECT(i == (nnodes + 1));
+}
+
+
 TEST_F(tree_fixture, avltree, erase_last)
 {
   /*

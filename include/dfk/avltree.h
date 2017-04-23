@@ -1,5 +1,5 @@
 /**
- * @file dfk/internal/avltree.h
+ * @file dfk/avltree.h
  * Balanced tree data structure
  *
  * @copyright
@@ -12,6 +12,9 @@
 #include <dfk/config.h>
 
 typedef struct dfk_avltree_hook_t {
+  /**
+   * @privatesection
+   */
   struct dfk_avltree_hook_t* _left;
   struct dfk_avltree_hook_t* _right;
   struct dfk_avltree_hook_t* _parent;
@@ -24,7 +27,15 @@ typedef struct dfk_avltree_hook_t {
 typedef int (*dfk_avltree_cmp)(dfk_avltree_hook_t*, dfk_avltree_hook_t*);
 typedef int (*dfk_avltree_find_cmp)(dfk_avltree_hook_t*, void*);
 
+/**
+ * AVL tree, self-balancing binary search tree
+ *
+ * @see https://en.wikipedia.org/wiki/AVL_tree
+ */
 typedef struct dfk_avltree_t {
+  /**
+   * @privatesection
+   */
   dfk_avltree_hook_t* _root;
   dfk_avltree_cmp _cmp;
 #if DFK_AVLTREE_CONSTANT_TIME_SIZE
@@ -33,9 +44,13 @@ typedef struct dfk_avltree_t {
 } dfk_avltree_t;
 
 
+/**
+ * dfk_avltree_t iterator
+ */
 typedef struct dfk_avltree_it {
   dfk_avltree_hook_t* value;
 #if DFK_DEBUG
+  /** @private */
   dfk_avltree_t* _tree;
 #endif
 } dfk_avltree_it;
@@ -56,6 +71,10 @@ size_t dfk_avltree_size(dfk_avltree_t* tree);
 
 size_t dfk_avltree_sizeof(void);
 
+/**
+ * @todo Add an option to switch between constant-time and
+ * logarithmic dfk_avltree_begin.
+ */
 void dfk_avltree_begin(dfk_avltree_t* tree, dfk_avltree_it* it);
 
 void dfk_avltree_end(dfk_avltree_t* tree, dfk_avltree_it* it);

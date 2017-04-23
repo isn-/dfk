@@ -719,10 +719,6 @@ void dfk_avltree_it_next(dfk_avltree_it* it)
     }
     return;
   }
-  if (it->value->_parent && it->value->_parent->_left == it->value) {
-    it->value = it->value->_parent;
-    return;
-  }
   while (it->value->_parent && it->value->_parent->_right == it->value) {
     it->value = it->value->_parent;
   }
