@@ -1628,3 +1628,23 @@ TEST_F(tree_fixture, avltree, erase_left_single_rotation_in_right_subtree)
       node_cmp));
 }
 
+
+TEST_F(tree_fixture, avltree, size_empty)
+{
+  EXPECT(dfk_avltree_size(&fixture->in_tree) == 0);
+}
+
+
+TEST_F(tree_fixture, avltree, size_non_empty)
+{
+  size_t nnodes = 400;
+  fixture->in_nodes = malloc(nnodes * sizeof(node_t));
+  for (size_t i = 0; i < nnodes; ++i) {
+    dfk_avltree_hook_init((dfk_avltree_hook_t*) (fixture->in_nodes + i));
+    fixture->in_nodes[i].value = (757 * i + 839) % 967;
+    dfk_avltree_insert(&fixture->in_tree,
+        (dfk_avltree_hook_t*) (fixture->in_nodes + i));
+  }
+  EXPECT(dfk_avltree_size(&fixture->in_tree) == nnodes);
+}
+
