@@ -347,72 +347,68 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree,
     return tree->_root;
   }
 
-  {
-    dfk_avltree_hook_t* i = tree->_root;
-    dfk_avltree_hook_t* prime_parent = NULL;
-    dfk_avltree_hook_t* prime = tree->_root;
-    int prime_parent_dir = 0;
+  dfk_avltree_hook_t* i = tree->_root;
+  dfk_avltree_hook_t* prime_parent = NULL;
+  dfk_avltree_hook_t* prime = tree->_root;
+  int prime_parent_dir = 0;
 
-    while (1) {
-      int cmp = tree->_cmp(i, e);
-      if (cmp < 0) {
-        if (i->_left) {
-          if (i->_left->_bal) {
-            prime = i->_left;
-            prime_parent = i;
-            prime_parent_dir = -1;
-          }
-          i = i->_left;
-        } else {
-          i->_left = e;
-          e->_parent = i;
-          break;
+  while (1) {
+    int cmp = tree->_cmp(i, e);
+    if (cmp < 0) {
+      if (i->_left) {
+        if (i->_left->_bal) {
+          prime = i->_left;
+          prime_parent = i;
+          prime_parent_dir = -1;
         }
-      } else if (cmp > 0) {
-        if (i->_right) {
-          if (i->_right->_bal) {
-            prime = i->_right;
-            prime_parent = i;
-            prime_parent_dir = 1;
-          }
-          i = i->_right;
-        } else {
-          i->_right = e;
-          e->_parent = i;
-          break;
-        }
-      } else {
-        return NULL;
-      }
-    }
-
-    i = prime;
-    while (i != e) {
-      int cmp = tree->_cmp(i, e);
-      if (cmp < 0) {
-        i->_bal -= 1;
         i = i->_left;
-      } else  {
-        assert(cmp > 0);
-        i->_bal += 1;
+      } else {
+        i->_left = e;
+        e->_parent = i;
+        break;
+      }
+    } else if (cmp > 0) {
+      if (i->_right) {
+        if (i->_right->_bal) {
+          prime = i->_right;
+          prime_parent = i;
+          prime_parent_dir = 1;
+        }
         i = i->_right;
+      } else {
+        i->_right = e;
+        e->_parent = i;
+        break;
       }
+    } else {
+      return NULL;
     }
+  }
 
-    {
-      dfk_avltree_hook_t* new_prime = NULL;
-      if ((prime->_bal == 2 && prime->_right->_bal == -1)
-          || (prime->_bal == -2 && prime->_left->_bal == 1)) {
-        new_prime = dfk__avltree_double_rot(prime);
-      } else if ((prime->_bal == 2 && prime->_right->_bal == 1)
-          || (prime->_bal == -2 && prime->_left->_bal == -1)) {
-        new_prime = dfk__avltree_single_rot(prime);
-      }
-      if (new_prime) {
-        dfk__avltree_promote_prime(prime_parent_dir,
-            new_prime, prime_parent, tree);
-      }
+  i = prime;
+  while (i != e) {
+    int cmp = tree->_cmp(i, e);
+    if (cmp < 0) {
+      i->_bal -= 1;
+      i = i->_left;
+    } else  {
+      assert(cmp > 0);
+      i->_bal += 1;
+      i = i->_right;
     }
+  }
+
+  dfk_avltree_hook_t* new_prime = NULL;
+  if ((prime->_bal == 2 && prime->_right->_bal == -1)
+      || (prime->_bal == -2 && prime->_left->_bal == 1)) {
+    new_prime = dfk__avltree_double_rot(prime);
+  } else if ((prime->_bal == 2 && prime->_right->_bal == 1)
+      || (prime->_bal == -2 && prime->_left->_bal == -1)) {
+    new_prime = dfk__avltree_single_rot(prime);
+  }
+  if (new_prime) {
+    dfk__avltree_promote_prime(prime_parent_dir,
+        new_prime, prime_parent, tree);
   }
 
   DFK_IF_AVLTREE_CONSTANT_TIME_SIZE(tree->_size += 1);
@@ -434,7 +430,8 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
   dfk_avltree_hook_t* newe;
   /* Node to start rebalancing from */
   dfk_avltree_hook_t* prime;
-  /* Is set to 1 if subtree's height has changed after the erase operation.
+  /*
+   * Is set to 1 if subtree's height has changed after the erase operation.
    * Height can only decrease, obviously.
    * If height has decreased, we need to update node's balance factor, and
    * possibly perform re-balancing, e.g. rotation to preserve AVL property.
@@ -471,7 +468,8 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
       a->_parent = r;
     }
     r->_bal = e->_bal;
-    /* Since e's right subtree replaces e on it's position,
+    /*
+     * Since e's right subtree replaces e on it's position,
      * height of R subtree after removal proceudre decreases
      * only if height(R) > heigth(A), or, in terms of nodes' balance, if
      * e->_bal == 1
@@ -611,21 +609,18 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
 dfk_avltree_hook_t* dfk_avltree_find(dfk_avltree_t* tree, void* e,
     dfk_avltree_find_cmp cmp)
 {
-
   DFK_AVLTREE_CHECK_INVARIANTS(tree);
   assert(e);
   assert(cmp);
-  {
-    dfk_avltree_hook_t* i = tree->_root;
-    while (i) {
-      int cmpres = cmp(i, e);
-      if (cmpres < 0) {
-        i = i->_left;
-      } else if (cmpres > 0) {
-        i = i->_right;
-      } else {
-        return i;
-      }
+  dfk_avltree_hook_t* i = tree->_root;
+  while (i) {
+    int cmpres = cmp(i, e);
+    if (cmpres < 0) {
+      i = i->_left;
+    } else if (cmpres > 0) {
+      i = i->_right;
+    } else {
+      return i;
     }
   }
   return NULL;
