@@ -47,11 +47,97 @@ static const uint8_t hex_to_byte[] = {
 };
 
 
-size_t dfk_urldecode(char* buf, size_t size, char* out, size_t* byteswritten)
+static const uint8_t bytelo_to_hex[] = {
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+  '0', '1', '2', '3', '4', '5', '6', '7',
+  '8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+};
+
+
+static const uint8_t bytehi_to_hex[] = {
+  '0', '0', '0', '0', '0', '0', '0', '0',
+  '0', '0', '0', '0', '0', '0', '0', '0',
+  '1', '1', '1', '1', '1', '1', '1', '1',
+  '1', '1', '1', '1', '1', '1', '1', '1',
+  '2', '2', '2', '2', '2', '2', '2', '2',
+  '2', '2', '2', '2', '2', '2', '2', '2',
+  '3', '3', '3', '3', '3', '3', '3', '3',
+  '3', '3', '3', '3', '3', '3', '3', '3',
+  '4', '4', '4', '4', '4', '4', '4', '4',
+  '4', '4', '4', '4', '4', '4', '4', '4',
+  '5', '5', '5', '5', '5', '5', '5', '5',
+  '5', '5', '5', '5', '5', '5', '5', '5',
+  '6', '6', '6', '6', '6', '6', '6', '6',
+  '6', '6', '6', '6', '6', '6', '6', '6',
+  '7', '7', '7', '7', '7', '7', '7', '7',
+  '7', '7', '7', '7', '7', '7', '7', '7',
+  '8', '8', '8', '8', '8', '8', '8', '8',
+  '8', '8', '8', '8', '8', '8', '8', '8',
+  '9', '9', '9', '9', '9', '9', '9', '9',
+  '9', '9', '9', '9', '9', '9', '9', '9',
+  'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A',
+  'A', 'A', 'A', 'A', 'A', 'A', 'A', 'A',
+  'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B',
+  'B', 'B', 'B', 'B', 'B', 'B', 'B', 'B',
+  'C', 'C', 'C', 'C', 'C', 'C', 'C', 'C',
+  'C', 'C', 'C', 'C', 'C', 'C', 'C', 'C',
+  'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+  'D', 'D', 'D', 'D', 'D', 'D', 'D', 'D',
+  'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E',
+  'E', 'E', 'E', 'E', 'E', 'E', 'E', 'E',
+  'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F',
+  'F', 'F', 'F', 'F', 'F', 'F', 'F', 'F',
+};
+
+
+size_t dfk_urldecode_hint(const char* buf, size_t size)
+{
+  size_t s = 0;
+  for (const char* end = buf + size; buf != end; ++buf) {
+    if (*buf == '%') {
+      s += 2;
+    }
+  }
+  return size - s;
+}
+
+
+size_t dfk_urldecode(char* buf, size_t size, char* out, size_t* nwritten)
 {
   assert(buf || !size);
   assert(out || !size);
-  assert(byteswritten);
+  assert(nwritten);
 
   char* end = buf + size;
   char* initial_out = out;
@@ -71,17 +157,45 @@ size_t dfk_urldecode(char* buf, size_t size, char* out, size_t* byteswritten)
       *out++ = *buf++;
     }
   }
-  *byteswritten = out - initial_out;
+  *nwritten = out - initial_out;
   return buf - end + size;
+}
+
+
+static int dfk__urlencode_unreserved(char c)
+{
+  return ('a' <= c && c <= 'z')
+    || ('A' <= c && c <= 'Z')
+    || ('0' <= c && c <= '9')
+    || c == '-' || c == '.' || c == '_' || c == '~';
+}
+
+
+size_t dfk_urlencode_hint(const char* buf, size_t size)
+{
+  size_t s = 0;
+  for (const char* end = buf + size; buf != end; ++buf) {
+    if (!dfk__urlencode_unreserved(*buf)) {
+      s += 2;
+    }
+  }
+  return size + s;
 }
 
 
 size_t dfk_urlencode(const char* buf, size_t size, char* out)
 {
-  /** @todo implement it */
-  (void) (buf);
-  (void) (size);
-  (void) (out);
-  return 0;
+  char* original_out = out;
+  for (const char* end = buf + size; buf != end; ++buf) {
+    char b = *buf;
+    if (dfk__urlencode_unreserved(b)) {
+      *out++ = b;
+    } else {
+      *out++ = '%';
+      *out++ = bytehi_to_hex[(unsigned char) b];
+      *out++ = bytelo_to_hex[(unsigned char) b];
+    }
+  }
+  return out - original_out;
 }
 

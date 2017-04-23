@@ -205,7 +205,7 @@ set(dfk_sources
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/core.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/sync.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/tcp_socket.c"
-  # "${CMAKE_CURRENT_SOURCE_DIR}/src/urlencoding.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/urlencoding.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/constants.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/request.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/response.c"

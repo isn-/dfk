@@ -38,3 +38,8 @@ dfk_avltree_end
 dfk_avltree_it_next
 dfk_avltree_it_equal
 dfk_avltree_it_sizeof
+
+dfk_urldecode_hint
+dfk_urldecode
+dfk_urlencode_hint
+dfk_urlencode
