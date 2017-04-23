@@ -312,6 +312,25 @@ static dfk_avltree_hook_t* dfk__avltree_double_rot(dfk_avltree_hook_t* prime)
 }
 
 
+static void dfk__avltree_promote_prime(int prime_parent_dir,
+    dfk_avltree_hook_t* prime, dfk_avltree_hook_t* prime_parent,
+    dfk_avltree_t* tree)
+{
+  if (!prime_parent_dir) {
+    tree->_root = prime;
+    tree->_root->_parent = NULL;
+    return;
+  }
+  if (prime_parent_dir == 1) {
+    prime_parent->_right = prime;
+  } else {
+    assert(prime_parent_dir == -1);
+    prime_parent->_left = prime;
+  }
+  prime->_parent = prime_parent;
+}
+
+
 dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree,
     dfk_avltree_hook_t* e)
 {
@@ -390,23 +409,8 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree,
         new_prime = dfk__avltree_single_rot(prime);
       }
       if (new_prime) {
-        switch (prime_parent_dir) {
-          case -1: {
-             prime_parent->_left = new_prime;
-             new_prime->_parent = prime_parent;
-             break;
-          }
-          case 0: {
-            tree->_root = new_prime;
-            new_prime->_parent = NULL;
-            break;
-          }
-          case 1: {
-            prime_parent->_right = new_prime;
-            new_prime->_parent = prime_parent;
-            break;
-          }
-        }
+        dfk__avltree_promote_prime(prime_parent_dir,
+            new_prime, prime_parent, tree);
       }
     }
   }
@@ -564,20 +568,7 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
         } else {
           new_prime = dfk__avltree_single_rot(prime);
         }
-        switch (dir) {
-          case -1:
-            parent->_left = new_prime;
-            new_prime->_parent = parent;
-            break;
-          case 0:
-            tree->_root = new_prime;
-            tree->_root->_parent = NULL;
-            break;
-          case 1:
-            parent->_right = new_prime;
-            new_prime->_parent = parent;
-            break;
-        }
+        dfk__avltree_promote_prime(dir, new_prime, parent, tree);
         prime = new_prime;
         if (!rightbal) {
           break;
@@ -599,20 +590,7 @@ void dfk_avltree_erase(dfk_avltree_t* tree, dfk_avltree_hook_t* e)
         } else {
           new_prime = dfk__avltree_single_rot(prime);
         }
-        switch (dir) {
-          case -1:
-            parent->_left = new_prime;
-            new_prime->_parent = parent;
-            break;
-          case 0:
-            tree->_root = new_prime;
-            tree->_root->_parent = NULL;
-            break;
-          case 1:
-            parent->_right = new_prime;
-            new_prime->_parent = parent;
-            break;
-        }
+        dfk__avltree_promote_prime(dir, new_prime, parent, tree);
         prime = new_prime;
         if (!leftbal) {
           break;
