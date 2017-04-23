@@ -247,23 +247,22 @@ static dfk_avltree_hook_t* dfk__avltree_double_rot(dfk_avltree_hook_t* prime)
     }
     x->_right = b;
     b->_parent = x;
-    switch (x->_bal) {
-      case -1: {
-        b->_bal = 1;
-        prime->_bal = 0;
-        break;
-      }
-      case 0: {
-        b->_bal = 0;
-        prime->_bal = 0;
-        break;
-      }
-      case 1: {
-        b->_bal = 0;
-        prime->_bal = -1;
-        break;
-      }
-    }
+    /*
+     * x->_bal | b->_bal
+     * --------+--------
+     *   -1    |   1
+     *    0    |   0
+     *   +1    |   0
+     */
+    b->_bal = !(x->_bal + 1);
+    /*
+     * x->_bal | prime->_bal
+     * --------+--------
+     *   -1    |   0
+     *    0    |   0
+     *   +1    |  -1
+     */
+    prime->_bal = 0 - !(x->_bal - 1);
     x->_bal = 0;
   } else {
     /*
@@ -291,23 +290,22 @@ static dfk_avltree_hook_t* dfk__avltree_double_rot(dfk_avltree_hook_t* prime)
     }
     x->_left = b;
     b->_parent = x;
-    switch (x->_bal) {
-      case -1: {
-        b->_bal = 0;
-        prime->_bal = 1;
-        break;
-      }
-      case 0: {
-        b->_bal = 0;
-        prime->_bal = 0;
-        break;
-      }
-      case 1: {
-        b->_bal = -1;
-        prime->_bal = 0;
-        break;
-      }
-    }
+    /*
+     * x->_bal | b->_bal
+     * --------+--------
+     *   -1    |   0
+     *    0    |   0
+     *   +1    |  -1
+     */
+    b->_bal = 0 - !(x->_bal - 1);
+    /*
+     * x->_bal | prime->_bal
+     * --------+--------
+     *   -1    |   1
+     *    0    |   0
+     *   +1    |   0
+     */
+    prime->_bal = !(x->_bal + 1);
     x->_bal = 0;
   }
   return x;
