@@ -15,9 +15,9 @@ static void ut_decode(const char* input, size_t inputlen,
 {
   char* decoded = malloc(dfk_urldecode_hint(input, inputlen));
   size_t bytesdecoded;
-  size_t bytesread = dfk_urldecode((char*) input, inputlen, decoded,
+  size_t nread = dfk_urldecode((char*) input, inputlen, decoded,
       &bytesdecoded);
-  EXPECT(bytesread == inputlen);
+  EXPECT(nread == inputlen);
   EXPECT(bytesdecoded == expectedlen);
   EXPECT(!strncmp(decoded, expected, expectedlen));
   free(decoded);
@@ -117,16 +117,44 @@ TEST(urlencoding, decode_coverage)
 }
 
 
-TEST(urlencoding, decode_bad_input)
+TEST(urlencoding, decode_bad_input_lo)
 {
   /* %2C replaced with %2G */
   char encoded[] = "%68%65%6C%6C%6F%2G%20%77%6F%72%6C%64";
   char decoded[DFK_SIZE(encoded)] = {0};
-  size_t byteswritten;
-  size_t bytesread = dfk_urldecode(encoded, DFK_SIZE(encoded), decoded, &byteswritten);
-  EXPECT(bytesread == 15);
-  EXPECT(byteswritten == 5);
-  EXPECT(!strncmp(decoded, "hello", byteswritten));
+  size_t nwritten;
+  size_t nread = dfk_urldecode(encoded, DFK_SIZE(encoded) - 1, decoded,
+      &nwritten);
+  EXPECT(nread == 15);
+  EXPECT(nwritten == 5);
+  EXPECT(!strncmp(decoded, "hello", nwritten));
+}
+
+
+TEST(urlencoding, decode_bad_input_hi)
+{
+  /* %2C replaced with %ZC */
+  char encoded[] = "%68%65%6C%6C%6F%ZC%20%77%6F%72%6C%64";
+  char decoded[DFK_SIZE(encoded)] = {0};
+  size_t nwritten;
+  size_t nread = dfk_urldecode(encoded, DFK_SIZE(encoded) - 1, decoded,
+      &nwritten);
+  EXPECT(nread == 15);
+  EXPECT(nwritten == 5);
+  EXPECT(!strncmp(decoded, "hello", nwritten));
+}
+
+
+TEST(urlencoding, decode_truncated_input)
+{
+  char encoded[] = "hello%2";
+  char decoded[DFK_SIZE(encoded)] = {0};
+  size_t nwritten;
+  size_t nread = dfk_urldecode(encoded, DFK_SIZE(encoded) - 1, decoded,
+      &nwritten);
+  EXPECT(nread == 5);
+  EXPECT(nwritten == 5);
+  EXPECT(!strncmp(decoded, "hello", nwritten));
 }
 
 
