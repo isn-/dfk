@@ -160,6 +160,21 @@
  */
 #cmakedefine01 DFK_AVLTREE_CONSTANT_TIME_SIZE
 
+/**
+ * Enable heuristics for dfk_urlencode_hint, dfk_urldecode_hint
+ *
+ * It makes dfk_urlencode_hint(), dfk_urldecode_hint() functions constant-time,
+ * so they do not peek into the buffer. The buffer size hint is determined as
+ * the maximum buffer that could possibly be needed to decode/encode:
+ * - dfk_urlencode_hint() returns 3 * size of the input buffer
+ * - dfk_urldecode_hint() returns the size of input buffer
+ *
+ * @par Rule of thumb
+ * Set to OFF to reduce memory consumption at the expense of performance.
+ * Setting to OFF is relevant for apps that url-decode/url-encode large
+ * volumes of data and run in memory-restricted environment.
+ */
+#cmakedefine01 DFK_URLENCODING_HINT_HEURISRICS
 
 /** Size of arena's segment, in bytes */
 #define DFK_ARENA_SEGMENT_SIZE @DFK_ARENA_SEGMENT_SIZE@

@@ -123,6 +123,10 @@ static const uint8_t bytehi_to_hex[] = {
 
 size_t dfk_urldecode_hint(const char* buf, size_t size)
 {
+#if DFK_URLENCODING_HINT_HEURISTICS
+  DFK_UNUSED(buf);
+  return size;
+#else
   size_t s = 0;
   for (const char* end = buf + size; buf != end; ++buf) {
     if (*buf == '%') {
@@ -130,6 +134,7 @@ size_t dfk_urldecode_hint(const char* buf, size_t size)
     }
   }
   return size - s;
+#endif
 }
 
 
@@ -173,6 +178,10 @@ static int dfk__urlencode_unreserved(char c)
 
 size_t dfk_urlencode_hint(const char* buf, size_t size)
 {
+#if DFK_URLENCODING_HINT_HEURISTICS
+  DFK_UNUSED(buf);
+  return 3 * size;
+#else
   size_t s = 0;
   for (const char* end = buf + size; buf != end; ++buf) {
     if (!dfk__urlencode_unreserved(*buf)) {
@@ -180,6 +189,7 @@ size_t dfk_urlencode_hint(const char* buf, size_t size)
     }
   }
   return size + s;
+#endif
 }
 
 
