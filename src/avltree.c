@@ -402,8 +402,9 @@ dfk_avltree_hook_t* dfk_avltree_insert(dfk_avltree_t* tree,
   if ((prime->_bal == 2 && prime->_right->_bal == -1)
       || (prime->_bal == -2 && prime->_left->_bal == 1)) {
     new_prime = dfk__avltree_double_rot(prime);
-  } else if ((prime->_bal == 2 && prime->_right->_bal == 1)
-      || (prime->_bal == -2 && prime->_left->_bal == -1)) {
+  } else if ((prime->_bal == 2) || (prime->_bal == -2)) {
+    assert((prime->_bal == 2 && prime->_right->_bal == 1)
+        || (prime->_bal == -2 && prime->_left->_bal == -1));
     new_prime = dfk__avltree_single_rot(prime);
   }
   if (new_prime) {
