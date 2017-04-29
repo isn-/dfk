@@ -83,6 +83,7 @@ check_include_files(pthread.h DFK_HAVE_PTHREAD_H)
 check_include_files(sys/socket.h DFK_HAVE_SYS_SOCKET_H)
 check_include_files(sys/types.h DFK_HAVE_SYS_TYPES_H)
 check_include_files(sys/mman.h DFK_HAVE_SYS_MMAN_H)
+check_include_files(sys/uio.h DFK_HAVE_SYS_UIO_H)
 check_include_files(netinet/in.h DFK_HAVE_NETINET_IN_H)
 check_include_files(arpa/inet.h DFK_HAVE_ARPA_INET_H)
 check_include_files(ucontext.h DFK_HAVE_UCONTEXT_H)
@@ -199,10 +200,13 @@ fw_c_flags("-Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wo
 set(dfk_sources
   "${CMAKE_CURRENT_SOURCE_DIR}/src/list.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/avltree.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/context.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/error.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/strtoll.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/misc.c"
   #  "${CMAKE_CURRENT_SOURCE_DIR}/src/arena.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/strmap.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/sponge.c"
-  # "${CMAKE_CURRENT_SOURCE_DIR}/src/misc.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/core.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/sync.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/tcp_socket.c"

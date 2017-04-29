@@ -28,6 +28,7 @@
 #cmakedefine01 DFK_HAVE_SYS_SOCKET_H
 #cmakedefine01 DFK_HAVE_SYS_TYPES_H
 #cmakedefine01 DFK_HAVE_SYS_MMAN_H
+#cmakedefine01 DFK_HAVE_SYS_UIO_H
 #cmakedefine01 DFK_HAVE_NETINET_IN_H
 #cmakedefine01 DFK_HAVE_ARPA_INET_H
 #cmakedefine01 DFK_HAVE_UCONTEXT_H

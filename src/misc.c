@@ -5,48 +5,18 @@
  */
 
 #include <assert.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <string.h>
-#include <dfk/internal/misc.h>
+#include <sys/uio.h>
+#include <dfk/misc.h>
 
-
-int dfk_strtoll(dfk_buf_t nbuf, char** endptr, int base, long long* out)
+size_t dfk_buf_sizeof(void)
 {
-  /**
-   * null-terminated copy of buf, for calling strtoll
-   * that accept C strings only.
-   */
-  char ntcopy[22];
-  char* ntendptr;
-  assert(out);
-
-  if (nbuf.size >= sizeof(ntcopy)) {
-    return dfk_err_overflow;
-  }
-
-  memcpy(ntcopy, nbuf.data, nbuf.size);
-  ntcopy[nbuf.size] = 0;
-  errno = 0;
-  long long res = strtoll(ntcopy, &ntendptr, base);
-  if (errno == ERANGE) {
-    return dfk_err_overflow;
-  } else if (ntendptr == ntcopy || errno == EINVAL) {
-    /*
-     * EINVAL should not be returned for C99 code.
-     * However, we'll keep this check here for possible
-     * C89 backporting.
-     */
-    return dfk_err_badarg;
-  }
-  *out= res;
-  if (endptr) {
-    assert(ntendptr > ntcopy);
-    *endptr = nbuf.data + (ntendptr - ntcopy);
-  }
-  return dfk_err_ok;
+  return sizeof(dfk_buf_t);
 }
 
+size_t dfk_iovec_sizeof(void)
+{
+  return sizeof(dfk_iovec_t);
+}
 
 void dfk_buf_append(dfk_buf_t* to, const char* data, size_t size)
 {
