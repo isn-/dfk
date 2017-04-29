@@ -31,7 +31,7 @@ int dfk_strtoll(dfk_buf_t nbuf, char** endptr, int base, long long* out)
   long long res = strtoll(ntcopy, &ntendptr, base);
   if (errno == ERANGE) {
     return dfk_err_overflow;
-  } else if (ntendptr == ntcopy || errno == EINVAL) {
+  } else if (errno == EINVAL || ntendptr == ntcopy) {
     /*
      * EINVAL should not be returned for C99 code.
      * However, we'll keep this check here for possible
