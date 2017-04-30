@@ -1,5 +1,6 @@
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/../src/include)
 
 set(ut_sources
   #  test_core.c
@@ -9,7 +10,7 @@ set(ut_sources
   test_context.c
   test_error.c
   test_misc.c
-  #  test_arena.c
+  test_arena.c
   #  test_sponge.c
   #  test_strmap.c
   #  test_sync.c

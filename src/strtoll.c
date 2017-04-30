@@ -46,3 +46,4 @@ int dfk_strtoll(dfk_buf_t nbuf, char** endptr, int base, long long* out)
   }
   return dfk_err_ok;
 }
+

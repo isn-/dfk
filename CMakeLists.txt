@@ -204,7 +204,7 @@ set(dfk_sources
   "${CMAKE_CURRENT_SOURCE_DIR}/src/error.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/strtoll.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/misc.c"
-  #  "${CMAKE_CURRENT_SOURCE_DIR}/src/arena.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/arena.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/strmap.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/sponge.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/core.c"

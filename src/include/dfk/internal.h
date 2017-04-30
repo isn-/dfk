@@ -14,6 +14,7 @@
 extern "C" {
 #endif
 
+#include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
@@ -25,7 +26,14 @@ extern "C" {
 #define DFK_UNUSED(x) (void) (x)
 
 #define DFK_MALLOC(dfk, nbytes) (dfk)->malloc((dfk), nbytes)
-#define DFK_FREE(dfk, p) (dfk)->free((dfk), p)
+
+#define DFK_FREE(dfk, p) \
+{ \
+  assert(dfk); \
+  assert(p); \
+  (dfk)->free((dfk), p); \
+}
+
 #define DFK_REALLOC(dfk, p, nbytes) (dfk)->realloc((dfk), p, nbytes)
 
 #define DFK_MAX(x, y) ((x) > (y) ? (x) : (y))
@@ -201,7 +209,7 @@ typedef struct dfk_epoll_arg_t {
 
 
 #define DFK_PDEADBEEF ((void*) 0xDEADBEEF)
-#define DFK_DEADBEEF 0xDEADBEEF
+#define DFK_DEADBEEF ((uint32_t) 0xDEADBEEF)
 
 #if DFK_DEBUG
 #define DFK_IF_DEBUG(expr) expr

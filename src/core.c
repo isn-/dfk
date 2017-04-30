@@ -41,8 +41,8 @@ struct coro_context init;
 #if DFK_DEBUG
 static void dfk__default_log(dfk_t* dfk, int channel, const char* msg)
 {
-  char strchannel[5] = {0};
   DFK_UNUSED(dfk);
+  char strchannel[5] = {0};
   switch(channel) {
     case dfk_log_error: memcpy(strchannel, "error", 5); break;
     case dfk_log_warning: memcpy(strchannel, "warn_", 5); break;

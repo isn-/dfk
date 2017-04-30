@@ -22,16 +22,6 @@
  */
 typedef struct dfk_t {
   /**
-   * @privatesection
-   */
-
-  struct dfk_coro_t* _current;
-  struct dfk_coro_t* _scheduler;
-  struct dfk_coro_t* _eventloop;
-  struct dfk_coro_t* _terminator;
-  sig_atomic_t _stopped;
-
-  /**
    * @publicsection
    */
 
@@ -59,17 +49,30 @@ typedef struct dfk_t {
   int sys_errno;
   int dfk_errno;
 
+  /**
+   * @privatesection
+   */
+
+  struct dfk_coro_t* _current;
+  struct dfk_coro_t* _scheduler;
+  struct dfk_coro_t* _eventloop;
+  struct dfk_coro_t* _terminator;
+  sig_atomic_t _stopped;
 } dfk_t;
 
 /**
  * Initialize dfk context with default settings.
+ *
+ * @pre dfk != NULL
  */
-int dfk_init(dfk_t* dfk);
+void dfk_init(dfk_t* dfk);
 
 /**
  * Cleanup resources allocated for dfk context
+ *
+ * @pre dfk != NULL
  */
-int dfk_free(dfk_t* dfk);
+void dfk_free(dfk_t* dfk);
 
 /**
  * Start dfk working cycle.

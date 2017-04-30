@@ -33,7 +33,6 @@ static void ut_encode(const char* input, size_t inputlen,
 {
   char* encoded = malloc(dfk_urlencode_hint(input, inputlen));
   size_t nwritten = dfk_urlencode(input, inputlen, encoded);
-  printf("%d %d\n", (int) nwritten, (int) expectedlen);
   EXPECT(nwritten == expectedlen);
   EXPECT(!strncmp(encoded, expected, expectedlen));
   free(encoded);
