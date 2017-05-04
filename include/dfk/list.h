@@ -80,7 +80,28 @@ typedef struct dfk_list_rit {
 void dfk_list_init(dfk_list_t* list);
 void dfk_list_hook_init(dfk_list_hook_t* hook);
 
+/**
+ * Returns a pointer to the first element of the list, NULL if the list is empty
+ *
+ * @pre list != NULL
+ */
+dfk_list_hook_t* dfk_list_front(dfk_list_t* list);
+
+/**
+ * Returns a pointer to the last element of the list, NULL if the list is empty
+ *
+ * @pre list != NULL
+ */
+dfk_list_hook_t* dfk_list_back(dfk_list_t* list);
+
+/**
+ * @todo add test append_erased
+ */
 void dfk_list_append(dfk_list_t* list, dfk_list_hook_t* hook);
+
+/**
+ * @todo add test prepend_erased
+ */
 void dfk_list_prepend(dfk_list_t* list, dfk_list_hook_t* hook);
 
 /**
@@ -100,6 +121,27 @@ void dfk_list_erase(dfk_list_t* list, dfk_list_it* it);
 void dfk_list_rerase(dfk_list_t* list, dfk_list_rit* rit);
 void dfk_list_pop_front(dfk_list_t* list);
 void dfk_list_pop_back(dfk_list_t* list);
+
+/**
+ * Moves all elements from source list to destination.
+ *
+ * Existing content of the destination list is discarded, source list becomes
+ * empty.
+ *
+ * @pre src != NULL
+ * @pre dst != NULL
+ */
+void dfk_list_move(dfk_list_t* src, dfk_list_t* dst);
+
+/**
+ * Swap content of two lists
+ *
+ * @note If destination list is guaranteed to be empty, use dfk_list_move.
+ *
+ * @pre lhs != NULL
+ * @pre rhs != NULL
+ */
+void dfk_list_swap(dfk_list_t* lhs, dfk_list_t* rhs);
 
 /**
  * Returns number of elements in the list
@@ -122,6 +164,7 @@ size_t dfk_list_size(dfk_list_t* list);
  * @returns non-zero if list is empty, 0 otherwise
  */
 int dfk_list_empty(dfk_list_t* list);
+
 size_t dfk_list_sizeof(void);
 
 void dfk_list_begin(dfk_list_t* list, dfk_list_it* it);

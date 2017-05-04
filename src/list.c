@@ -309,16 +309,27 @@ void dfk_list_hook_init(dfk_list_hook_t* hook)
   DFK_LIST_HOOK_CHECK_INVARIANTS(hook);
 }
 
+dfk_list_hook_t* dfk_list_front(dfk_list_t* list)
+{
+  DFK_LIST_CHECK_INVARIANTS(list);
+  return list->_head;
+}
+
+dfk_list_hook_t* dfk_list_back(dfk_list_t* list)
+{
+  DFK_LIST_CHECK_INVARIANTS(list);
+  return list->_tail;
+}
 
 void dfk_list_append(dfk_list_t* list, dfk_list_hook_t* hook)
 {
   DFK_LIST_CHECK_INVARIANTS(list);
-  DFK_LIST_HOOK_CHECK_INVARIANTS(hook);
+  assert(hook); /* do not check invariants here */
   DFK_IF_DEBUG(assert(!hook->_list));
 
 #if DFK_LIST_MEMORY_OPTIMIZED
+  hook->_p = list->_tail;
   if (list->_tail) {
-    hook->_p = list->_tail;
     list->_tail->_p = DFK_PTR_XOR(list->_tail->_p, hook);
   }
 #else
@@ -344,12 +355,12 @@ void dfk_list_append(dfk_list_t* list, dfk_list_hook_t* hook)
 void dfk_list_prepend(dfk_list_t* list, dfk_list_hook_t* hook)
 {
   DFK_LIST_CHECK_INVARIANTS(list);
-  DFK_LIST_HOOK_CHECK_INVARIANTS(hook);
+  assert(hook); /* do not check invariants here */
   DFK_IF_DEBUG(assert(!hook->_list));
 
 #if DFK_LIST_MEMORY_OPTIMIZED
+  hook->_p = list->_head;
   if (list->_head) {
-    hook->_p = list->_head;
     list->_head->_p = DFK_PTR_XOR(list->_head->_p, hook);
   }
 #else
@@ -376,7 +387,7 @@ void dfk_list_insert(dfk_list_t* list, dfk_list_hook_t* hook,
     dfk_list_it* position)
 {
   DFK_LIST_CHECK_INVARIANTS(list);
-  DFK_LIST_HOOK_CHECK_INVARIANTS(hook);
+  assert(hook); /* do not check invariants here */
   DFK_LIST_IT_CHECK_INVARIANTS(position);
 
   dfk_list_hook_t* before = NULL; /* Points at the element before `position' */
@@ -428,7 +439,7 @@ void dfk_list_rinsert(dfk_list_t* list, dfk_list_hook_t* hook,
     dfk_list_rit* position)
 {
   DFK_LIST_CHECK_INVARIANTS(list);
-  DFK_LIST_HOOK_CHECK_INVARIANTS(hook);
+  assert(hook); /* do not check invariants here */
   DFK_LIST_RIT_CHECK_INVARIANTS(position);
 
   dfk_list_hook_t* before = NULL; /* Points at the element before `position' */
@@ -491,7 +502,7 @@ void dfk_list_clear(dfk_list_t* list)
   while (i) {
     dfk_list_hook_t* next = DFK_PTR_XOR(i->_p, prev);
     prev = i;
-    i->_list = DFK_PDEADBEEF;
+    i->_list = NULL;
     i->_p = DFK_PDEADBEEF;
     i = next;
   }
@@ -499,7 +510,7 @@ void dfk_list_clear(dfk_list_t* list)
   dfk_list_hook_t* i = list->_head;
   while (i) {
     dfk_list_hook_t* next = i->_next;
-    i->_list = DFK_PDEADBEEF;
+    i->_list = NULL;
     i->_prev = DFK_PDEADBEEF;
     i->_next = DFK_PDEADBEEF;
     i = next;
@@ -587,9 +598,9 @@ void dfk_list_erase(dfk_list_t* list, dfk_list_it* it)
 #else
   hook->_next = DFK_PDEADBEEF;
   hook->_prev = DFK_PDEADBEEF;
-#endif
-  hook->_list = DFK_PDEADBEEF;
-#endif
+#endif /* DFK_LIST_MEMORY_OPTIMIZED */
+  hook->_list = NULL;
+#endif /* DFK_DEBUG */
 
   DFK_LIST_CHECK_INVARIANTS(list);
 }
@@ -659,6 +670,59 @@ int dfk_list_empty(dfk_list_t* list)
   return !list->_head;
 }
 
+/*
+ * Iterate over all elements in list and adjust ._list property
+ */
+#if DFK_DEBUG
+static void dfk__list_adjust_hooks(dfk_list_t* list)
+{
+#if DFK_LIST_MEMORY_OPTIMIZED
+  /*
+   * We can not use dfk_list_t at this point because it will trigger an
+   * assertion because of ill-formed ._list property
+   */
+  dfk_list_hook_t* prev = NULL;
+  dfk_list_hook_t* cur = list->_head;
+  while (cur) {
+    cur->_list = list;
+    dfk_list_hook_t* pprev = cur;
+    cur = DFK_PTR_XOR(prev, cur->_p);
+    prev = pprev;
+  }
+#else
+  dfk_list_hook_t* cur = list->_head;
+  while (cur) {
+    cur->_list = list;
+    cur = cur->_next;
+  }
+#endif
+}
+#endif /* DFK_DEBUG */
+
+void dfk_list_move(dfk_list_t* src, dfk_list_t* dst)
+{
+  DFK_LIST_CHECK_INVARIANTS(src);
+  DFK_LIST_CHECK_INVARIANTS(dst);
+  memcpy(dst, src, sizeof(dfk_list_t));
+  memset(src, 0, sizeof(dfk_list_t));
+  DFK_IF_DEBUG(dfk__list_adjust_hooks(dst));
+  DFK_LIST_CHECK_INVARIANTS(dst);
+  DFK_LIST_CHECK_INVARIANTS(src);
+}
+
+void dfk_list_swap(dfk_list_t* lhs, dfk_list_t* rhs)
+{
+  DFK_LIST_CHECK_INVARIANTS(lhs);
+  DFK_LIST_CHECK_INVARIANTS(rhs);
+  dfk_list_t copy;
+  memcpy(&copy, lhs, sizeof(dfk_list_t));
+  memcpy(lhs, rhs, sizeof(dfk_list_t));
+  memcpy(rhs, &copy, sizeof(dfk_list_t));
+  DFK_IF_DEBUG(dfk__list_adjust_hooks(lhs));
+  DFK_IF_DEBUG(dfk__list_adjust_hooks(rhs));
+  DFK_LIST_CHECK_INVARIANTS(lhs);
+  DFK_LIST_CHECK_INVARIANTS(rhs);
+}
 
 size_t dfk_list_sizeof(void)
 {
