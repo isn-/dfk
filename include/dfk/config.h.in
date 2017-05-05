@@ -85,7 +85,15 @@
 /** Event loop implementation */
 #define DFK_EVENT_LOOP "@DFK_EVENT_LOOP@"
 
-/** Emit debug log messages */
+/** Emit any log messages */
+#cmakedefine01 DFK_LOGGING
+
+/**
+ * Emit debug log messages
+ *
+ * @note If DFK_LOGGING is disabled, debug messages will **not** be emitted
+ * regardless of the DFK_DEBUG value.
+ */
 #cmakedefine01 DFK_DEBUG
 
 /** Enable object mocking for unit testing */

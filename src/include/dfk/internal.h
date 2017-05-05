@@ -20,6 +20,7 @@ extern "C" {
 #include <string.h>
 #include <stdio.h>
 #include <dfk/config.h>
+#include <dfk/log.h>
 
 #define DFK_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
@@ -45,6 +46,7 @@ extern "C" {
   (y) = tmp; \
 }
 
+#if DFK_LOGGING
 /*
  * A cheat to suppress -Waddress warning:
  * instead of straightforward "if ((dfk)..." we write
@@ -59,6 +61,13 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
   snprintf(msg + printed , sizeof(msg) - printed, __VA_ARGS__);\
   (dfk)->log((dfk), channel, msg);\
 }
+#else
+#define DFK_LOG(dfk, channel, ...) \
+{ \
+  DFK_UNUSED(dfk); \
+  DFK_UNUSED(channel); \
+}
+#endif
 
 #define DFK_ERROR(dfk, ...) DFK_LOG((dfk), dfk_log_error, __VA_ARGS__)
 #define DFK_WARNING(dfk, ...) DFK_LOG((dfk), dfk_log_warning, __VA_ARGS__)
