@@ -283,6 +283,10 @@ if(DFK_BUILD_CPP_BINDINGS)
   add_subdirectory(c++)
 endif()
 
+# Enable after getting rid of #include <dfk.h>
+# add_test(no_include_dfk_h ${CMAKE_CURRENT_SOURCE_DIR}/scripts/check_dfk_h.sh
+#   ${CMAKE_CURRENT_SOURCE_DIR})
+
 # A directory for experimenting, no file from this directory except empty
 # CMakeLists.txt should be committed into the repository
 add_subdirectory(sandbox)
