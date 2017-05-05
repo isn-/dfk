@@ -7,76 +7,127 @@
 #include <dfk/scheduler.h>
 #include <dfk/internal.h>
 
-int dfk_scheduler_init(dfk_scheduler_t* scheduler)
+void dfk__scheduler_init(dfk_scheduler_t* scheduler, dfk_fiber_t* fiber)
 {
-  DFK_UNUSED(scheduler);
-  return 0;
+  scheduler->fiber = fiber;
+  dfk_list_init(&scheduler->pending);
+  dfk_list_init(&scheduler->iowait);
+  dfk_list_init(&scheduler->terminated);
 }
 
-int dfk_scheduler_free(dfk_scheduler_t* scheduler)
+int dfk__scheduler(dfk_scheduler_t* scheduler)
 {
-  DFK_UNUSED(scheduler);
-  return 0;
-}
+  dfk_t* dfk = scheduler->fiber->dfk;
 
-void dfk_scheduler(dfk_coro_t* scheduler, void* arg)
-{
-  DFK_UNUSED(p);
-  assert(scheduler);
-  dfk_t* dfk = scheduler->dfk;
-  assert(dfk);
-  while (1) {
-    DFK_DBG(dfk, "coroutines pending: %lu, terminated: %lu, iowait: %lu",
-        (unsigned long) dfk_list_size(&dfk->_pending_coros),
-        (unsigned long) dfk_list_size(&dfk->_terminated_coros),
-        (unsigned long) dfk_list_size(&dfk->_iowait_coros));
+  DFK_DBG(dfk, "fibers pending: %lu, terminated: %lu, iowait: %lu",
+      (unsigned long) dfk_list_size(&scheduler->pending),
+      (unsigned long) dfk_list_size(&scheduler->terminated),
+      (unsigned long) dfk_list_size(&scheduler->iowait));
 
-    if (!dfk_list_size(&dfk->_terminated_coros)
-        && !dfk_list_size(&dfk->_pending_coros)
-        && !dfk_list_size(&dfk->_iowait_coros)) {
-      DFK_DBG(dfk, "{%p} no pending coroutines, terminate", (void*) dfk);
-      break;
-    }
+  if (dfk_list_empty(&scheduler->terminated)
+      && dfk_list_empty(&scheduler->pending)
+      && dfk_list_empty(&scheduler->iowait)) {
+    DFK_DBG(dfk, "{%p} no pending fibers, terminate", (void*) dfk);
+    return 1;
+  }
 
-    DFK_DBG(dfk, "{%p} cleanup terminated coroutines", (void*) dfk);
-    {
-      dfk_coro_t* i = (dfk_coro_t*) dfk->_terminated_coros.head;
-      while (i) {
-        dfk_coro_t* next = (dfk_coro_t*) i->_hook.next;
-        DFK_DBG(dfk, "corotine {%p} is terminated, cleanup", (void*) i);
-        dfk__coro_free(i);
-        i = next;
-      }
-      dfk_list_clear(&dfk->_terminated_coros);
-    }
+  DFK_DBG(dfk, "{%p} cleanup %lu terminated fibers", (void*) dfk,
+      (unsigned long) dfk_list_size(&scheduler->terminated));
+  while (!dfk_list_empty(&scheduler->terminated)) {
+    dfk_list_it begin;
+    dfk_list_begin(&scheduler->terminated, &begin);
+    dfk_list_hook_t* fiber = begin.value;
+    dfk_list_pop_front(&scheduler->terminated);
+    DFK_DBG(dfk, "fiber {%p} is terminated, cleanup", (void*) fiber);
+    DFK_FREE(dfk, fiber);
+  }
 
-    DFK_DBG(dfk, "{%p} execute CPU hungry coroutines", (void*) dfk);
-    {
-      dfk_coro_t* i = (dfk_coro_t*) dfk->_pending_coros.head;
-      while (i) {
-        dfk_coro_t* next = (dfk_coro_t*) i->_hook.next;
-        DFK_DBG(dfk, "next coroutine to run {%p}", (void*) i);
-        DFK_SCHED(dfk, scheduler, i);
-        i = next;
-      }
-      dfk_list_clear(&dfk->_pending_coros);
-    }
-
-    if (!dfk_list_size(&dfk->_pending_coros)
-        && dfk_list_size(&dfk->_iowait_coros)) {
-      /*
-       * pending_coros list is empty, while IO hungry coroutines
-       * exist - switch to IO with possible blocking
-       */
-      DFK_DBG(dfk, "no pending coroutines, will do I/O");
-      DFK_SCHED(dfk, scheduler, dfk->_eventloop);
+  DFK_DBG(dfk, "{%p} execute %lu CPU hungry fibers", (void*) dfk,
+      (unsigned long) dfk_list_size(&scheduler->pending));
+  {
+    /*
+     * Move scheduler->pending list into a local copy, to prevent iteration over
+     * a list that is modified in progress.
+     */
+    dfk_list_t pending;
+    dfk_list_init(&pending);
+    dfk_list_move(&scheduler->pending, &pending);
+    while (!dfk_list_empty(&pending)) {
+      dfk_fiber_t* fiber = (dfk_fiber_t*) dfk_list_front(&pending);
+      dfk_list_pop_front(&pending);
+      DFK_DBG(dfk, "{%p} next fiber to run {%p}", (void*) dfk, (void*) fiber);
+      dfk_yield(scheduler->fiber, fiber);
     }
   }
-  DFK_INFO(dfk, "no pending coroutines left in execution queue, job is done");
-  /*
-  dfk->_current = NULL;
-  dfk_yield(scheduler, NULL);
-  */
+
+  if (dfk_list_empty(&scheduler->pending)
+      && !dfk_list_empty(&scheduler->iowait)) {
+    /*
+     * Pending fibers list is empty, while IO hungry fibers
+     * exist - switch to IO with possible blocking.
+     */
+    DFK_DBG(dfk, "no pending fibers, will do I/O");
+    dfk_yield(scheduler->fiber, dfk->_eventloop);
+  }
+  return 0;
 }
 
+void dfk__schedule(dfk_t* dfk, dfk_fiber_t* fiber)
+{
+  assert(dfk);
+  assert(fiber);
+  /*
+   * If the assertion below fails, you're probably trying to call dfk_run()
+   * outside of dfk work loop. Fibers can be created only from other fibers.
+   * Main fiber is created by the dfk_work() function.
+   */
+  assert(dfk->_scheduler);
+  dfk_list_append(&dfk->_scheduler->pending, &fiber->_hook);
+}
+
+void dfk__terminate(dfk_scheduler_t* scheduler, dfk_fiber_t* fiber)
+{
+  assert(scheduler);
+  assert(fiber);
+  dfk_list_append(&scheduler->terminated, &fiber->_hook);
+  /*
+   * Yield back to the scheduler - control will never return here,
+   * therefore the line below dfk_yield is marked as unreachable and excluded
+   * from lcov coverage report.
+   */
+  dfk_yield(fiber, scheduler->fiber);
+} /* LCOV_EXCL_LINE */
+
+void dfk__scheduler_loop(dfk_fiber_t* fiber, void* arg)
+{
+  assert(fiber);
+  dfk_t* dfk = fiber->dfk;
+  assert(dfk);
+  dfk_scheduler_t scheduler;
+  dfk__scheduler_init(&scheduler, fiber);
+  dfk->_scheduler = &scheduler;
+  {
+    /* Scheduler is initialized - now we can schedule main fiber manually */
+    dfk_fiber_t* mainf = (dfk_fiber_t*) arg;
+    assert(mainf);
+    dfk__schedule(dfk, mainf);
+  }
+  int ret = 0;
+  while (!ret) {
+    ret = dfk__scheduler(&scheduler);
+    DFK_DBG(dfk, "schedule returned %d, %s", ret,
+        ret ? "terminating" : "continue spinning");
+  }
+  DFK_INFO(dfk, "no pending fibers left in execution queue, job is done");
+  dfk->_current = NULL;
+
+  /* Same format as in fiber.c */
+#if DFK_NAMED_FIBERS
+  DFK_DBG(dfk, "context switch {scheduler} -> {*}");
+#else
+  DFK_DBG(dfk, "context switch {%p} -> {*}", (void*) dfk->_scheduler);
+#endif
+  /* Story ends, main character rudes into the sunset */
+  coro_transfer(&fiber->_ctx, &dfk->_comeback);
+} /* LCOV_EXCL_LINE */
 

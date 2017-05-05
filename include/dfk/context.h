@@ -11,6 +11,7 @@
 #include <stddef.h>
 #include <signal.h>
 #include <dfk/misc.h>
+#include <dfk/thirdparty/libcoro/coro.h>
 
 /**
  * Library context
@@ -40,7 +41,7 @@ typedef struct dfk_t {
   void (*log)(struct dfk_t*, int, const char*);
 
   /**
-   * Initial stack size for new coroutines
+   * Initial stack size for new fibers
    *
    * @note default: #DFK_STACK_SIZE
    */
@@ -53,10 +54,20 @@ typedef struct dfk_t {
    * @privatesection
    */
 
-  struct dfk_coro_t* _current;
-  struct dfk_coro_t* _scheduler;
-  struct dfk_coro_t* _eventloop;
-  struct dfk_coro_t* _terminator;
+  struct dfk_fiber_t* _current;
+  struct dfk_scheduler_t* _scheduler;
+  struct dfk_fiber_t* _eventloop;
+  struct dfk_fiber_t* _terminator;
+
+  /**
+   * A coro object used as source for spawning first fiber.
+   *
+   * Last fiber standing (generally it is scheduler) should yield here to
+   * indicate self termination.
+   *
+   * @todo move to internal function and declare as static variable
+   */
+  struct coro_context _comeback;
   sig_atomic_t _stopped;
 } dfk_t;
 
@@ -76,8 +87,12 @@ void dfk_free(dfk_t* dfk);
 
 /**
  * Start dfk working cycle.
+ *
+ * A main fiber with entry point @ep is created and scheduled for execution.
+ * @see dfk_run
  */
-int dfk_work(dfk_t* dfk);
+int dfk_work(dfk_t* dfk, void (*ep)(struct dfk_fiber_t*, void*),
+    void* arg, size_t argsize);
 
 /**
  * Stop dfk working cycle

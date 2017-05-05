@@ -6,10 +6,16 @@
 
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 #include <dfk/config.h>
 #include <dfk/internal.h>
 #include <dfk/context.h>
 #include <dfk/log.h>
+#include <dfk/error.h>
+#include <dfk/fiber.h>
+#include <dfk/internal/fiber.h>
+#include <dfk/scheduler.h>
+#include <dfk/eventloop.h>
 
 #if DFK_THREADS
 #include <pthread.h>
@@ -85,6 +91,7 @@ void dfk_init(dfk_t* dfk)
   dfk->_scheduler = NULL;
   dfk->_eventloop = NULL;
   dfk->_terminator = NULL;
+  memset(&dfk->_comeback, 0, sizeof(dfk->_comeback));;
   dfk->_stopped = 0;
 }
 
@@ -92,5 +99,53 @@ void dfk_free(dfk_t* dfk)
 {
   DFK_UNUSED(dfk);
   assert(dfk);
+}
+
+int dfk_work(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*), void* arg,
+    size_t argsize)
+{
+  assert(dfk);
+  DFK_INFO(dfk, "start work cycle {%p}", (void*) dfk);
+
+#if DFK_IGNORE_SIGPIPE
+  (void) signal(SIGPIPE, SIG_IGN);
+#endif
+
+  dfk_fiber_t* eventloop = dfk__run(dfk, dfk__eventloop, NULL, 0);
+  if (!eventloop) {
+    return dfk->dfk_errno;
+  }
+
+  /* mainf stands for main fiber */
+  dfk_fiber_t* mainf = dfk__run(dfk, ep, arg, argsize);
+  if (!mainf) {
+    /* A brutal method of cancelling fiber that has not been started yet */
+    DFK_FREE(dfk, eventloop);
+    return dfk->dfk_errno;
+  }
+
+  dfk_fiber_t* scheduler = dfk__run(dfk, dfk__scheduler_loop, mainf, 0);
+  if (!scheduler) {
+    DFK_FREE(dfk, eventloop);
+    DFK_FREE(dfk, mainf);
+    return dfk->dfk_errno;
+  }
+
+  dfk_fiber_name(scheduler, "scheduler");
+  dfk_fiber_name(eventloop, "eventloop");
+  dfk_fiber_name(mainf, "main");
+
+  dfk->_eventloop = eventloop;
+
+  /* Same format as in fiber.c */
+#if DFK_NAMED_FIBERS
+  DFK_DBG(dfk, "context switch {*} -> {scheduler}");
+#else
+  DFK_DBG(dfk, "context switch {*} -> {%p}", (void*) dfk->_scheduler);
+#endif
+  coro_transfer(&dfk->_comeback, &scheduler->_ctx);
+
+  DFK_INFO(dfk, "work cycle {%p} done", (void*) dfk);
+  return dfk_err_ok;
 }
 

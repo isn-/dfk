@@ -11,6 +11,7 @@ set(ut_sources
   test_error.c
   test_misc.c
   test_arena.c
+  test_fiber.c
   #  test_sponge.c
   #  test_strmap.c
   #  test_sync.c
@@ -36,6 +37,8 @@ add_executable(ut-dfk
   ${ut_init_c}
   ut.h
   ut.c
+  allocators.h
+  allocators.c
   #  naivetp/naivetp.h
   #  naivetp/naivetp.c
   main.c)

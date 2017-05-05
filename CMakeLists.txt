@@ -183,7 +183,7 @@ if(NOT DFK_MAINTAINER_MODE)
   fw_c_cxx_flags("-Werror")
 endif()
 
-if("${DFK_COROUTINE}" STREQUAL ASM)
+if("${DFK_FIBERS}" STREQUAL ASM)
   # CORO_ASM variable is needed for dfk/config.h
   set(CORO_ASM true)
   add_definitions(-DCORO_ASM)
@@ -222,9 +222,11 @@ set(dfk_sources
   "${CMAKE_CURRENT_SOURCE_DIR}/src/strtoll.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/misc.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/arena.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/scheduler.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/eventloop.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/strmap.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/sponge.c"
-  # "${CMAKE_CURRENT_SOURCE_DIR}/src/core.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/fiber.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/sync.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/tcp_socket.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/urlencoding.c"

@@ -7,6 +7,8 @@
  * Licensed under the MIT License (see LICENSE)
  */
 
+#pragma once
+
 #define DFK_VERSION "@DFK_VERSION@"
 #define DFK_VERSION_MAJOR @DFK_VERSION_MAJOR@
 #define DFK_VERSION_MINOR @DFK_VERSION_MINOR@
@@ -40,21 +42,33 @@
 #cmakedefine01 DFK_HAVE_FFLUSH
 #cmakedefine01 DFK_HAVE_MPROTECT
 
+/**
+ * Enable binary package maintainer mode.
+ *
+ * Designed for deb/rpm packages maintainers. Disables -Werror and checks that
+ * neither of release-unfriendly options are set.
+ *
+ * @par Rule of thumb
+ * Enable if you are writing specs for debian/rpm or other binary packages to
+ * ensure that no development options are enabled by mistake.
+ */
+#cmakedefine01 DFK_MAINTAINER_MODE
+
 /** Memory page size of target platform */
 #define DFK_PAGE_SIZE @DFK_PAGE_SIZE@
 
 /** Default TCP backlog size */
 #define DFK_TCP_BACKLOG @DFK_TCP_BACKLOG@
 
-/** Coroutine implementation */
-#define DFK_COROUTINE "@DFK_COROUTINE@"
+/** Fibers implementation */
+#define DFK_FIBERS "@DFK_FIBERS@"
 #cmakedefine01 CORO_ASM
 
-/** Enable user-provided names for coroutines */
-#cmakedefine01 DFK_NAMED_COROUTINES
+/** Enable user-provided names for fibers */
+#cmakedefine01 DFK_NAMED_FIBERS
 
-/** Maximum size of coroutine name, including zero termination byte */
-#define DFK_COROUTINE_NAME_LENGTH @DFK_COROUTINE_NAME_LENGTH@
+/** Maximum size of fiber name, including zero termination byte */
+#define DFK_FIBER_NAME_LENGTH @DFK_FIBER_NAME_LENGTH@
 
 /** Stack growth strategy */
 #define DFK_STACK "@DFK_STACK@"
@@ -129,7 +143,6 @@
  * Set to OFF, if dfk_list_size() function is not used in the application's code
  */
 #cmakedefine01 DFK_LIST_CONSTANT_TIME_SIZE
-
 
 /**
  * Enable XOR'ed pointers optimization for dfk_list_t.

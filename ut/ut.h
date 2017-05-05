@@ -7,6 +7,7 @@
 #pragma once
 #include <string.h>
 #include <dfk/context.h>
+#include <dfk/error.h>
 #include <ut_init.h>
 
 void ut_register_test_case(const char* group, const char* name,
