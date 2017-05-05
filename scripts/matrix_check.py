@@ -13,6 +13,7 @@ import stat
 import shutil
 import subprocess
 import random
+import platform
 from datetime import datetime
 from multiprocessing import Pool, Queue, Manager
 
@@ -96,6 +97,7 @@ def run_job(queue, njob, totaljobs, parameters, source_dir):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--randomize", type=str, metavar='seed',
+            default=platform.uname().node,
             help=("reorder configurations randomly, "
                   "using seed for initializing random numbers generator"))
     parser.add_argument("-j", "--jobs", metavar='N', default=1, type=int,
@@ -107,9 +109,8 @@ def main():
     source_dir = os.path.realpath(os.path.join(script_dir, os.path.pardir))
     paramlist = sorted([(k, v) for k, v in CMAKE_OPTIONS.items()])
     configurations = list(all_configurations(paramlist))
-    if args.randomize:
-        random.seed(args.randomize)
-        random.shuffle(configurations)
+    random.seed(args.randomize)
+    random.shuffle(configurations)
     configurations = configurations[args.skip:]
     pool = Pool(processes=args.jobs)
     m = Manager()
