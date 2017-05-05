@@ -45,9 +45,7 @@ void dfk_arena_free(dfk_arena_t* arena, dfk_t* dfk)
 
   /* release plain segments */
   while (!dfk_list_empty(&arena->_segments)) {
-    dfk_list_it begin;
-    dfk_list_begin(&arena->_segments, &begin);
-    dfk_list_hook_t* segment = begin.value;
+    dfk_list_hook_t* segment = dfk_list_front(&arena->_segments);
     dfk_list_pop_front(&arena->_segments);
     DFK_FREE(dfk, segment);
   }
@@ -55,9 +53,7 @@ void dfk_arena_free(dfk_arena_t* arena, dfk_t* dfk)
 
 static segment_t* dfk__arena_current_segment(dfk_arena_t* arena)
 {
-  dfk_list_rit rbegin;
-  dfk_list_rbegin(&arena->_segments, &rbegin);
-  return (segment_t*) rbegin.value;
+  return (segment_t*) dfk_list_back(&arena->_segments);
 }
 
 static size_t dfk__arena_bytes_available(dfk_arena_t* arena)
