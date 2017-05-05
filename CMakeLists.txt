@@ -24,22 +24,27 @@ if(NOT CMAKE_BUILD_TYPE)
     "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
 
+# Options that configure *what* to build
 set(DFK_BUILD_UNIT_TESTS TRUE CACHE BOOL "Build unit tests.")
 set(DFK_BUILD_AUTO_TESTS TRUE CACHE BOOL "Build auto tests.")
 set(DFK_BUILD_SAMPLES FALSE CACHE BOOL "Build code samples.")
 set(DFK_BUILD_CPP_BINDINGS FALSE CACHE BOOL "Build c++ bindings.")
 
-set(DFK_MAINTAINER_MODE FALSE CACHE BOOL "Enable binary package maintainer mode. Designed for deb/rpm packages maintainers. Disables -Werror and checks that neither of release-unfriendly options are set.")
-
-set(DFK_PAGE_SIZE ${page_size} CACHE STRING "Memory page size of target platform.")
+# Options that configure parts to be built
+set(DFK_MAINTAINER_MODE FALSE CACHE BOOL
+  "Enable binary package maintainer mode.")
+set(DFK_PAGE_SIZE ${page_size} CACHE STRING
+  "Memory page size of target platform.")
 set(DFK_TCP_BACKLOG 128 CACHE STRING "Default TCP backlog size.")
-set(DFK_COROUTINE ASM CACHE STRING "Coroutine implementation, options are: ASM.")
-set(DFK_NAMED_COROUTINES TRUE CACHE BOOL "Enable user-provided names for coroutines.")
-set(DFK_COROUTINE_NAME_LENGTH 32 CACHE STRING "Maximum size of coroutine name, including zero termination byte.")
+set(DFK_FIBERS ASM CACHE STRING "Fibers implementation, options are: ASM.")
+set(DFK_NAMED_FIBERS TRUE CACHE BOOL "Enable user-provided names for fibers.")
+set(DFK_FIBER_NAME_LENGTH 32 CACHE STRING
+  "Maximum size of fiber name, including zero termination byte.")
 set(DFK_STACK FIXED CACHE STRING "Stack growth strategy, options are: FIXED.")
 set(DFK_STACK_SIZE ${stack_size} CACHE STRING "Default stack size, in bytes.")
 set(DFK_STACK_ALIGNMENT 16 CACHE STRING "Stack alignment, in bytes.")
 set(DFK_STACK_GUARD_SIZE ${guard_size} CACHE STRING "Emit N guard bytes to protect against stack overflow.")
+set(DFK_LOGGING TRUE CACHE BOOL "Emit any log messages.")
 set(DFK_DEBUG FALSE CACHE BOOL "Emit debug log messages.")
 set(DFK_MOCKS TRUE CACHE BOOL "Enable object mocking for unit testing. If set to OFF, some tests will be unavailable.")
 set(DFK_THREADS FALSE CACHE BOOL "Enable multithreading support.")
@@ -57,9 +62,11 @@ set(DFK_LIST_CONSTANT_TIME_SIZE TRUE CACHE BOOL "Store size of the dfk_list_t")
 set(DFK_LIST_MEMORY_OPTIMIZED FALSE CACHE BOOL
   "Enable XOR'ed pointers optimization for doubly linked list.")
 set(DFK_AVLTREE_CONSTANT_TIME_SIZE TRUE CACHE BOOL "Store size of the dfk_avltree_t")
-set(DFK_ARENA_SEGMENT_SIZE 40960 CACHE STRING "Size of arena's segment, in bytes.")
+set(DFK_ARENA_SEGMENT_SIZE 40960 CACHE STRING
+  "Size of arena's segment, in bytes.")
 set(DFK_SPONGE_INITIAL_SIZE 4096 CACHE STRING "Size of sponge data structure initial size, in bytes.")
-set(DFK_URLENCODING_HINT_HEURISTICS TRUE CACHE BOOL "Enable heuristics for dfk_urlencode_hint, dfk_urldecode_hint.")
+set(DFK_URLENCODING_HINT_HEURISTICS TRUE CACHE BOOL
+  "Enable heuristics for dfk_urlencode_hint, dfk_urldecode_hint.")
 set(DFK_FILESERVER TRUE CACHE BOOL "Enable fileserver middleware")
 set(DFK_FILESERVER_BUFFER_SIZE 4096 CACHE STRING "Size of disk IO buffer for each connecion")
 
@@ -121,11 +128,14 @@ endif()
 # required syscall is missing, report it here via message(FATAL_ERROR ...)
 
 if(DFK_COVERAGE AND NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug")
-  message(FATAL_ERROR "Code coverage can be computed only for Debug builds.\nDisable DFK_ENABLE_COVERAGE or change build type to Debug.")
+  message(FATAL_ERROR
+    "Code coverage can be computed only for Debug builds. "
+    "Disable DFK_ENABLE_COVERAGE or change build type to Debug.")
 endif()
 
 if(DFK_STACK_GUARD_SIZE AND (NOT DFK_HAVE_MPROTECT OR NOT DFK_HAVE_SYS_MMAN_H))
-  message(FATAL_ERROR "Can not emit guard pages without mprotect function from <sys/mman.h> header.")
+  message(FATAL_ERROR
+    "Can not emit guard pages without mprotect function from <sys/mman.h>.")
 endif()
 
 if(DFK_MAINTAINER_MODE)
@@ -136,7 +146,9 @@ if(DFK_MAINTAINER_MODE)
     DFK_VALGRIND)
   foreach(opt ${disallowed_options})
     if(${${opt}})
-      message(FATAL_ERROR "${opt} is not allowed in maintainer mode.\nSet ${opt} to OFF, or disable DFK_MAINTAINER_MODE.")
+      message(FATAL_ERROR
+        "${opt} is not allowed in maintainer mode.\n"
+        "Set ${opt} to OFF, or disable DFK_MAINTAINER_MODE.")
     endif()
   endforeach()
   set(not_recommended_options
@@ -144,7 +156,10 @@ if(DFK_MAINTAINER_MODE)
     DFK_DEBUG)
   foreach(opt ${not_recommended_options})
     if(${${opt}})
-      message(WARNING "${opt} is not recommended in maintainer mode.\nSet ${opt} to OFF, or disable DFK_MAINTAINER_MODE to suppress that warning.")
+      message(WARNING
+        "${opt} is not recommended in maintainer mode.\n"
+        "Set ${opt} to OFF, or disable DFK_MAINTAINER_MODE to suppress "
+        "this warning.")
     endif()
   endforeach()
 endif()
@@ -178,7 +193,8 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"
   ${CMAKE_CURRENT_BINARY_DIR}/dfk/config.h @ONLY)
 
 execute_process(
-  COMMAND "${CMAKE_COMMAND}" -E create_symlink "${CMAKE_SOURCE_DIR}/thirdparty" thirdparty
+  COMMAND "${CMAKE_COMMAND}" -E create_symlink
+    "${CMAKE_SOURCE_DIR}/thirdparty" thirdparty
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/dfk")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
@@ -195,7 +211,8 @@ else()
 endif()
 
 # Enable hardcore warnings mode.
-fw_c_flags("-Wall -Wextra -pedantic -Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition")
+fw_c_flags("-Wall -Wextra -pedantic")
+fw_c_flags("-Wmissing-prototypes -Wstrict-prototypes -Wold-style-definition")
 
 set(dfk_sources
   "${CMAKE_CURRENT_SOURCE_DIR}/src/list.c"
