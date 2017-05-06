@@ -69,3 +69,35 @@ TEST(fiber, copy_arg)
   dfk_free(&dfk);
 }
 
+static void noop_fiber(dfk_fiber_t* fiber, void* arg)
+{
+  DFK_UNUSED(fiber);
+  DFK_UNUSED(arg);
+}
+
+TEST(fiber, no_need_to_align_stack)
+{
+  dfk_t dfk;
+  dfk_init(&dfk);
+  char arg[DFK_STACK_ALIGNMENT - (sizeof(dfk_fiber_t) % DFK_STACK_ALIGNMENT)];
+  dfk_work(&dfk, noop_fiber, arg, sizeof(arg));
+  dfk_free(&dfk);
+}
+
+static void spawn_child_oom_main(dfk_fiber_t* fiber, void* arg)
+{
+  EXPECT(!dfk_run(fiber->dfk, noop_fiber, arg, 0));
+}
+
+TEST(fiber, spawn_child_oom)
+{
+  dfk_t dfk;
+  dfk_init(&dfk);
+  int spawned = 0;
+  size_t nsuccessfulallocs = 3;
+  dfk.user.data = &nsuccessfulallocs;
+  dfk.malloc = malloc_first_n_ok;
+  dfk_work(&dfk, spawn_child_oom_main, &spawned, 0);
+  dfk_free(&dfk);
+}
+

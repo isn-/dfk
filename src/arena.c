@@ -7,6 +7,7 @@
 #include <assert.h>
 #include <dfk/arena.h>
 #include <dfk/internal.h>
+#include <dfk/internal/malloc.h>
 
 typedef struct segment_t {
   dfk_list_hook_t hook;
@@ -47,7 +48,7 @@ void dfk_arena_free(dfk_arena_t* arena, dfk_t* dfk)
   while (!dfk_list_empty(&arena->_segments)) {
     dfk_list_hook_t* segment = dfk_list_front(&arena->_segments);
     dfk_list_pop_front(&arena->_segments);
-    DFK_FREE(dfk, segment);
+    dfk__free(dfk, segment);
   }
 }
 
@@ -74,7 +75,7 @@ void* dfk_arena_alloc(dfk_arena_t* arena, dfk_t* dfk, size_t size)
   if (dfk_list_empty(&arena->_segments)
       || dfk__arena_bytes_available(arena) < size) {
     size_t toalloc = DFK_MAX(DFK_ARENA_SEGMENT_SIZE, size + sizeof(segment_t));
-    segment_t* s = DFK_MALLOC(dfk, toalloc);
+    segment_t* s = dfk__malloc(dfk, toalloc);
     if (!s) {
       return NULL;
     }

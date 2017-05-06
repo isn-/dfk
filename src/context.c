@@ -119,15 +119,14 @@ int dfk_work(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*), void* arg,
   /* mainf stands for main fiber */
   dfk_fiber_t* mainf = dfk__run(dfk, ep, arg, argsize);
   if (!mainf) {
-    /* A brutal method of cancelling fiber that has not been started yet */
-    DFK_FREE(dfk, eventloop);
+    dfk__fiber_free(dfk, eventloop);
     return dfk->dfk_errno;
   }
 
   dfk_fiber_t* scheduler = dfk__run(dfk, dfk__scheduler_loop, mainf, 0);
   if (!scheduler) {
-    DFK_FREE(dfk, eventloop);
-    DFK_FREE(dfk, mainf);
+    dfk__fiber_free(dfk, eventloop);
+    dfk__fiber_free(dfk, mainf);
     return dfk->dfk_errno;
   }
 

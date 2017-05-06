@@ -18,3 +18,8 @@
 dfk_fiber_t* dfk__run(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*),
     void* arg, size_t argsize);
 
+/**
+ * Release resources allocated for the fiber
+ */
+void dfk__fiber_free(dfk_t* dfk, dfk_fiber_t* fiber);
+

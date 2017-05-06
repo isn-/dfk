@@ -6,6 +6,7 @@
 
 #include <dfk/arena.h>
 #include <dfk/internal.h>
+#include <dfk/internal/malloc.h>
 #include <ut.h>
 
 typedef struct fixture_t {
@@ -93,12 +94,12 @@ typedef struct data_holder_t {
 static void data_holder_init(dfk_t* dfk, data_holder_t* dh)
 {
   dh->dfk = dfk;
-  dh->p = DFK_MALLOC(dfk, 1024);
+  dh->p = dfk__malloc(dfk, 1024);
 }
 
 static void data_holder_free(data_holder_t* dh)
 {
-  DFK_FREE(dh->dfk, dh->p);
+  dfk__free(dh->dfk, dh->p);
 }
 
 static void cleanup_data_holder(dfk_arena_t* arena, void* p)
@@ -169,5 +170,18 @@ TEST_F(fixture, arena, alloc_copy_ex_no_mem)
   uint32_t* pcopy = dfk_arena_alloc_copy_ex(&fixture->arena,
       &fixture->dfk, (const char*) &value, sizeof(value), no_cleaup);
   EXPECT(!pcopy);
+}
+
+/* Try to allocate a chunk of memory larger that default segment size */
+TEST_F(fixture, arena, alloc_large_object)
+{
+  dfk_arena_t* arena = &fixture->arena;
+  dfk_t* dfk = &fixture->dfk;
+  size_t nbytes = 3 * DFK_ARENA_SEGMENT_SIZE;
+  char* p = dfk_arena_alloc(arena, dfk, nbytes);
+  EXPECT(p);
+  for (size_t i = 0; i < nbytes; ++i) {
+    p[i] = (char) i;
+  }
 }
 

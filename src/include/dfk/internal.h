@@ -19,23 +19,13 @@ extern "C" {
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
+#include <dfk/context.h>
 #include <dfk/config.h>
 #include <dfk/log.h>
 
 #define DFK_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
 #define DFK_UNUSED(x) (void) (x)
-
-#define DFK_MALLOC(dfk, nbytes) (dfk)->malloc((dfk), nbytes)
-
-#define DFK_FREE(dfk, p) \
-{ \
-  assert(dfk); \
-  assert(p); \
-  (dfk)->free((dfk), p); \
-}
-
-#define DFK_REALLOC(dfk, p, nbytes) (dfk)->realloc((dfk), p, nbytes)
 
 #define DFK_MAX(x, y) ((x) > (y) ? (x) : (y))
 #define DFK_MIN(x, y) ((x) < (y) ? (x) : (y))

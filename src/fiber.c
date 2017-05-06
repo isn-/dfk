@@ -9,6 +9,7 @@
 #include <dfk/internal/fiber.h>
 #include <dfk/error.h>
 #include <dfk/internal.h>
+#include <dfk/internal/malloc.h>
 #include <dfk/scheduler.h>
 
 #if DFK_STACK_GUARD_SIZE
@@ -43,7 +44,7 @@ dfk_fiber_t* dfk__run(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*),
 {
   assert(dfk);
   assert(ep);
-  dfk_fiber_t* fiber = DFK_MALLOC(dfk, dfk->default_stack_size);
+  dfk_fiber_t* fiber = dfk__malloc(dfk, dfk->default_stack_size);
   if (!fiber) {
     dfk->dfk_errno = dfk_err_nomem;
     return NULL;
@@ -90,6 +91,17 @@ dfk_fiber_t* dfk__run(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*),
       (void*) stack_base, (unsigned long) stack_size, (void*) fiber);
   coro_create(&fiber->_ctx, dfk__fiber_main, fiber, stack_base, stack_size);
   return fiber;
+}
+
+void dfk__fiber_free(dfk_t* dfk, dfk_fiber_t* fiber)
+{
+#if DFK_VALGRIND
+  char* stack_base = (char*) fiber + sizeof(dfk_fiber_t);
+  stack_base += DFK_STACK_ALIGNMENT - 1;
+  stack_base -= stack_base % DFK_STACK_ALIGNMENT;
+  VALGRIND_STACK_DEREGISTER(stack_base);
+#endif
+  dfk__free(dfk, fiber);
 }
 
 dfk_fiber_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*),

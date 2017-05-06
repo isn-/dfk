@@ -6,6 +6,7 @@
 
 #include <dfk/scheduler.h>
 #include <dfk/internal.h>
+#include <dfk/internal/fiber.h>
 
 void dfk__scheduler_init(dfk_scheduler_t* scheduler, dfk_fiber_t* fiber)
 {
@@ -31,7 +32,7 @@ int dfk__scheduler(dfk_scheduler_t* scheduler)
     return 1;
   }
 
-  DFK_DBG(dfk, "{%p} cleanup %lu terminated fibers", (void*) dfk,
+  DFK_DBG(dfk, "{%p} cleanup %lu terminated fiber(s)", (void*) dfk,
       (unsigned long) dfk_list_size(&scheduler->terminated));
   while (!dfk_list_empty(&scheduler->terminated)) {
     dfk_list_it begin;
@@ -39,10 +40,10 @@ int dfk__scheduler(dfk_scheduler_t* scheduler)
     dfk_list_hook_t* fiber = begin.value;
     dfk_list_pop_front(&scheduler->terminated);
     DFK_DBG(dfk, "fiber {%p} is terminated, cleanup", (void*) fiber);
-    DFK_FREE(dfk, fiber);
+    dfk__fiber_free(dfk, (dfk_fiber_t*) fiber);
   }
 
-  DFK_DBG(dfk, "{%p} execute %lu CPU hungry fibers", (void*) dfk,
+  DFK_DBG(dfk, "{%p} execute %lu CPU hungry fiber(s)", (void*) dfk,
       (unsigned long) dfk_list_size(&scheduler->pending));
   {
     /*
