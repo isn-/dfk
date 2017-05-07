@@ -23,17 +23,18 @@ typedef struct owc_t {
   dfk_arena_cleanup cleanup;
 } owc_t;
 
-void dfk_arena_init(dfk_arena_t* arena)
-{
-  assert(arena);
-  dfk_list_init(&arena->_segments);
-  dfk_list_init(&arena->_owc);
-}
-
-void dfk_arena_free(dfk_arena_t* arena, dfk_t* dfk)
+void dfk_arena_init(dfk_arena_t* arena, dfk_t* dfk)
 {
   assert(arena);
   assert(dfk);
+  dfk_list_init(&arena->_segments);
+  dfk_list_init(&arena->_owc);
+  arena->dfk = dfk;
+}
+
+void dfk_arena_free(dfk_arena_t* arena)
+{
+  assert(arena);
 
   /* release objects with cleanup */
   dfk_list_it it, end;
@@ -48,7 +49,7 @@ void dfk_arena_free(dfk_arena_t* arena, dfk_t* dfk)
   while (!dfk_list_empty(&arena->_segments)) {
     dfk_list_hook_t* segment = dfk_list_front(&arena->_segments);
     dfk_list_pop_front(&arena->_segments);
-    dfk__free(dfk, segment);
+    dfk__free(arena->dfk, segment);
   }
 }
 
@@ -66,16 +67,15 @@ static size_t dfk__arena_bytes_available(dfk_arena_t* arena)
   return seg->size - seg->used;
 }
 
-void* dfk_arena_alloc(dfk_arena_t* arena, dfk_t* dfk, size_t size)
+void* dfk_arena_alloc(dfk_arena_t* arena, size_t size)
 {
   assert(arena);
-  assert(dfk);
   assert(size);
 
   if (dfk_list_empty(&arena->_segments)
       || dfk__arena_bytes_available(arena) < size) {
     size_t toalloc = DFK_MAX(DFK_ARENA_SEGMENT_SIZE, size + sizeof(segment_t));
-    segment_t* s = dfk__malloc(dfk, toalloc);
+    segment_t* s = dfk__malloc(arena->dfk, toalloc);
     if (!s) {
       return NULL;
     }
@@ -92,28 +92,26 @@ void* dfk_arena_alloc(dfk_arena_t* arena, dfk_t* dfk, size_t size)
   return ret;
 }
 
-void* dfk_arena_alloc_copy(dfk_arena_t* arena, dfk_t* dfk,
-    const char* data, size_t size)
+void* dfk_arena_alloc_copy(dfk_arena_t* arena, const char* data, size_t size)
 {
   assert(arena);
-  assert(dfk);
   assert(data);
   assert(size);
 
-  void* allocated = dfk_arena_alloc(arena, dfk, size);
+  void* allocated = dfk_arena_alloc(arena, size);
   if (allocated) {
     memcpy(allocated, data, size);
   }
   return allocated;
 }
 
-void* dfk_arena_alloc_ex(dfk_arena_t* arena, dfk_t* dfk, size_t size,
+void* dfk_arena_alloc_ex(dfk_arena_t* arena, size_t size,
     dfk_arena_cleanup cleanup)
 {
   assert(arena);
   assert(size);
   assert(cleanup);
-  owc_t* owc = dfk_arena_alloc(arena, dfk, sizeof(owc_t) + size);
+  owc_t* owc = dfk_arena_alloc(arena, sizeof(owc_t) + size);
   if (!owc) {
     return NULL;
   }
@@ -123,15 +121,14 @@ void* dfk_arena_alloc_ex(dfk_arena_t* arena, dfk_t* dfk, size_t size,
   return ((char*) owc) + sizeof(owc_t);
 }
 
-void* dfk_arena_alloc_copy_ex(dfk_arena_t* arena, dfk_t* dfk,
-    const char* data, size_t size, dfk_arena_cleanup cleanup)
+void* dfk_arena_alloc_copy_ex(dfk_arena_t* arena, const char* data, size_t size,
+    dfk_arena_cleanup cleanup)
 {
   assert(arena);
-  assert(dfk);
   assert(data);
   assert(size);
   assert(cleanup);
-  void* allocated  = dfk_arena_alloc_ex(arena, dfk, size, cleanup);
+  void* allocated  = dfk_arena_alloc_ex(arena, size, cleanup);
   if (allocated) {
     memcpy(allocated, data, size);
   }

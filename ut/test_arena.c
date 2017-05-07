@@ -17,12 +17,12 @@ typedef struct fixture_t {
 static void fixture_setup(fixture_t* f)
 {
   dfk_init(&f->dfk);
-  dfk_arena_init(&f->arena);
+  dfk_arena_init(&f->arena, &f->dfk);
 }
 
 static void fixture_teardown(fixture_t* f)
 {
-  dfk_arena_free(&f->arena, &f->dfk);
+  dfk_arena_free(&f->arena);
   dfk_free(&f->dfk);
 }
 
@@ -40,7 +40,7 @@ static int intersect(char* p1, char* r1, char* p2, char* r2)
 TEST_F(fixture, arena, alloc_first)
 {
   size_t i, count = 10;
-  char* p = dfk_arena_alloc(&fixture->arena, &fixture->dfk, count);
+  char* p = dfk_arena_alloc(&fixture->arena, count);
   EXPECT(p);
   for (i = 0; i < count; ++i) {
     p[i] = 0;
@@ -50,9 +50,9 @@ TEST_F(fixture, arena, alloc_first)
 TEST_F(fixture, arena, alloc_no_overlap)
 {
   size_t count = 10;
-  char* p0 = dfk_arena_alloc(&fixture->arena, &fixture->dfk, count);
-  char* p1 = dfk_arena_alloc(&fixture->arena, &fixture->dfk, count);
-  char* p2 = dfk_arena_alloc(&fixture->arena, &fixture->dfk, count);
+  char* p0 = dfk_arena_alloc(&fixture->arena, count);
+  char* p1 = dfk_arena_alloc(&fixture->arena, count);
+  char* p2 = dfk_arena_alloc(&fixture->arena, count);
   EXPECT(!intersect(p0, p0 + count, p1, p1 + count));
   EXPECT(!intersect(p1, p1 + count, p2, p2 + count));
   EXPECT(!intersect(p0, p0 + count, p2, p2 + count));
@@ -61,8 +61,8 @@ TEST_F(fixture, arena, alloc_no_overlap)
 TEST_F(fixture, arena, alloc_two_segments)
 {
   size_t i, count = (size_t) (0.75 * DFK_ARENA_SEGMENT_SIZE);
-  signed char* p1 = dfk_arena_alloc(&fixture->arena, &fixture->dfk, count);
-  signed char* p2 = dfk_arena_alloc(&fixture->arena, &fixture->dfk, count);
+  signed char* p1 = dfk_arena_alloc(&fixture->arena, count);
+  signed char* p2 = dfk_arena_alloc(&fixture->arena, count);
   for (i = 0; i < count; ++i) {
     p1[i] = (signed char) (2 * i);
     p2[i] = (signed char) (2 * i + 1);
@@ -83,7 +83,7 @@ static void* out_of_memory(dfk_t* p, size_t size)
 TEST_F(fixture, arena, alloc_no_mem)
 {
   fixture->dfk.malloc = out_of_memory;
-  EXPECT(!dfk_arena_alloc(&fixture->arena, &fixture->dfk, 10));
+  EXPECT(!dfk_arena_alloc(&fixture->arena, 10));
 }
 
 typedef struct data_holder_t {
@@ -111,7 +111,7 @@ static void cleanup_data_holder(dfk_arena_t* arena, void* p)
 TEST_F(fixture, arena, alloc_ex_one)
 {
   data_holder_t* dh = dfk_arena_alloc_ex(&fixture->arena,
-      &fixture->dfk, sizeof(void*), cleanup_data_holder);
+      sizeof(void*), cleanup_data_holder);
   EXPECT(dh);
   data_holder_init(&fixture->dfk, dh);
   /* Valgrind should report no memory leak here */
@@ -123,10 +123,10 @@ TEST_F(fixture, arena, alloc_mix)
   size_t i = 0;
   for (i = 0; i < 10; ++i) {
     data_holder_t* dh = dfk_arena_alloc_ex(&fixture->arena,
-        &fixture->dfk, sizeof(void*), cleanup_data_holder);
+        sizeof(void*), cleanup_data_holder);
     EXPECT(dh);
     data_holder_init(&fixture->dfk, dh);
-    EXPECT(dfk_arena_alloc(&fixture->arena, &fixture->dfk, count));
+    EXPECT(dfk_arena_alloc(&fixture->arena, count));
   }
   /* Valgrind should report no memory leak here */
 }
@@ -134,8 +134,7 @@ TEST_F(fixture, arena, alloc_mix)
 TEST_F(fixture, arena, alloc_copy)
 {
   char buf[] = "Hello, world";
-  void* p = dfk_arena_alloc_copy(&fixture->arena, &fixture->dfk,
-      buf, sizeof(buf));
+  void* p = dfk_arena_alloc_copy(&fixture->arena, buf, sizeof(buf));
   EXPECT(p);
   EXPECT(memcmp(p, buf, sizeof(buf)) == 0);
 }
@@ -144,8 +143,7 @@ TEST_F(fixture, arena, alloc_copy_no_mem)
 {
   char buf[] = "Hello, world";
   fixture->dfk.malloc = out_of_memory;
-  void* p = dfk_arena_alloc_copy(&fixture->arena, &fixture->dfk,
-      buf, sizeof(buf));
+  void* p = dfk_arena_alloc_copy(&fixture->arena, buf, sizeof(buf));
   EXPECT(!p);
 }
 
@@ -159,7 +157,7 @@ TEST_F(fixture, arena, alloc_copy_ex)
 {
   uint32_t value = DFK_DEADBEEF;
   uint32_t* pcopy = dfk_arena_alloc_copy_ex(&fixture->arena,
-      &fixture->dfk, (const char*) &value, sizeof(value), no_cleaup);
+      (const char*) &value, sizeof(value), no_cleaup);
   EXPECT(*pcopy == DFK_DEADBEEF);
 }
 
@@ -168,7 +166,7 @@ TEST_F(fixture, arena, alloc_copy_ex_no_mem)
   uint32_t value = DFK_DEADBEEF;
   fixture->dfk.malloc = out_of_memory;
   uint32_t* pcopy = dfk_arena_alloc_copy_ex(&fixture->arena,
-      &fixture->dfk, (const char*) &value, sizeof(value), no_cleaup);
+      (const char*) &value, sizeof(value), no_cleaup);
   EXPECT(!pcopy);
 }
 
@@ -176,9 +174,8 @@ TEST_F(fixture, arena, alloc_copy_ex_no_mem)
 TEST_F(fixture, arena, alloc_large_object)
 {
   dfk_arena_t* arena = &fixture->arena;
-  dfk_t* dfk = &fixture->dfk;
   size_t nbytes = 3 * DFK_ARENA_SEGMENT_SIZE;
-  char* p = dfk_arena_alloc(arena, dfk, nbytes);
+  char* p = dfk_arena_alloc(arena, nbytes);
   EXPECT(p);
   for (size_t i = 0; i < nbytes; ++i) {
     p[i] = (char) i;
