@@ -25,6 +25,10 @@
 #include <stdarg.h>
 #endif
 
+#if DFK_VALGRIND
+#include <valgrind/valgrind.h>
+#endif
+
 /**
  * An entry point for all fibers
  */
@@ -98,7 +102,7 @@ void dfk__fiber_free(dfk_t* dfk, dfk_fiber_t* fiber)
 #if DFK_VALGRIND
   char* stack_base = (char*) fiber + sizeof(dfk_fiber_t);
   stack_base += DFK_STACK_ALIGNMENT - 1;
-  stack_base -= stack_base % DFK_STACK_ALIGNMENT;
+  stack_base -= ((ptrdiff_t) stack_base) % DFK_STACK_ALIGNMENT;
   VALGRIND_STACK_DEREGISTER(stack_base);
 #endif
   dfk__free(dfk, fiber);

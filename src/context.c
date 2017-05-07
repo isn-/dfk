@@ -144,7 +144,9 @@ int dfk_work(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*), void* arg,
 #endif
   coro_transfer(&dfk->_comeback, &scheduler->_ctx);
 
-  DFK_INFO(dfk, "work cycle {%p} done", (void*) dfk);
+  DFK_INFO(dfk, "work cycle {%p} done, cleanup", (void*) dfk);
+  dfk__fiber_free(dfk, scheduler);
+  dfk__fiber_free(dfk, eventloop);
   return dfk_err_ok;
 }
 

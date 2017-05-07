@@ -19,7 +19,7 @@ from multiprocessing import Pool, Queue, Manager
 
 CMAKE_OPTIONS = {
     "CMAKE_BUILD_TYPE": ("Debug", "Release"),
-    "DFK_NAMED_COROUTINES": ("ON", "OFF"),
+    "DFK_NAMED_FIBERS": ("ON", "OFF"),
     "DFK_DEBUG": ("ON", "OFF"),
     "DFK_MOCKS": ("ON", "OFF"),
     "DFK_THREADS": ("ON", "OFF"),
@@ -129,6 +129,7 @@ def main():
             config = configurations[njob]
             params_strlist = ["{} = {}".format(k, v) for k, v in config.items()]
             indent = "  "
+            print()
             print("Failed with parameters:")
             print(indent + format_parameters(config, "{key} = {value}",
                 os.linesep + indent))
@@ -138,6 +139,7 @@ def main():
             print("cmake",
                     format_parameters(config, "-D{key}:{type}={value}", " "),
                     source_dir, "&& make -j && make test")
+            print()
             return 1
     sys.stdout.write(os.linesep)
     pool.terminate()
