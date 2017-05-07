@@ -8,7 +8,7 @@
 #include <dfk/config.h>
 #include <dfk/internal/malloc.h>
 
-#define ALIGNED(ptr) (!(((ptrdiff_t) (ptr)) % DFK_STACK_ALIGNMENT))
+#define ALIGNED(ptr) (!(((ptrdiff_t) (ptr)) % DFK_MALLOC_ALIGNMENT))
 
 void* dfk__malloc(dfk_t* dfk, size_t nbytes)
 {

@@ -57,10 +57,18 @@
 /** Memory page size of target platform */
 #define DFK_PAGE_SIZE @DFK_PAGE_SIZE@
 
+/** Expected alignment of the pointer returned by malloc() */
+#define DFK_MALLOC_ALIGNMENT @DFK_MALLOC_ALIGNMENT@
+
 /** Default TCP backlog size */
 #define DFK_TCP_BACKLOG @DFK_TCP_BACKLOG@
 
-/** Fibers implementation */
+/**
+ * Fibers implementation
+ *
+ * Options are:
+ * - ASM
+ */
 #define DFK_FIBERS "@DFK_FIBERS@"
 #cmakedefine01 CORO_ASM
 

@@ -18,6 +18,7 @@ fw_version_from_git(DFK_VERSION DFK_VERSION_MAJOR DFK_VERSION_MINOR DFK_VERSION_
 fw_page_size(page_size)
 fw_stack_size(stack_size)
 fw_guard_size(guard_size)
+fw_malloc_alignment(malloc_alignment)
 
 if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Debug CACHE STRING
@@ -35,6 +36,8 @@ set(DFK_MAINTAINER_MODE FALSE CACHE BOOL
   "Enable binary package maintainer mode.")
 set(DFK_PAGE_SIZE ${page_size} CACHE STRING
   "Memory page size of target platform.")
+set(DFK_MALLOC_ALIGNMENT ${malloc_alignment} CACHE STRING
+  "Expected alignment of the pointer returned by malloc().")
 set(DFK_TCP_BACKLOG 128 CACHE STRING "Default TCP backlog size.")
 set(DFK_FIBERS ASM CACHE STRING "Fibers implementation, options are: ASM.")
 set(DFK_NAMED_FIBERS TRUE CACHE BOOL "Enable user-provided names for fibers.")
