@@ -42,7 +42,7 @@ BUILD_SCRIPT = (
 "{parameters}\n"
 "EOT\n"
 "cmake -Cconfig.cmake {source_dir}\n"
-"make -j\n"
+"make \n"
 "make test\n"
 )
 
@@ -133,6 +133,7 @@ def main():
             print("Failed with parameters:")
             print(indent + format_parameters(config, "{key} = {value}",
                 os.linesep + indent))
+            print("Error:", err)
             print()
             print("Run to reproduce:")
             print()
