@@ -36,6 +36,15 @@ extern "C" {
   (y) = tmp; \
 }
 
+/**
+ * Returns a pointer to struct from a pointer to data member
+ *
+ * Inspired by `container_of' from Linux kernel
+ * (https://www.fsl.cs.sunysb.edu/kernel-api/re85.html)
+ */
+#define DFK_CONTAINER_OF(ptr, type, member) \
+  ((type*)((char*) (ptr) - offsetof(type, member)))
+
 #if DFK_LOGGING
 /*
  * A cheat to suppress -Waddress warning:

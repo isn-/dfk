@@ -51,6 +51,8 @@ void dfk_arena_free(dfk_arena_t* arena)
     dfk_list_pop_front(&arena->_segments);
     dfk__free(arena->dfk, segment);
   }
+
+  DFK_IF_DEBUG(arena->dfk = DFK_PDEADBEEF);
 }
 
 static segment_t* dfk__arena_current_segment(dfk_arena_t* arena)

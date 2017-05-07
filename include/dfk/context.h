@@ -54,7 +54,6 @@ typedef struct dfk_t {
    * @privatesection
    */
 
-  struct dfk_fiber_t* _current;
   struct dfk_scheduler_t* _scheduler;
   struct dfk_fiber_t* _eventloop;
   struct dfk_fiber_t* _terminator;

@@ -18,6 +18,17 @@
  */
 typedef struct dfk_fiber_t {
   /**
+   * @warning Readonly
+   * @public
+   */
+  dfk_t* dfk;
+
+  /**
+   * @public
+   */
+  dfk_userdata_t user;
+
+  /**
    * @privatesection
    */
 
@@ -39,13 +50,6 @@ typedef struct dfk_fiber_t {
 #if DFK_VALGRIND
   int _stack_id;
 #endif
-
-  /**
-   * @publicsection
-   */
-
-  dfk_t* dfk;
-  dfk_userdata_t user;
 } dfk_fiber_t;
 
 /**

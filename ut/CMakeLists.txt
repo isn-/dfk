@@ -3,7 +3,6 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/../src/include)
 
 set(ut_sources
-  #  test_core.c
   test_list.c
   test_avltree.c
   test_strtoll.c
@@ -12,9 +11,9 @@ set(ut_sources
   test_misc.c
   test_arena.c
   test_fiber.c
+  test_mutex.c
   #  test_sponge.c
   #  test_strmap.c
-  #  test_sync.c
   #  test_tcp_socket.c
   test_urlencoding.c
   #  http/test_http_constants.c

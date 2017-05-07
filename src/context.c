@@ -87,7 +87,6 @@ void dfk_init(dfk_t* dfk)
   dfk->sys_errno = 0;
   dfk->dfk_errno = 0;
 
-  dfk->_current = NULL;
   dfk->_scheduler = NULL;
   dfk->_eventloop = NULL;
   dfk->_terminator = NULL;
@@ -138,9 +137,9 @@ int dfk_work(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*), void* arg,
 
   /* Same format as in fiber.c */
 #if DFK_NAMED_FIBERS
-  DFK_DBG(dfk, "context switch {*} -> {scheduler}");
+  DFK_DBG(dfk, "context switch {init} -> {scheduler}");
 #else
-  DFK_DBG(dfk, "context switch {*} -> {%p}", (void*) dfk->_scheduler);
+  DFK_DBG(dfk, "context switch {init} -> {%p}", (void*) dfk->_scheduler);
 #endif
   coro_transfer(&dfk->_comeback, &scheduler->_ctx);
 

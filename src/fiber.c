@@ -115,7 +115,7 @@ dfk_fiber_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*),
   if (!fiber) {
     return NULL;
   }
-  dfk__schedule(dfk, fiber);
+  dfk__resume(dfk->_scheduler, fiber);
   return fiber;
 }
 
@@ -145,6 +145,8 @@ void dfk_yield(dfk_fiber_t* from, dfk_fiber_t* to)
   DFK_DBG((from ? from : to)->dfk, "context switch {%p} -> {%p}",
       (void*) from, (void*) to);
 #endif
+  /* Notify scheduler about manual context switch. */
+  dfk__yield(from->dfk->_scheduler, from, to);
   coro_transfer(&from->_ctx, &to->_ctx);
 }
 
