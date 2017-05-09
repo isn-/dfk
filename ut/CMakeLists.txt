@@ -12,6 +12,7 @@ set(ut_sources
   test_arena.c
   test_fiber.c
   test_mutex.c
+  test_cond.c
   #  test_sponge.c
   #  test_strmap.c
   #  test_tcp_socket.c
