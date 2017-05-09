@@ -18,7 +18,7 @@ matrix:
   - os: linux
     compiler: gcc
     env: UPLOAD_COVERAGE=YES CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DCMAKE_C_FLAGS=-DNDEBUG
-      -DDFK_COVERAGE=ON"
+      -DDFK_COVERAGE=ON -DDFK_LOGGING=OFF"
     addons:
       apt:
         packages:
