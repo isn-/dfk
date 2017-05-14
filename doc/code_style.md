@@ -1,5 +1,5 @@
 # Code Style
-1. no include guards, just `#pragma once`
+1. No include guards, just `#pragma once`
 2. All API functions should:
   - start with `dfk_` prefix
   - be listed in the dfk.exports file
@@ -16,7 +16,7 @@
   - internal dfk headers from src/include
 7. Objects' `_free` methods should populate object with DEADBEEF data if
   `DFK_DEBUG` is enabled.
-8. Public data members of structs should be declared *prior* to private to
+8. Public data members of structs should be declared **prior** to private to
   preserve binary compatibility when private members are
   added/removed/rearranged.
 9. If more than 50% of object's methods need a pointer to `dfk_t`, then `dfk_t*`
