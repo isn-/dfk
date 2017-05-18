@@ -83,7 +83,7 @@ static void two_fibers_contention_worker(dfk_fiber_t* fiber, void* arg)
    * fiber 0 increments counter.
    */
   if (*d->counter == 0 && d->nfiber == 1) {
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
   }
   /*
    * When fiber 0 reaches this line, counter is equal to 0. When fiber 1 reaches
@@ -99,11 +99,11 @@ static void two_fibers_contention_worker(dfk_fiber_t* fiber, void* arg)
    * of the suspend here is for letting fiber 1 to increment counter before
    * locking on dfk_mutex_lock in the line above.
    */
-  dfk__postpone(fiber->dfk->_scheduler);
+  DFK_POSTPONE(fiber->dfk);
   EXPECT(*d->counter == d->nfiber + 2);
   (*d->counter)++;
   /* Should return to the same fiber */
-  dfk__postpone(fiber->dfk->_scheduler);
+  DFK_POSTPONE(fiber->dfk);
   EXPECT(*d->counter == d->nfiber + 3);
   dfk_mutex_unlock(d->mutex);
 
@@ -148,7 +148,7 @@ static void try_lock_worker(dfk_fiber_t* fiber, void* arg)
   if (d->nfiber == 0) {
     dfk_mutex_init(d->mutex, dfk);
     EXPECT_OK(dfk_mutex_trylock(d->mutex));
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
     dfk_mutex_unlock(d->mutex);
   } else {
     assert(d->nfiber == 1);

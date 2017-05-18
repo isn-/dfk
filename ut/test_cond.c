@@ -96,11 +96,11 @@ static void signal_single_wait_fiber_1(dfk_fiber_t* fiber, void* arg)
   cond_fixture_t* f = (cond_fixture_t*) arg;
   dfk_mutex_lock(&f->mutex);
   f->state = 2;
-  dfk__postpone(dfk->_scheduler);
+  DFK_POSTPONE(dfk);
   dfk_cond_signal(&f->cv);
   f->state = 3;
   /* fiber 0 should not run because fiber 1 still owns the mutex */
-  dfk__postpone(dfk->_scheduler);
+  DFK_POSTPONE(dfk);
   EXPECT(f->state == 3);
   dfk_mutex_unlock(&f->mutex);
 }
@@ -113,7 +113,7 @@ static void signal_single_wait_main(dfk_fiber_t* fiber, void* arg)
   dfk_cond_init(&f->cv, dfk);
   EXPECT(dfk_run(dfk, signal_single_wait_fiber_0, arg, 0));
   while (f->state != 1) {
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
   }
   EXPECT(dfk_run(dfk, signal_single_wait_fiber_1, arg, 0));
 }
@@ -139,7 +139,7 @@ static void wait_unlock_mutex_fiber_0(dfk_fiber_t* fiber, void* arg)
   dfk_mutex_lock(&f->mutex);
   CHANGE_STATE(f->state, 0, 1);
   while (f->state != 2) {
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
   }
   CHANGE_STATE(f->state, 2, 3);
   dfk_cond_wait(&f->cv, &f->mutex);
@@ -172,15 +172,15 @@ static void wait_unlock_mutex_fiber_main(dfk_fiber_t* fiber, void* arg)
   dfk_cond_init(&f->cv, dfk);
   EXPECT(dfk_run(dfk, wait_unlock_mutex_fiber_0, arg, 0));
   while (f->state != 1) {
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
   }
   EXPECT(dfk_run(dfk, wait_unlock_mutex_fiber_1, arg, 0));
   while (f->state != 4) {
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
   }
   EXPECT(dfk_run(dfk, wait_unlock_mutex_fiber_2, arg, 0));
   while (f->state != 5) {
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
   }
   dfk_cond_free(&f->cv);
   dfk_mutex_free(&f->mutex);
@@ -230,7 +230,7 @@ static void signal_multi_wait_fiber_2(dfk_fiber_t* fiber, void* arg)
   dfk_cond_signal(&f->cv);
   CHANGE_STATE(f->state, 2, 3);
   while (f->state != 4) {
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
   }
   dfk_cond_signal(&f->cv);
   CHANGE_STATE(f->state, 4, 5);
@@ -244,15 +244,15 @@ static void signal_multi_wait(dfk_fiber_t* fiber, void* arg)
   dfk_cond_init(&f->cv, dfk);
   EXPECT(dfk_run(dfk, signal_multi_wait_fiber_0, arg, 0));
   while (f->state != 1) {
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
   }
   EXPECT(dfk_run(dfk, signal_multi_wait_fiber_1, arg, 0));
   while (f->state != 2) {
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
   }
   EXPECT(dfk_run(dfk, signal_multi_wait_fiber_2, arg, 0));
   while (f->state != 6) {
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
   }
   dfk_cond_free(&f->cv);
   dfk_mutex_free(&f->mutex);
@@ -311,18 +311,18 @@ static void broadcast_multi_wait_fiber_main(dfk_fiber_t* fiber, void* arg)
   dfk_cond_init(&f->cv, dfk);
   EXPECT(dfk_run(dfk, broadcast_multi_wait_fiber_0, arg, 0));
   while (f->state != 1) {
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
   }
   EXPECT(dfk_run(dfk, broadcast_multi_wait_fiber_1, arg, 0));
   while (f->state != 2) {
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
   }
   EXPECT(dfk_run(dfk, broadcast_multi_wait_fiber_2, arg, 0));
   while (f->state != 3) {
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
   }
   while (f->state != 5) {
-    dfk__postpone(dfk->_scheduler);
+    DFK_POSTPONE(dfk);
   }
   dfk_cond_free(&f->cv);
   dfk_mutex_free(&f->mutex);

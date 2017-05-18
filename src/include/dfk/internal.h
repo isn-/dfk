@@ -8,20 +8,18 @@
  */
 
 #pragma once
-#pragma GCC diagnostic push
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #include <assert.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 #include <stdio.h>
-#include <dfk/context.h>
+#include <errno.h>
 #include <dfk/config.h>
+#include <dfk/context.h>
 #include <dfk/log.h>
+#include <dfk/scheduler.h>
+#include <dfk/eventloop.h>
 
 #define DFK_FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 
@@ -46,7 +44,10 @@ extern "C" {
   ((type*)((char*) (ptr) - offsetof(type, member)))
 
 #if DFK_LOGGING
-/*
+/**
+ * Formats and logs a message
+ *
+ * @note
  * A cheat to suppress -Waddress warning:
  * instead of straightforward "if ((dfk)..." we write
  * "if (((void*) (dfk) != NULL)..."
@@ -78,9 +79,25 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
 #define DFK_DBG(dfk, ...) DFK_UNUSED((dfk))
 #endif
 
+/**
+ * Log failed system call and set dfk.sys_errno respectively
+ *
+ * @note dfk expression is evaluated more than once, so it should not have side
+ * effects.
+ */
+#define DFK_ERROR_SYSCALL(dfk, syscall) \
+{ \
+  DFK_ERROR((dfk), "{%p} " syscall " failed, errno=%d: %s", \
+      (void*) (dfk), errno, strerror(errno)); \
+  (dfk)->sys_errno = errno; \
+}
+
 #define DFK_STRINGIFY(D) DFK_STR__(D)
 #define DFK_STR__(D) #D
 
+/**
+ * Returns number of the elements in a fixed-size array
+ */
 #define DFK_SIZE(c) (sizeof((c)) / sizeof((c)[0]))
 
 #define DFK_CALL(dfk, c) \
@@ -150,56 +167,47 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
   } \
 }
 
-#define DFK_THIS_CORO(dfk) (dfk)->_current
-
-#define DFK_YIELD(dfk) \
-{ \
-  DFK_CALL((dfk), dfk_yield(DFK_THIS_CORO((dfk)), (dfk)->_scheduler)); \
-}
-
-#define DFK_YIELD_RVOID(dfk) \
-{ \
-  DFK_CALL_RVOID((dfk), dfk_yield(DFK_THIS_CORO((dfk)), (dfk)->_scheduler)); \
-}
-
-#define DFK_POSTPONE(dfk) \
-{ \
-  dfk_list_append(&(dfk)->_pending_coros, (dfk_list_hook_t*) DFK_THIS_CORO((dfk))); \
-  DFK_YIELD((dfk)); \
-}
-
-#define DFK_POSTPONE_RVOID(dfk) \
-{ \
-  dfk_list_append(&(dfk)->_pending_coros, (dfk_list_hook_t*) DFK_THIS_CORO((dfk))); \
-  DFK_YIELD_RVOID((dfk)); \
-}
-
-#define DFK_IO(dfk) \
-{ \
-  dfk_coro_t* self = DFK_THIS_CORO((dfk)); \
-  dfk_list_append(&(dfk)->_iowait_coros, (dfk_list_hook_t*) self); \
-  DFK_YIELD((dfk)); \
-}
-
-#define DFK_RESUME(dfk, coro) \
-{ \
-  dfk_list_append(&(dfk)->_pending_coros, (dfk_list_hook_t*) (coro)); \
-}
-
-#define DFK_IO_RESUME(dfk, yieldback) \
-{ \
-  dfk_list_erase(&(dfk)->_iowait_coros, (dfk_list_hook_t*) (yieldback)); \
-  DFK_RESUME((dfk), yieldback); \
-}
-
-/*
- * A macro to use in scheduler implementation
+/**
+ * @see dfk__this_fiber
  */
-#define DFK_SCHED(dfk, from, to) \
-{ \
-  (dfk)->_current = (to); \
-  dfk_yield((from), (to)); \
-}
+#define DFK_THIS_FIBER(dfk) \
+  dfk__this_fiber((dfk)->_scheduler)
+
+/**
+ * @see dfk__suspend
+ */
+#define DFK_SUSPEND(dfk) \
+  dfk__suspend((dfk)->_scheduler);
+
+/**
+ * @see dfk__postpone
+ */
+#define DFK_POSTPONE(dfk) \
+  dfk__postpone((dfk)->_scheduler);
+
+/**
+ * @see dfk__io
+ */
+#define DFK_IO(dfk, socket, flags) \
+  dfk__io((dfk)->_eventloop, (socket), (flags));
+
+/**
+ * @see dfk__iosuspend
+ */
+#define DFK_IOSUSPEND(dfk) \
+  dfk__iosuspend((dfk)->_scheduler)
+
+/**
+ * @see dfk__ioresume
+ */
+#define DFK_IORESUME(fiber) \
+  dfk__ioresume((fiber)->dfk->_scheduler, (fiber))
+
+/**
+ * @see dfk__resume
+ */
+#define DFK_RESUME(fiber) \
+  dfk__resume((fiber)->dfk->_scheduler, (fiber))
 
 #if DFK_THREAD_SANITIZER
 #define DFK_NO_SANITIZE_THREAD __attribute__((no_sanitize_thread))
@@ -207,27 +215,22 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
 #define DFK_NO_SANITIZE_THREAD
 #endif
 
-typedef struct dfk_epoll_arg_t {
-  void (*callback)(uint32_t events, void* arg0, void* arg1, void* arg2, void* arg3);
-  void* arg0;
-  void* arg1;
-  void* arg2;
-  void* arg3;
-} dfk_epoll_arg_t;
-
-
+/**
+ * Magic value to fill pointer which value is considered unspecified
+ */
 #define DFK_PDEADBEEF ((void*) 0xDEADBEEF)
+
+/**
+ * Magic value to fill integers which value is considered unspecified
+ */
 #define DFK_DEADBEEF ((uint32_t) 0xDEADBEEF)
 
 #if DFK_DEBUG
+/**
+ * Evaluates to the argument if DFK_DEBUG is enabled
+ */
 #define DFK_IF_DEBUG(expr) expr
 #else
 #define DFK_IF_DEBUG(...)
 #endif
-
-#ifdef __cplusplus
-}
-#endif
-
-#pragma GCC diagnostic pop
 
