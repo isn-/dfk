@@ -259,7 +259,7 @@ set(dfk_sources
   "${CMAKE_CURRENT_SOURCE_DIR}/src/fiber.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/mutex.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/cond.c"
-  # "${CMAKE_CURRENT_SOURCE_DIR}/src/tcp_socket.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/tcp_socket.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/urlencoding.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/constants.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/request.c"
