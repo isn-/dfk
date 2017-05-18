@@ -110,30 +110,20 @@ int dfk_work(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*), void* arg,
   (void) signal(SIGPIPE, SIG_IGN);
 #endif
 
-  dfk_fiber_t* eventloop = dfk__run(dfk, dfk__eventloop, NULL, 0);
-  if (!eventloop) {
-    return dfk->dfk_errno;
-  }
-
   /* mainf stands for main fiber */
   dfk_fiber_t* mainf = dfk__run(dfk, ep, arg, argsize);
   if (!mainf) {
-    dfk__fiber_free(dfk, eventloop);
     return dfk->dfk_errno;
   }
 
-  dfk_fiber_t* scheduler = dfk__run(dfk, dfk__scheduler_loop, mainf, 0);
+  dfk_fiber_t* scheduler = dfk__run(dfk, dfk__scheduler_main, mainf, 0);
   if (!scheduler) {
-    dfk__fiber_free(dfk, eventloop);
     dfk__fiber_free(dfk, mainf);
     return dfk->dfk_errno;
   }
 
   dfk_fiber_name(scheduler, "scheduler");
-  dfk_fiber_name(eventloop, "eventloop");
   dfk_fiber_name(mainf, "main");
-
-  dfk->_eventloop = eventloop;
 
   /* Same format as in fiber.c */
 #if DFK_NAMED_FIBERS
@@ -145,7 +135,6 @@ int dfk_work(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*), void* arg,
 
   DFK_INFO(dfk, "work cycle {%p} done, cleanup", (void*) dfk);
   dfk__fiber_free(dfk, scheduler);
-  dfk__fiber_free(dfk, eventloop);
   return dfk_err_ok;
 }
 

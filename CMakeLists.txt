@@ -39,6 +39,8 @@ set(DFK_PAGE_SIZE ${page_size} CACHE STRING
 set(DFK_MALLOC_ALIGNMENT ${malloc_alignment} CACHE STRING
   "Expected alignment of the pointer returned by malloc().")
 set(DFK_TCP_BACKLOG 128 CACHE STRING "Default TCP backlog size.")
+set(DFK_EVENT_LOOP "AUTO" CACHE STRING
+  "Event loop implementation, options are: AUTO, EPOLL")
 set(DFK_FIBERS ASM CACHE STRING "Fibers implementation, options are: ASM.")
 set(DFK_NAMED_FIBERS TRUE CACHE BOOL "Enable user-provided names for fibers.")
 set(DFK_FIBER_NAME_LENGTH 32 CACHE STRING
@@ -91,6 +93,7 @@ check_include_files(signal.h DFK_HAVE_SIGNAL_H)
 check_include_files(unistd.h DFK_HAVE_UNISTD_H)
 check_include_files(pthread.h DFK_HAVE_PTHREAD_H)
 check_include_files(sys/socket.h DFK_HAVE_SYS_SOCKET_H)
+check_include_files(sys/epoll.h DFK_HAVE_SYS_EPOLL_H)
 check_include_files(sys/types.h DFK_HAVE_SYS_TYPES_H)
 check_include_files(sys/mman.h DFK_HAVE_SYS_MMAN_H)
 check_include_files(sys/uio.h DFK_HAVE_SYS_UIO_H)
@@ -141,6 +144,11 @@ if(DFK_STACK_GUARD_SIZE AND (NOT DFK_HAVE_MPROTECT OR NOT DFK_HAVE_SYS_MMAN_H))
     "Can not emit guard pages without mprotect function from <sys/mman.h>.")
 endif()
 
+if(DFK_EVENT_LOOP STREQUAL EPOLL AND NOT DFK_HAVE_SYS_EPOLL_H)
+  message(FATAL_ERROR
+    "Can not use epoll for event loop, missing <sys/epoll.h>")
+endif()
+
 if(DFK_MAINTAINER_MODE)
   set(disallowed_options
     DFK_COVERAGE
@@ -167,6 +175,18 @@ if(DFK_MAINTAINER_MODE)
   endforeach()
 endif()
 
+# Deduce options specified as "AUTO"
+
+if(DFK_EVENT_LOOP STREQUAL AUTO)
+  if(DFK_HAVE_SYS_EPOLL_H)
+    set(DFK_EVENT_LOOP EPOLL)
+  else()
+    message(FATAL_ERROR
+      "No suitable event loop implementation found.\n"
+      "Please report an issue at https://github.com/ivochkin/dfk/issues/new")
+  endif()
+endif()
+
 # Add compiler flags to satisfy user-provided configuration options.
 
 if(DFK_THREAD_SANITIZER)
@@ -191,6 +211,12 @@ if("${DFK_FIBERS}" STREQUAL ASM)
   set(CORO_ASM true)
   add_definitions(-DCORO_ASM)
 endif()
+
+if(DFK_EVENT_LOOP STREQUAL EPOLL)
+  set(DFK_EVENT_LOOP_EPOLL 1)
+endif()
+
+# Generate dfk/config.h
 
 configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"
   ${CMAKE_CURRENT_BINARY_DIR}/dfk/config.h @ONLY)
@@ -241,6 +267,10 @@ set(dfk_sources
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/protocol.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/server.c"
 )
+
+if(DFK_EVENT_LOOP_EPOLL)
+  list(APPEND dfk_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/epoll.c")
+endif()
 
 #if(DFK_FILESERVER)
 #  list(APPEND dfk_sources

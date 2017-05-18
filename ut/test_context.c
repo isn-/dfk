@@ -55,7 +55,7 @@ TEST(context, work_out_of_memory)
   dfk_t dfk;
   dfk_init(&dfk);
   dfk.malloc = malloc_first_n_ok;
-  size_t allocs_needed = 3;
+  size_t allocs_needed = 2;
   for (size_t i = 0; i < allocs_needed; ++i) {
     size_t nallocs = i;
     dfk.user.data = &nallocs;

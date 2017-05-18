@@ -28,6 +28,7 @@
 #cmakedefine01 DFK_HAVE_UNISTD_H
 #cmakedefine01 DFK_HAVE_PTHREAD_H
 #cmakedefine01 DFK_HAVE_SYS_SOCKET_H
+#cmakedefine01 DFK_HAVE_SYS_EPOLL_H
 #cmakedefine01 DFK_HAVE_SYS_TYPES_H
 #cmakedefine01 DFK_HAVE_SYS_MMAN_H
 #cmakedefine01 DFK_HAVE_SYS_UIO_H
@@ -64,6 +65,20 @@
 #define DFK_TCP_BACKLOG @DFK_TCP_BACKLOG@
 
 /**
+ * Event loop implementation
+ *
+ * Options are
+ * - AUTO (detect best method supported on the current platform)
+ * - EPOLL (linux-specific, http://man7.org/linux/man-pages/man7/epoll.7.html)
+ */
+#define DFK_EVENT_LOOP "@DFK_EVENT_LOOP@"
+
+/**
+ * Defined if #DFK_EVENT_LOOP is equal to "EPOLL"
+ */
+#cmakedefine01 DFK_EVENT_LOOP_EPOLL
+
+/**
  * Fibers implementation
  *
  * Options are:
@@ -89,9 +104,6 @@
 
 /** Emit N guard bytes to protect against stack overflow */
 #define DFK_STACK_GUARD_SIZE @DFK_STACK_GUARD_SIZE@
-
-/** Event loop implementation */
-#define DFK_EVENT_LOOP "@DFK_EVENT_LOOP@"
 
 /** Emit any log messages */
 #cmakedefine01 DFK_LOGGING

@@ -146,7 +146,7 @@ void dfk_yield(dfk_fiber_t* from, dfk_fiber_t* to)
       (void*) from, (void*) to);
 #endif
   /* Notify scheduler about manual context switch. */
-  dfk__yield(from->dfk->_scheduler, from, to);
+  dfk__yielded(from->dfk->_scheduler, from, to);
   coro_transfer(&from->_ctx, &to->_ctx);
 }
 

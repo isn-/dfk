@@ -1,34 +1,63 @@
 /**
+ * @file scheduler.c
+ *
+ * Contains default scheduler implementation. Default scheduler is rather naive,
+ * namely is does not support multithreading, has only one eventloop.
+ *
  * @copyright
  * Copyright (c) 2017 Stanislav Ivochkin
  * Licensed under the MIT License (see LISENSE)
  */
 
+#include <dfk/list.h>
 #include <dfk/scheduler.h>
+#include <dfk/eventloop.h>
 #include <dfk/internal.h>
 #include <dfk/internal/fiber.h>
 
-void dfk__scheduler_init(dfk_scheduler_t* scheduler, dfk_fiber_t* fiber)
+/**
+ * Default scheduler object
+ */
+typedef struct dfk_scheduler_t {
+  /** Scheduler's own fiber */
+  dfk_fiber_t* fiber;
+  /** Fiber that is currently active */
+  dfk_fiber_t* current;
+  /** Fiber for the eventloop */
+  dfk_fiber_t* eventloop;
+  /** List of fibers waiting for CPU */
+  dfk_list_t pending;
+  /** Number of fibers waiting for IO */
+  size_t iowait;
+  /** List of terminated fibers, they wait for scheduler to clean them up */
+  dfk_list_t terminated;
+} dfk_scheduler_t;
+
+static void dfk__scheduler_init(dfk_scheduler_t* scheduler,
+    dfk_fiber_t* self, dfk_fiber_t* eventloop)
 {
-  scheduler->fiber = fiber;
+  scheduler->fiber = self;
   scheduler->current = NULL;
+  scheduler->eventloop = eventloop;
   dfk_list_init(&scheduler->pending);
-  dfk_list_init(&scheduler->iowait);
   dfk_list_init(&scheduler->terminated);
 }
 
-int dfk__scheduler(dfk_scheduler_t* scheduler)
+/**
+ * Scheduler loop iteration
+ */
+static int dfk__scheduler(dfk_scheduler_t* scheduler)
 {
   dfk_t* dfk = scheduler->fiber->dfk;
 
   DFK_DBG(dfk, "fibers pending: %lu, terminated: %lu, iowait: %lu",
       (unsigned long) dfk_list_size(&scheduler->pending),
       (unsigned long) dfk_list_size(&scheduler->terminated),
-      (unsigned long) dfk_list_size(&scheduler->iowait));
+      (unsigned long) scheduler->iowait);
 
   if (dfk_list_empty(&scheduler->terminated)
       && dfk_list_empty(&scheduler->pending)
-      && dfk_list_empty(&scheduler->iowait)) {
+      && !scheduler->iowait) {
     DFK_DBG(dfk, "{%p} no pending fibers, terminate", (void*) dfk);
     return 1;
   }
@@ -49,7 +78,8 @@ int dfk__scheduler(dfk_scheduler_t* scheduler)
   {
     /*
      * Move scheduler->pending list into a local copy, to prevent iteration over
-     * a list that is modified in progress.
+     * a list that is modified in progress. New elements could be added to
+     * scheduler->pending list when any fiber woren up calls dfk_run().
      */
     dfk_list_t pending;
     dfk_list_init(&pending);
@@ -65,15 +95,14 @@ int dfk__scheduler(dfk_scheduler_t* scheduler)
     }
   }
 
-  if (dfk_list_empty(&scheduler->pending)
-      && !dfk_list_empty(&scheduler->iowait)) {
+  if (dfk_list_empty(&scheduler->pending) && scheduler->iowait) {
     /*
      * Pending fibers list is empty, while IO hungry fibers
      * exist - switch to IO with possible blocking.
      */
     DFK_DBG(dfk, "no pending fibers, will do I/O");
-    scheduler->current = dfk->_eventloop;
-    dfk_yield(scheduler->fiber, dfk->_eventloop);
+    scheduler->current = scheduler->eventloop;
+    dfk_yield(scheduler->fiber, scheduler->eventloop);
   }
   return 0;
 }
@@ -111,7 +140,8 @@ dfk_fiber_t* dfk__this_fiber(dfk_scheduler_t* scheduler)
   return scheduler->current;
 }
 
-void dfk__yield(dfk_scheduler_t* scheduler, dfk_fiber_t* from, dfk_fiber_t* to)
+void dfk__yielded(dfk_scheduler_t* scheduler, dfk_fiber_t* from,
+    dfk_fiber_t* to)
 {
   assert(scheduler);
   assert(from);
@@ -129,6 +159,25 @@ void dfk__suspend(dfk_scheduler_t* scheduler)
   dfk_yield(this, scheduler->fiber);
 }
 
+void dfk__iosuspend(dfk_scheduler_t* scheduler)
+{
+  assert(scheduler);
+  dfk_t* dfk = scheduler->fiber->dfk;
+  dfk_fiber_t* this = dfk__this_fiber(scheduler);
+  DFK_DBG(dfk, "{%p}", (void*) this);
+  scheduler->iowait++;
+  dfk_yield(this, scheduler->fiber);
+}
+
+void dfk__ioresume(struct dfk_scheduler_t* scheduler, dfk_fiber_t* fiber)
+{
+  assert(scheduler);
+  assert(fiber);
+  DFK_DBG(fiber->dfk, "{%p}", (void*) fiber);
+  scheduler->iowait--;
+  dfk_list_append(&scheduler->pending, &fiber->_hook);
+}
+
 void dfk__postpone(dfk_scheduler_t* scheduler)
 {
   assert(scheduler);
@@ -139,20 +188,30 @@ void dfk__postpone(dfk_scheduler_t* scheduler)
   dfk_yield(this, scheduler->fiber);
 }
 
-void dfk__scheduler_loop(dfk_fiber_t* fiber, void* arg)
+void dfk__scheduler_main(dfk_fiber_t* fiber, void* arg)
 {
   assert(fiber);
   dfk_t* dfk = fiber->dfk;
   assert(dfk);
-  dfk_scheduler_t scheduler;
-  dfk__scheduler_init(&scheduler, fiber);
-  dfk->_scheduler = &scheduler;
-  {
-    /* Scheduler is initialized - now we can schedule main fiber manually */
-    dfk_fiber_t* mainf = (dfk_fiber_t*) arg;
-    assert(mainf);
-    dfk__resume(&scheduler, mainf);
+
+  dfk_eventloop_t eventloop;
+  dfk_fiber_t* loopf = dfk__run(dfk, dfk__eventloop_main, &eventloop, 0);
+  if (!loopf) {
+    DFK_ERROR(dfk, "can not spawn fiber for eventloop");
+    return;
   }
+  dfk__eventloop_init(&eventloop, dfk);
+
+  dfk_scheduler_t scheduler;
+  dfk__scheduler_init(&scheduler, fiber, loopf);
+  dfk->_scheduler = &scheduler;
+  dfk->_eventloop = &eventloop;
+
+  /* Scheduler is initialized - now we can schedule main fiber manually */
+  dfk_fiber_t* mainf = (dfk_fiber_t*) arg;
+  assert(mainf);
+  dfk__resume(&scheduler, mainf);
+
   int ret = 0;
   while (!ret) {
     ret = dfk__scheduler(&scheduler);
@@ -161,6 +220,8 @@ void dfk__scheduler_loop(dfk_fiber_t* fiber, void* arg)
   }
   DFK_INFO(dfk, "no pending fibers left in execution queue, job is done");
   scheduler.current = NULL;
+
+  dfk__eventloop_free(&eventloop);
 
   /* Same format as in fiber.c */
 #if DFK_NAMED_FIBERS

@@ -55,7 +55,7 @@ typedef struct dfk_t {
    */
 
   struct dfk_scheduler_t* _scheduler;
-  struct dfk_fiber_t* _eventloop;
+  struct dfk_eventloop_t* _eventloop;
   struct dfk_fiber_t* _terminator;
 
   /**
