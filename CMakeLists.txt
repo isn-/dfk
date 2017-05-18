@@ -28,7 +28,7 @@ endif()
 # Options that configure *what* to build
 set(DFK_BUILD_UNIT_TESTS TRUE CACHE BOOL "Build unit tests.")
 set(DFK_BUILD_AUTO_TESTS TRUE CACHE BOOL "Build auto tests.")
-set(DFK_BUILD_SAMPLES FALSE CACHE BOOL "Build code samples.")
+set(DFK_BUILD_SAMPLES TRUE CACHE BOOL "Build code samples.")
 set(DFK_BUILD_CPP_BINDINGS FALSE CACHE BOOL "Build c++ bindings.")
 
 # Options that configure parts to be built

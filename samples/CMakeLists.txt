@@ -1,6 +1,4 @@
-add_subdirectory(tcp-echo)
-add_subdirectory(http-echo)
-add_subdirectory(http-fileserver)
+add_subdirectory(c)
 if(DFK_BUILD_CPP_BINDINGS)
-  add_subdirectory(c++)
+  #  add_subdirectory(c++)
 endif()
