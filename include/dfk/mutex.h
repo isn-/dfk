@@ -25,6 +25,7 @@ typedef struct dfk_mutex_t {
 
   /**
    * A list of fibers waiting for the locked mutex
+   *
    * @private
    */
   dfk_list_t _waitqueue;
@@ -38,6 +39,7 @@ typedef struct dfk_mutex_t {
    * Fiber can acquire a mutex and then call dfk__postpone (move to the list of
    * pending fibers) - in this case fiber will be contained in two lists
    * simultaneously.
+   *
    * @private
    */
   dfk_fiber_t* _owner;
