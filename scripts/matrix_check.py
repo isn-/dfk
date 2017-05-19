@@ -29,6 +29,7 @@ CMAKE_OPTIONS = {
     "DFK_AVLTREE_CONSTANT_TIME_SIZE": ("ON", "OFF"),
     "DFK_URLENCODING_HINT_HEURISRICS": ("ON", "OFF"),
     "DFK_STACK_ALIGNMENT": ("16", "64"),
+    "DFK_EVENT_LOOP": ("AUTO", "EPOLL"),
     # Temporary disable those, until build is broken
     "DFK_BUILD_CPP_BINDINGS": ("OFF",),
 }
@@ -118,6 +119,7 @@ def main():
             for i, c in enumerate(configurations, start=1)]
     pool.starmap_async(run_job, jobs)
     start_time = datetime.now()
+    print("Started running {} jobs at {}".format(len(jobs), datetime.now()))
     for i in range(1, len(jobs) + 1):
         njob, err = queue.get()
         time_remaining = (len(jobs) - i) * (datetime.now() - start_time) / i
