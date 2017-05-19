@@ -198,7 +198,8 @@ void dfk__scheduler_main(dfk_fiber_t* fiber, void* arg)
   dfk_fiber_t* loopf = dfk__run(dfk, dfk__eventloop_main, &eventloop, 0);
   if (!loopf) {
     DFK_ERROR(dfk, "can not spawn fiber for eventloop");
-    return;
+    /* A proper way of terminating scheduler */
+    coro_transfer(&fiber->_ctx, &dfk->_comeback);
   }
   dfk__eventloop_init(&eventloop, dfk);
 

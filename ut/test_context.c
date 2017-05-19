@@ -47,21 +47,23 @@ static void empty_fiber(dfk_fiber_t* fiber, void* arg)
 }
 
 /*
- * White-box test. We assume that three allocations are needed for dfk_work to
- * run successfully.
+ * Checks that dfk_work tolerates out-of-memory and performs at most
+ * max_allocs memory allocations.
  */
 TEST(context, work_out_of_memory)
 {
   dfk_t dfk;
   dfk_init(&dfk);
   dfk.malloc = malloc_first_n_ok;
-  size_t allocs_needed = 2;
-  for (size_t i = 0; i < allocs_needed; ++i) {
+  size_t max_allocs = 16;
+  for (size_t i = 0; i < max_allocs; ++i) {
     size_t nallocs = i;
     dfk.user.data = &nallocs;
-    EXPECT(dfk_work(&dfk, empty_fiber, NULL, 0) == dfk_err_nomem);
+    int ret = dfk_work(&dfk, empty_fiber, NULL, 0);
+    if (ret == dfk_err_ok) {
+      break;
+    }
+    EXPECT(ret == dfk_err_nomem);
   }
-  dfk.user.data = &allocs_needed;
-  EXPECT_OK(dfk_work(&dfk, empty_fiber, NULL, 0));
 }
 

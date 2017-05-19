@@ -25,6 +25,9 @@
 /**
  * Scheduler entry point - main loop
  *
+ * @todo Write a wrapper that properly handles "return from scheduler", see
+ * scheduler.c:202
+ *
  * @param arg a pointer to main fiber
  */
 void dfk__scheduler_main(dfk_fiber_t* fiber, void* arg);
