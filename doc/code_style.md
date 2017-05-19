@@ -21,3 +21,4 @@
   added/removed/rearranged.
 9. If more than 50% of object's methods need a pointer to `dfk_t`, then `dfk_t*`
   should be added to the object's data members.
+10. Do not use functions listed in `scripts/check_banned_functions.sh`.
