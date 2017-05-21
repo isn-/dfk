@@ -68,6 +68,8 @@ int dfk_tcp_socket_connect(dfk_tcp_socket_t* sock,
 {
   assert(sock);
   assert(endpoint);
+  assert(sock->dfk);
+
   dfk_t* dfk = sock->dfk;
 
   DFK_DBG(dfk, "{%p} connect to %s:%d", (void*) sock, endpoint, port);
@@ -124,6 +126,8 @@ ssize_t dfk_tcp_socket_read(dfk_tcp_socket_t* sock, char* buf, size_t nbytes)
   assert(sock);
   assert(buf);
   assert(nbytes);
+  assert(sock->dfk);
+
   dfk_t* dfk = sock->dfk;
 
   ssize_t nread = read(sock->_socket, buf, nbytes);
@@ -160,6 +164,51 @@ ssize_t dfk_tcp_socket_read(dfk_tcp_socket_t* sock, char* buf, size_t nbytes)
     return -1;
   }
   return nread;
+}
+
+ssize_t dfk_tcp_socket_write(dfk_tcp_socket_t* sock, char* buf, size_t nbytes)
+{
+  assert(sock);
+  assert(buf);
+  assert(nbytes);
+  assert(sock->dfk);
+
+  dfk_t* dfk = sock->dfk;
+
+  ssize_t nwritten = write(sock->_socket, buf, nbytes);
+  DFK_DBG(dfk, "{%p} first write (possibly blocking) attempt returned %lld",
+      (void*) sock, (long long) nwritten);
+  if (nwritten >= 0) {
+    DFK_DBG(dfk, "{%p} non-blocking write of %lld bytes", (void*) sock,
+        (long long) nwritten);
+    return nwritten;
+  }
+  if (errno != EAGAIN) {
+    DFK_ERROR_SYSCALL(dfk, "write");
+    dfk->dfk_errno = dfk_err_sys;
+    return -1;
+  }
+  int ioret = DFK_IO(dfk, sock->_socket, DFK_IO_OUT);
+#if DFK_DEBUG
+  char strev[16];
+  size_t strevlen = dfk__io_events_to_str(ioret, strev, DFK_SIZE(strev));
+  DFK_DBG(dfk, "{%p} DFK_IO returned %d (%.*s)", (void*) sock, ioret,
+      (int) strevlen, strev);
+#endif
+  if (ioret & DFK_IO_ERR) {
+    DFK_ERROR_SYSCALL(dfk, "write");
+    dfk->dfk_errno = dfk_err_sys;
+    return -1;
+  }
+  assert(ioret & DFK_IO_OUT);
+  nwritten = write(sock->_socket, buf, nbytes);
+  DFK_DBG(dfk, "{%p} write returned %lld", (void*) sock, (long long) nwritten);
+  if (nwritten < 0) {
+    DFK_ERROR_SYSCALL(dfk, "write");
+    dfk->dfk_errno = dfk_err_sys;
+    return -1;
+  }
+  return nwritten;
 }
 
 /*
@@ -446,182 +495,5 @@ typedef struct dfk_tcp_socket_read_async_arg_t {
   int err;
 } dfk_tcp_socket_read_async_arg_t;
 
-
-static void dfk__tcp_socket_on_read(uv_stream_t* p, ssize_t nread, const uv_buf_t* buf)
-{
-  dfk_tcp_socket_read_async_arg_t* arg;
-  dfk_tcp_socket_t* sock;
-
-  DFK_UNUSED(buf);
-  assert(p);
-  sock = (dfk_tcp_socket_t*) p->data;
-  assert(sock);
-  arg = (dfk_tcp_socket_read_async_arg_t*) sock->_arg.data;
-  assert(arg);
-  DFK_INFO(sock->dfk, "(%p) %ld bytes read", (void*) sock, (long) nread);
-  if (nread == 0) {
-    * read returned EAGAIN or EWOULDBLOCK
-    return;
-  } else if (nread < 0) {
-    arg->err = dfk_err_sys;
-  } else {
-    arg->nbytes = nread;
-    arg->err = dfk_err_ok;
-  }
-
-  {
-    int err = uv_read_stop(p);
-    if (err != 0) {
-      arg->err = dfk_err_sys;
-      sock->dfk->sys_errno = err;
-    }
-  }
-  DFK_IO_RESUME(sock->dfk, arg->yieldback);
-}
-
-static void dfk__tcp_socket_on_alloc(uv_handle_t* p, size_t hint, uv_buf_t* buf)
-{
-  dfk_tcp_socket_read_async_arg_t* arg;
-  dfk_tcp_socket_t* sock;
-
-  (void) hint;
-  assert(p);
-  sock = (dfk_tcp_socket_t*) p->data;
-  assert(sock);
-  arg = (dfk_tcp_socket_read_async_arg_t*) sock->_arg.data;
-  assert(arg);
-
-  DFK_DBG(sock->dfk, "(%p) %lu bytes requested", (void*) sock, (unsigned long) hint);
-
-  if (arg->nbytes) {
-    *buf = uv_buf_init(arg->buf, arg->nbytes);
-  }
-}
-
-
-ssize_t dfk_tcp_socket_readv(
-    dfk_tcp_socket_t* sock,
-    dfk_iovec_t* iov,
-    size_t niov)
-{
-  if (!sock || (!iov && niov)) {
-    return dfk_err_badarg;
-  }
-  if (!niov) {
-    return dfk_err_ok;
-  }
-  * optimizations are not supported yet
-  return dfk_tcp_socket_read(sock, iov[0].data, iov[0].size);
-}
-
-
-typedef struct dfk_tcp_socket_write_async_arg_t {
-  dfk_coro_t* yieldback;
-  int err;
-} dfk_tcp_socket_write_async_arg_t;
-
-
-static void dfk__tcp_socket_on_write(uv_write_t* request, int status)
-{
-  dfk_tcp_socket_write_async_arg_t* arg;
-  dfk_tcp_socket_t* sock;
-
-  assert(request);
-  sock = (dfk_tcp_socket_t*) request->data;
-  assert(sock);
-  arg = (dfk_tcp_socket_write_async_arg_t*) sock->_arg.data;
-  assert(arg);
-  sock->_arg.data = NULL;
-
-  DFK_DBG(sock->dfk, "(%p) write returned %d", (void*) sock, status);
-
-  if (status < 0) {
-    sock->dfk->sys_errno = status;
-    arg->err = dfk_err_sys;
-  } else {
-    arg->err = dfk_err_ok;
-  }
-
-  DFK_IO_RESUME(sock->dfk, arg->yieldback);
-}
-
-
-ssize_t dfk_tcp_socket_write(
-    dfk_tcp_socket_t* sock,
-    char* buf,
-    size_t nbytes)
-{
-  if (!sock || (!buf && nbytes)) {
-    return dfk_err_badarg;
-  }
-  {
-    dfk_iovec_t iovec;
-    iovec.data = buf;
-    iovec.size = nbytes;
-    return dfk_tcp_socket_writev(sock, &iovec, 1);
-  }
-}
-
-
-ssize_t dfk_tcp_socket_writev(
-    dfk_tcp_socket_t* sock,
-    dfk_iovec_t* iov,
-    size_t niov)
-{
-  if (!sock || (!iov && niov)) {
-    return dfk_err_badarg;
-  }
-
-  if (STATE(sock) & TCP_SOCKET_WRITING) {
-    return dfk_err_inprog;
-  }
-
-  if (!(STATE(sock) & TCP_SOCKET_CONNECTED)) {
-    return dfk_err_badarg;
-  }
-
-  {
-    uv_write_t request;
-    dfk_tcp_socket_write_async_arg_t arg;
-    size_t i, totalbytes = 0;
-
-    assert(sock->dfk);
-
-    for (i = 0; i < niov; ++i) {
-      totalbytes += iov[i].size;
-    }
-
-    DFK_DBG(sock->dfk, "(%p) write %lu bytes from %lu chunks",
-        (void*) sock, (unsigned long) totalbytes, (unsigned long) niov);
-
-    if (niov == 0) {
-      return dfk_err_ok;
-    }
-
-    assert(sock->_arg.data == NULL);
-    arg.yieldback = DFK_THIS_CORO(sock->dfk);
-    arg.err = dfk_err_ok;
-    sock->_arg.data = &arg;
-    request.data = sock;
-
-    DFK_SYSCALL(sock->dfk, uv_write(
-        &request,
-        (uv_stream_t*) &sock->_socket,
-        (uv_buf_t*) iov,
-        niov,
-        dfk__tcp_socket_on_write));
-
-    sock->_flags |= TCP_SOCKET_WRITING;
-
-    DFK_IO(sock->dfk);
-
-    sock->_arg.data = NULL;
-    assert(STATE(sock) & TCP_SOCKET_WRITING);
-    sock->_flags ^= TCP_SOCKET_WRITING;
-
-    sock->dfk->dfk_errno = arg.err;
-    return arg.err == dfk_err_ok ? (ssize_t) totalbytes : -1;
-  }
-}
 
 */
