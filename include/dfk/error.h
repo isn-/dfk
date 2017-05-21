@@ -87,6 +87,11 @@ typedef enum dfk_error_e {
    */
   dfk_err_timeout,
 
+  /**
+   * Connection refused
+   */
+  dfk_err_connection_refused,
+
   _dfk_err_total
 } dfk_error_e;
 

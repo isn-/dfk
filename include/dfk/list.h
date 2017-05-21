@@ -116,8 +116,23 @@ void dfk_list_insert(dfk_list_t* list, dfk_list_hook_t* hook,
 void dfk_list_rinsert(dfk_list_t* list, dfk_list_hook_t* hook,
     dfk_list_rit* position);
 
+/**
+ * Erase all elements for the list
+ */
 void dfk_list_clear(dfk_list_t* list);
+
+/**
+ * Erase element pointed by `it' from the list
+ *
+ * @warning Value of `it' after the call is unspecified.
+ */
 void dfk_list_erase(dfk_list_t* list, dfk_list_it* it);
+
+/**
+ * Erase element pointed by `rit' from the list
+ *
+ * @warning Value of `rit' after the call is unspecified.
+ */
 void dfk_list_rerase(dfk_list_t* list, dfk_list_rit* rit);
 void dfk_list_pop_front(dfk_list_t* list);
 void dfk_list_pop_back(dfk_list_t* list);

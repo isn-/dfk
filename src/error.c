@@ -51,6 +51,10 @@ const char* dfk_strerr(dfk_t* dfk, int err)
     case dfk_err_timeout: {
       return "dfk_err_timeout(12): Timeout has expired";
     }
+    case dfk_err_connection_refused: {
+      return "dfk_err_connection_refused(13): "
+        "Another part refused the connection";
+    }
     default: {
       return "Unknown error";
     }

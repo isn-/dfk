@@ -41,6 +41,7 @@ static void dfk__scheduler_init(dfk_scheduler_t* scheduler,
   scheduler->eventloop = eventloop;
   dfk_list_init(&scheduler->pending);
   dfk_list_init(&scheduler->terminated);
+  scheduler->iowait = 0;
 }
 
 /**

@@ -9,7 +9,7 @@
 
 #pragma once
 #include <sys/epoll.h>
-#include <dfk/fiber.h>
+#include <dfk/context.h>
 
 #ifndef DFK_INCLUDE_EVENTLOOP_EPOLL_H_DIRECTLY
 #error("Do not include this header directly, use <dfk/eventloop.h>")

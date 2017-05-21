@@ -90,6 +90,7 @@ int dfk__io(dfk_eventloop_t* epoll, int socket, int events)
 {
   assert(epoll);
   dfk_t* dfk = epoll->dfk;
+  assert(dfk);
   dfk_epoll_arg_t arg = {
     .yieldback = DFK_THIS_FIBER(dfk),
     .events = 0,

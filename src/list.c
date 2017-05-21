@@ -595,11 +595,14 @@ void dfk_list_erase(dfk_list_t* list, dfk_list_it* it)
 #if DFK_DEBUG
 #if DFK_LIST_MEMORY_OPTIMIZED
   hook->_p = DFK_PDEADBEEF;
+  it->_prev = DFK_PDEADBEEF;
 #else
   hook->_next = DFK_PDEADBEEF;
   hook->_prev = DFK_PDEADBEEF;
 #endif /* DFK_LIST_MEMORY_OPTIMIZED */
   hook->_list = NULL;
+  it->value = DFK_PDEADBEEF;
+  it->_list = NULL;
 #endif /* DFK_DEBUG */
 
   DFK_LIST_CHECK_INVARIANTS(list);
@@ -619,6 +622,11 @@ void dfk_list_rerase(dfk_list_t* list, dfk_list_rit* rit)
   };
   DFK_IF_DEBUG(it._list = rit->_list);
   dfk_list_erase(list, &it);
+#if DFK_DEBUG
+  DFK_IF_LIST_MEMORY_OPTIMIZED(rit->_prev = DFK_PDEADBEEF);
+  rit->value = DFK_PDEADBEEF;
+  rit->_list = NULL;
+#endif
   DFK_LIST_CHECK_INVARIANTS(list);
 }
 

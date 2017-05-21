@@ -26,11 +26,20 @@
  * - dfk_eventloop_t
  */
 
+/*
+ * A family of DFK_INCLUDE_..._DIRECTLY defines is designed to protect against
+ * direct inclusion of <dfk/eventloop/some_backend.h>
+ */
 #if DFK_EVENT_LOOP_EPOLL
-/* A define to protect against direct inclusion of <dfk/eventloop/epoll.h> */
 #define DFK_INCLUDE_EVENTLOOP_EPOLL_H_DIRECTLY
 #include <dfk/eventloop/epoll.h>
 #undef DFK_INCLUDE_EVENTLOOP_EPOLL_H_DIRECTLY
+#endif
+
+#if DFK_EVENT_LOOP_SELECT
+#define DFK_INCLUDE_EVENTLOOP_SELECT_H_DIRECTLY
+#include <dfk/eventloop/select.h>
+#undef DFK_INCLUDE_EVENTLOOP_SELECT_H_DIRECTLY
 #endif
 
 int dfk__eventloop_init(dfk_eventloop_t* loop, dfk_t* dfk);

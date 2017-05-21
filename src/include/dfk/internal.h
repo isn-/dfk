@@ -87,7 +87,7 @@ if (((void*) (dfk) != NULL) && (dfk)->log) {\
  */
 #define DFK_ERROR_SYSCALL(dfk, syscall) \
 { \
-  DFK_ERROR((dfk), "{%p} " syscall " failed, errno=%d: %s", \
+  DFK_ERROR((dfk), "{%p} " syscall " failed, errno=%d %s", \
       (void*) (dfk), errno, strerror(errno)); \
   (dfk)->sys_errno = errno; \
 }

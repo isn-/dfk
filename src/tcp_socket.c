@@ -10,6 +10,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <dfk/tcp_socket.h>
 #include <dfk/error.h>
 #include <dfk/internal.h>
@@ -19,11 +20,31 @@ int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk)
   assert(sock);
   assert(dfk);
   DFK_DBG(dfk, "{%p}", (void*) sock);
+#if DFK_HAVE_SOCK_NONBLOCK
   int s = socket(AF_INET, SOCK_STREAM | SOCK_NONBLOCK, 0);
+#else
+  int s = socket(AF_INET, SOCK_STREAM, 0);
+#endif
   if (s == -1) {
     DFK_ERROR_SYSCALL(dfk, "socket");
     return dfk_err_sys;
   }
+#if !DFK_HAVE_SOCK_NONBLOCK
+  {
+    int flags = fcntl(s, F_GETFL, 0);
+    if (flags == -1) {
+      DFK_ERROR_SYSCALL(dfk, "fcntl");
+      close(s);
+      return dfk_err_sys;
+    }
+    flags = fcntl(s, F_SETFL, flags | O_NONBLOCK);
+    if (flags == -1) {
+      DFK_ERROR_SYSCALL(dfk, "fnctl");
+      close(s);
+      return dfk_err_sys;
+    }
+  }
+#endif
   sock->_socket = s;
   sock->dfk = dfk;
   return dfk_err_ok;
@@ -61,14 +82,40 @@ int dfk_tcp_socket_connect(dfk_tcp_socket_t* sock,
     DFK_DBG(dfk, "{%p} connect returned -1, errno=%d: %s",
         (void*) sock, errno, strerror(errno));
     if (errno == EINPROGRESS) {
-      int ioret = DFK_IO(dfk, sock->_socket, DFK_IO_IN | DFK_IO_OUT);
-      DFK_DBG(dfk, "{%p} DFK_IO returned %d", (void*) sock, ioret);
+      int ioret = DFK_IO(dfk, sock->_socket, DFK_IO_OUT);
+#if DFK_DEBUG
+      char strev[16];
+      size_t nwritten = dfk__io_events_to_str(ioret, strev, DFK_SIZE(strev));
+      DFK_DBG(dfk, "{%p} DFK_IO returned %d (%.*s)", (void*) sock, ioret,
+          (int) nwritten, strev);
+#endif
       if (ioret & DFK_IO_ERR) {
-        DFK_ERROR_SYSCALL(dfk, "connect)");
+        DFK_ERROR_SYSCALL(dfk, "connect");
         return dfk_err_sys;
       }
+      int err;
+      socklen_t errlen = sizeof(err);
+      ret = getsockopt(sock->_socket, SOL_SOCKET, SO_ERROR, &err, &errlen);
+      if (ret == -1) {
+        DFK_ERROR_SYSCALL(dfk, "getsockopt");
+        return dfk_err_sys;
+      }
+      if (err != 0) {
+        DFK_ERROR(dfk, "{%p} connect failed, errno=%d: %s",
+            (void*) dfk, err, strerror(err));
+        if (err == ECONNREFUSED) {
+          return dfk_err_connection_refused;
+        }
+        dfk->sys_errno = err;
+        return dfk_err_sys;
+      }
+    } else if (errno == ECONNREFUSED) {
+      return dfk_err_connection_refused;
     }
+  } else {
+    DFK_DBG(dfk, "{%p} connect returned OK without blocking", (void*) sock);
   }
+  DFK_DBG(dfk, "{%p} connected", (void*) sock);
   return dfk_err_ok;
 }
 
@@ -83,15 +130,22 @@ ssize_t dfk_tcp_socket_read(dfk_tcp_socket_t* sock, char* buf, size_t nbytes)
   DFK_DBG(dfk, "{%p} first read (possibly blocking) attempt returned %lld",
       (void*) sock, (long long) nread);
   if (nread >= 0) {
+    DFK_DBG(dfk, "{%p} non-blocking read of %lld bytes", (void*) sock,
+        (long long) nread);
     return nread;
   }
-  if (nread != EAGAIN) {
+  if (errno != EAGAIN) {
     DFK_ERROR_SYSCALL(dfk, "read");
     dfk->dfk_errno = dfk_err_sys;
     return -1;
   }
   int ioret = DFK_IO(dfk, sock->_socket, DFK_IO_IN);
-  DFK_DBG(dfk, "{%p} DFK_IO returned %d", (void*) sock, ioret);
+#if DFK_DEBUG
+  char strev[16];
+  size_t nwritten = dfk__io_events_to_str(ioret, strev, DFK_SIZE(strev));
+  DFK_DBG(dfk, "{%p} DFK_IO returned %d (%.*s)", (void*) sock, ioret,
+      (int) nwritten, strev);
+#endif
   if (ioret & DFK_IO_ERR) {
     DFK_ERROR_SYSCALL(dfk, "read");
     dfk->dfk_errno = dfk_err_sys;

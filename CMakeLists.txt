@@ -34,7 +34,7 @@ set(DFK_MALLOC_ALIGNMENT ${malloc_alignment} CACHE STRING
   "Expected alignment of the pointer returned by malloc().")
 set(DFK_TCP_BACKLOG 128 CACHE STRING "Default TCP backlog size.")
 set(DFK_EVENT_LOOP "AUTO" CACHE STRING
-  "Event loop implementation, options are: AUTO, EPOLL")
+  "Event loop implementation, options are: AUTO, EPOLL, SELECT")
 set(DFK_FIBERS ASM CACHE STRING "Fibers implementation, options are: ASM.")
 set(DFK_NAMED_FIBERS TRUE CACHE BOOL "Enable user-provided names for fibers.")
 set(DFK_FIBER_NAME_LENGTH 32 CACHE STRING
@@ -88,6 +88,7 @@ check_include_files(unistd.h DFK_HAVE_UNISTD_H)
 check_include_files(pthread.h DFK_HAVE_PTHREAD_H)
 check_include_files(sys/socket.h DFK_HAVE_SYS_SOCKET_H)
 check_include_files(sys/epoll.h DFK_HAVE_SYS_EPOLL_H)
+check_include_files(sys/select.h DFK_HAVE_SYS_SELECT_H)
 check_include_files(sys/types.h DFK_HAVE_SYS_TYPES_H)
 check_include_files(sys/mman.h DFK_HAVE_SYS_MMAN_H)
 check_include_files(sys/uio.h DFK_HAVE_SYS_UIO_H)
@@ -106,6 +107,8 @@ set(CMAKE_REQUIRED_INCLUDES stdio.h)
 check_function_exists(fflush DFK_HAVE_FFLUSH)
 set(CMAKE_REQUIRED_INCLUDES sys/mman.h sys/types.h)
 check_function_exists(mprotect DFK_HAVE_MPROTECT)
+check_symbol_exists(SOCK_NONBLOCK sys/types.h;sys/socket.h
+  DFK_HAVE_SOCK_NONBLOCK)
 
 # Searching for packages
 
@@ -140,7 +143,12 @@ endif()
 
 if(DFK_EVENT_LOOP STREQUAL EPOLL AND NOT DFK_HAVE_SYS_EPOLL_H)
   message(FATAL_ERROR
-    "Can not use epoll for event loop, missing <sys/epoll.h>")
+    "Can not use epoll for event loop, <sys/epoll.h> is missing")
+endif()
+
+if(DFK_EVENT_LOOP STREQUAL SELECT AND NOT DFK_HAVE_SYS_SELECT_H)
+  message(FATAL_ERROR
+    "Can not use select for event loop, <sys/select.h> is missing")
 endif()
 
 if(DFK_MAINTAINER_MODE)
@@ -174,6 +182,8 @@ endif()
 if(DFK_EVENT_LOOP STREQUAL AUTO)
   if(DFK_HAVE_SYS_EPOLL_H)
     set(DFK_EVENT_LOOP EPOLL)
+  elseif(DFK_HAVE_SYS_SELECT_H)
+    set(DFK_EVENT_LOOP SELECT)
   else()
     message(FATAL_ERROR
       "No suitable event loop implementation found.\n"
@@ -208,6 +218,10 @@ endif()
 
 if(DFK_EVENT_LOOP STREQUAL EPOLL)
   set(DFK_EVENT_LOOP_EPOLL 1)
+endif()
+
+if(DFK_EVENT_LOOP STREQUAL SELECT)
+  set(DFK_EVENT_LOOP_SELECT 1)
 endif()
 
 # Generate dfk/config.h
@@ -260,6 +274,10 @@ set(dfk_sources
 
 if(DFK_EVENT_LOOP_EPOLL)
   list(APPEND dfk_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/epoll.c")
+endif()
+
+if(DFK_EVENT_LOOP_SELECT)
+  list(APPEND dfk_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/select.c")
 endif()
 
 #if(DFK_FILESERVER)

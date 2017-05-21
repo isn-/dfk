@@ -41,6 +41,7 @@
 #cmakedefine01 DFK_HAVE_SIGALTSTACK
 #cmakedefine01 DFK_HAVE_NANOSLEEP
 #cmakedefine01 DFK_HAVE_FFLUSH
+#cmakedefine01 DFK_HAVE_SOCK_NONBLOCK
 #cmakedefine01 DFK_HAVE_MPROTECT
 
 /**
@@ -77,6 +78,11 @@
  * Defined if #DFK_EVENT_LOOP is equal to "EPOLL"
  */
 #cmakedefine01 DFK_EVENT_LOOP_EPOLL
+
+/**
+ * Defined if #DFK_EVENT_LOOP is equal to "SELECT"
+ */
+#cmakedefine01 DFK_EVENT_LOOP_SELECT
 
 /**
  * Fibers implementation
