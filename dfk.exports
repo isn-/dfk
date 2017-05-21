@@ -52,6 +52,9 @@ dfk_urldecode
 dfk_urlencode_hint
 dfk_urlencode
 
+dfk_init
+dfk_free
+dfk_work
 dfk_sizeof
 
 dfk_strerr

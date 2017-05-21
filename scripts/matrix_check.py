@@ -23,6 +23,7 @@ linux = platform.system() == "Linux"
 
 CMAKE_OPTIONS = {
     "CMAKE_BUILD_TYPE": ("Debug", "Release"),
+    "BUILD_SHARED_LIBS": ("ON", "OFF"),
     "DFK_NAMED_FIBERS": ("ON", "OFF"),
     "DFK_DEBUG": ("ON", "OFF"),
     "DFK_MOCKS": ("ON", "OFF"),
