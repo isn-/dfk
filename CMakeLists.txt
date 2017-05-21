@@ -1,10 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
 project(dfk C CXX)
 
-if("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
-  message(FATAL_ERROR "\nIn-source builds are not allowed.\nTry 'mkdir build && cd build && cmake ..'")
-endif()
-
 set(CMAKE_MACOSX_RPATH ON)
 set(CMAKE_PREFIX_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cpm_packages)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
@@ -13,17 +9,15 @@ include(CheckIncludeFiles)
 include(CheckSymbolExists)
 include(CheckFunctionExists)
 
+fw_forbid_in_source_build()
+fw_default_build_type(Debug)
+
 fw_version_from_file(version DFK_VERSION DFK_VERSION_MAJOR DFK_VERSION_MINOR DFK_VERSION_PATCH)
 fw_version_from_git(DFK_VERSION DFK_VERSION_MAJOR DFK_VERSION_MINOR DFK_VERSION_PATCH)
 fw_page_size(page_size)
 fw_stack_size(stack_size)
 fw_guard_size(guard_size)
 fw_malloc_alignment(malloc_alignment)
-
-if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE Debug CACHE STRING
-    "Choose the type of build, options are: None(CMAKE_CXX_FLAGS or CMAKE_C_FLAGS used) Debug Release RelWithDebInfo MinSizeRel." FORCE)
-endif()
 
 # Options that configure *what* to build
 set(DFK_BUILD_UNIT_TESTS TRUE CACHE BOOL "Build unit tests.")
@@ -233,11 +227,7 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib")
 add_subdirectory(thirdparty)
 
 # Enable C11 for dfk code
-if(CMAKE_COMPILER_IS_GNUCC AND CMAKE_C_COMPILER_VERSION VERSION_LESS 4.7)
-  fw_c_flags("-std=c1x")
-else()
-  fw_c_flags("-std=c11")
-endif()
+fw_c11()
 
 # Enable hardcore warnings mode.
 fw_c_flags("-Wall -Wextra -pedantic")
