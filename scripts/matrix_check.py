@@ -9,6 +9,7 @@ import sys
 import uuid
 import os
 import os.path
+import platform
 import stat
 import shutil
 import subprocess
@@ -16,6 +17,9 @@ import random
 import platform
 from datetime import datetime
 from multiprocessing import Pool, Queue, Manager
+
+macos = platform.system() == "Darwin"
+linux = platform.system() == "Linux"
 
 CMAKE_OPTIONS = {
     "CMAKE_BUILD_TYPE": ("Debug", "Release"),
@@ -29,10 +33,15 @@ CMAKE_OPTIONS = {
     "DFK_AVLTREE_CONSTANT_TIME_SIZE": ("ON", "OFF"),
     "DFK_URLENCODING_HINT_HEURISRICS": ("ON", "OFF"),
     "DFK_STACK_ALIGNMENT": ("16", "64"),
-    "DFK_EVENT_LOOP": ("AUTO", "EPOLL"),
+    "DFK_EVENT_LOOP": ("AUTO",),
     # Temporary disable those, until build is broken
     "DFK_BUILD_CPP_BINDINGS": ("OFF",),
 }
+
+if macos:
+    CMAKE_OPTIONS["DFK_EVENT_LOOP"] = ("AUTO", "SELECT")
+elif linux:
+    CMAKE_OPTIONS["DFK_EVENT_LOOP"] = ("AUTO", "SELECT", "EPOLL")
 
 BUILD_SCRIPT = (
 "#!/usr/bin/env bash\n"
@@ -104,7 +113,13 @@ def main():
             help="allow N parallel jobs")
     parser.add_argument("-s", "--skip", metavar='COUNT', default=None, type=int,
             help="skip first COUNT jobs")
+    parser.add_argument("--print-matrix", action="store_true",
+            help="print testm matrix and return, do not actually run any tests")
     args = parser.parse_args()
+    if args.print_matrix:
+        for k, v in sorted(CMAKE_OPTIONS.items()):
+            print(k, v)
+        return 0
     script_dir = os.path.dirname(os.path.realpath(__file__))
     source_dir = os.path.realpath(os.path.join(script_dir, os.path.pardir))
     paramlist = sorted([(k, v) for k, v in CMAKE_OPTIONS.items()])
