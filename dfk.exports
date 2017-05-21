@@ -68,3 +68,8 @@ dfk_arena_alloc
 dfk_arena_alloc_copy
 dfk_arena_alloc_ex
 dfk_arena_alloc_copy_ex
+
+dfk_tcp_socket_init
+dfk_tcp_socket_connect
+dfk_tcp_socket_read
+dfk_tcp_socket_close

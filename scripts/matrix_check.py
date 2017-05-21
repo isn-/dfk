@@ -83,7 +83,7 @@ def format_parameters(params, formatstr, joinsep=os.linesep):
 
 def run_job(queue, njob, totaljobs, parameters, source_dir):
     jobid = str(uuid.uuid4())
-    scriptwd = os.path.join("/tmp", jobid)
+    scriptwd = os.path.join("/tmp", "dfk", jobid)
     scriptsh = os.path.join(scriptwd, "run.sh")
     try:
         os.makedirs(scriptwd)

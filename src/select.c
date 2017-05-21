@@ -15,6 +15,7 @@
 #define TO_FDLIST_ELEMENT(expr) \
   DFK_CONTAINER_OF((expr), dfk_fdlist_element_t, hook)
 
+#ifndef NDEBUG
 #if DFK_DEBUG
 static int dfk__eventloop_fd_in_set(dfk_eventloop_t* loop, int fd)
 {
@@ -28,7 +29,8 @@ static int dfk__eventloop_fd_in_set(dfk_eventloop_t* loop, int fd)
   }
   return 0;
 }
-#endif
+#endif /* DFK_DEBUG */
+#endif /* ifndef NDEBUG */
 
 int dfk__eventloop_init(dfk_eventloop_t* loop, dfk_t* dfk)
 {
