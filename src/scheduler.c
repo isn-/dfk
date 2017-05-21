@@ -192,13 +192,17 @@ void dfk__postpone(dfk_scheduler_t* scheduler)
 void dfk__scheduler_main(dfk_fiber_t* fiber, void* arg)
 {
   assert(fiber);
+  assert(fiber->dfk);
+  assert(arg);
+
   dfk_t* dfk = fiber->dfk;
-  assert(dfk);
+  dfk_fiber_t* mainf = (dfk_fiber_t*) arg;
 
   dfk_eventloop_t eventloop;
   dfk_fiber_t* loopf = dfk__run(dfk, dfk__eventloop_main, &eventloop, 0);
   if (!loopf) {
     DFK_ERROR(dfk, "can not spawn fiber for eventloop");
+    dfk__fiber_free(dfk, mainf);
     /* A proper way of terminating scheduler */
     coro_transfer(&fiber->_ctx, &dfk->_comeback);
   }
@@ -210,8 +214,6 @@ void dfk__scheduler_main(dfk_fiber_t* fiber, void* arg)
   dfk->_eventloop = &eventloop;
 
   /* Scheduler is initialized - now we can schedule main fiber manually */
-  dfk_fiber_t* mainf = (dfk_fiber_t*) arg;
-  assert(mainf);
   dfk__resume(&scheduler, mainf);
 
   int ret = 0;
@@ -231,6 +233,7 @@ void dfk__scheduler_main(dfk_fiber_t* fiber, void* arg)
 #else
   DFK_DBG(dfk, "context switch {%p} -> {init}", (void*) dfk->_scheduler);
 #endif
+  dfk__fiber_free(dfk, loopf);
   /* Story ends, main character rudes into the sunset */
   coro_transfer(&fiber->_ctx, &dfk->_comeback);
 } /* LCOV_EXCL_LINE */

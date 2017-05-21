@@ -28,7 +28,8 @@
  * @todo Write a wrapper that properly handles "return from scheduler", see
  * scheduler.c:202
  *
- * @param arg a pointer to main fiber
+ * @param arg  a pointer to main fiber (dfk_fiber_t*). Scheduler is responsible
+ * for cleaning up main fiber using dfk__fiber_free.
  */
 void dfk__scheduler_main(dfk_fiber_t* fiber, void* arg);
 
