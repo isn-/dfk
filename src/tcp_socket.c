@@ -15,6 +15,23 @@
 #include <dfk/error.h>
 #include <dfk/internal.h>
 
+static int dfk__tcp_socket_make_nonblock(dfk_t* dfk, int s)
+{
+  int flags = fcntl(s, F_GETFL, 0);
+  if (flags == -1) {
+    DFK_ERROR_SYSCALL(dfk, "fcntl");
+    close(s);
+    return dfk_err_sys;
+  }
+  flags = fcntl(s, F_SETFL, flags | O_NONBLOCK);
+  if (flags == -1) {
+    DFK_ERROR_SYSCALL(dfk, "fnctl");
+    close(s);
+    return dfk_err_sys;
+  }
+  return dfk_err_ok;
+}
+
 int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk)
 {
   assert(sock);
@@ -31,17 +48,9 @@ int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk)
   }
 #if !DFK_HAVE_SOCK_NONBLOCK
   {
-    int flags = fcntl(s, F_GETFL, 0);
-    if (flags == -1) {
-      DFK_ERROR_SYSCALL(dfk, "fcntl");
-      close(s);
-      return dfk_err_sys;
-    }
-    flags = fcntl(s, F_SETFL, flags | O_NONBLOCK);
-    if (flags == -1) {
-      DFK_ERROR_SYSCALL(dfk, "fnctl");
-      close(s);
-      return dfk_err_sys;
+    int err = dfk__tcp_socket_make_nonblock(dfk, s);
+    if (err != dfk_err_ok) {
+      return err;
     }
   }
 #endif
@@ -131,8 +140,9 @@ ssize_t dfk_tcp_socket_read(dfk_tcp_socket_t* sock, char* buf, size_t nbytes)
   dfk_t* dfk = sock->dfk;
 
   ssize_t nread = read(sock->_socket, buf, nbytes);
-  DFK_DBG(dfk, "{%p} first read (possibly blocking) attempt returned %lld",
-      (void*) sock, (long long) nread);
+  DFK_DBG(dfk, "{%p} read (possibly blocking) attempt returned %lld, "
+      "errno = %d",
+      (void*) sock, (long long) nread, errno);
   if (nread >= 0) {
     DFK_DBG(dfk, "{%p} non-blocking read of %lld bytes", (void*) sock,
         (long long) nread);
@@ -176,8 +186,8 @@ ssize_t dfk_tcp_socket_write(dfk_tcp_socket_t* sock, char* buf, size_t nbytes)
   dfk_t* dfk = sock->dfk;
 
   ssize_t nwritten = write(sock->_socket, buf, nbytes);
-  DFK_DBG(dfk, "{%p} first write (possibly blocking) attempt returned %lld",
-      (void*) sock, (long long) nwritten);
+  DFK_DBG(dfk, "{%p} write (possibly blocking) attempt returned %lld, errno=%d",
+      (void*) sock, (long long) nwritten, errno);
   if (nwritten >= 0) {
     DFK_DBG(dfk, "{%p} non-blocking write of %lld bytes", (void*) sock,
         (long long) nwritten);
@@ -209,6 +219,93 @@ ssize_t dfk_tcp_socket_write(dfk_tcp_socket_t* sock, char* buf, size_t nbytes)
     return -1;
   }
   return nwritten;
+}
+
+typedef struct dfk_tcp_socket_accepted_main_arg_t {
+  dfk_tcp_socket_t socket;
+  void (*callback)(dfk_fiber_t*, dfk_tcp_socket_t*, void*);
+  void* cbarg;
+} dfk_tcp_socket_accepted_main_arg_t;
+
+static void dfk__tcp_socket_accepted_main(dfk_fiber_t* fiber, void* arg)
+{
+  dfk_tcp_socket_accepted_main_arg_t* a = arg;
+  assert(fiber);
+  assert(a);
+  assert(a->callback);
+
+  a->callback(fiber, &a->socket, a->cbarg);
+}
+
+int dfk_tcp_socket_listen(dfk_tcp_socket_t* sock,
+    const char* endpoint, uint16_t port,
+    void (*callback)(dfk_fiber_t*, dfk_tcp_socket_t*, void*),
+    void* cbarg, size_t backlog)
+{
+  assert(sock);
+  assert(endpoint);
+  assert(port);
+  assert(callback);
+  assert(backlog);
+
+  dfk_t* dfk = sock->dfk;
+
+  struct sockaddr_in bindaddr;
+  bindaddr.sin_family = AF_INET;
+  inet_aton(endpoint, (struct in_addr*) &bindaddr.sin_addr.s_addr);
+  bindaddr.sin_port = htons(port);
+
+  socklen_t sockaddr_size = sizeof(struct sockaddr_in);
+
+  int err = bind(sock->_socket, (struct sockaddr*) &bindaddr, sockaddr_size);
+  if (err < 0) {
+    DFK_ERROR_SYSCALL(dfk, "bind");
+    return dfk_err_sys;
+  }
+
+  err = listen(sock->_socket, backlog);
+  if (err < 0) {
+    DFK_ERROR_SYSCALL(dfk, "listen");
+    return dfk_err_sys;
+  }
+
+  while (1) {
+    struct sockaddr_in client;
+    int s = accept(sock->_socket, (struct sockaddr*) &client, &sockaddr_size);
+    if (s < 0) {
+      if (errno == EWOULDBLOCK) {
+        int ioret = DFK_IO(dfk, sock->_socket, DFK_IO_IN);
+#if DFK_DEBUG
+        char strev[16];
+        size_t nwritten = dfk__io_events_to_str(ioret, strev, DFK_SIZE(strev));
+        DFK_DBG(dfk, "{%p} DFK_IO returned %d (%.*s)", (void*) sock, ioret,
+            (int) nwritten, strev);
+#endif
+        if (ioret & DFK_IO_ERR) {
+          DFK_ERROR_SYSCALL(dfk, "accept");
+          return dfk_err_sys;
+        }
+      } else {
+        DFK_ERROR_SYSCALL(dfk, "accept");
+        return dfk_err_sys;
+      }
+      continue;
+    }
+    DFK_DBG(dfk, "switch socket %d to non-blocking mode", s);
+    int err = dfk__tcp_socket_make_nonblock(dfk, s);
+    if (err != dfk_err_ok) {
+      continue;
+    }
+    dfk_tcp_socket_accepted_main_arg_t arg = {
+      .socket = {
+        .dfk = dfk,
+       ._socket = s
+      },
+      .callback = callback,
+      .cbarg = cbarg
+    };
+    dfk_run(dfk, dfk__tcp_socket_accepted_main, &arg, sizeof(arg));
+  }
 }
 
 /*

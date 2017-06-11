@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <dfk/context.h>
 #include <dfk/misc.h>
+#include <dfk/fiber.h>
 
 /**
  * TCP socket object
@@ -34,6 +35,12 @@ typedef struct dfk_tcp_socket_t {
  * @return
  * - ::dfk_err_ok On success
  * - ::dfk_err_sys If socket(2) syscall failed
+ *
+ * @internal
+ * TCP socket object is manually initialized bypassing dfk_tcp_socket_init
+ * method when a new incoming connection is accepted. When adding any new code
+ * to the dfk_tcp_socket_init method and/or new members to the dfk_tcp_socket_t
+ * structure don't forget to handle them in the dfk_tcp_socket_listen.
  */
 int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk);
 
@@ -67,14 +74,11 @@ ssize_t dfk_tcp_socket_write(dfk_tcp_socket_t* sock, char* buf, size_t nbytes);
  *
  * To stop listening, call dfk_tcp_socket_close.
  * Callback is executed for each incoming connection.
-int dfk_tcp_socket_listen(
-    dfk_tcp_socket_t* sock,
-    const char* endpoint,
-    uint16_t port,
-    void (*callback)(dfk_coro_t*, dfk_tcp_socket_t*, void*),
-    void* cbarg,
-    size_t backlog);
  */
+int dfk_tcp_socket_listen(dfk_tcp_socket_t* sock,
+    const char* endpoint, uint16_t port,
+    void (*callback)(dfk_fiber_t*, dfk_tcp_socket_t*, void*),
+    void* cbarg, size_t backlog);
 
 
 /**
