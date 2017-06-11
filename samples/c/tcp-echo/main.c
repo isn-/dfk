@@ -6,30 +6,20 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <dfk.h>
-#include <dfk/internal.h>
+#include <dfk/tcp_socket.h>
 
-
-typedef struct args_t {
-  int argc;
-  char** argv;
-} args_t;
-
-
-static void connection_handler(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p)
+static void connection(dfk_fiber_t* fiber, dfk_tcp_socket_t* sock, void* arg)
 {
-  char buf[512] = {0};
-  ssize_t nread, nwritten;
-
-  DFK_UNUSED(coro);
-  DFK_UNUSED(p);
+  (void) fiber;
+  (void) arg;
 
   for (;;) {
-    nread = dfk_tcp_socket_read(sock, buf, sizeof(buf));
-    if (nread < 0) {
+    char buf[512] = {0};
+    ssize_t nread = dfk_tcp_socket_read(sock, buf, sizeof(buf));
+    if (nread <= 0) {
       break;
     }
-    nwritten = dfk_tcp_socket_write(sock, buf, nread);
+    ssize_t nwritten = dfk_tcp_socket_write(sock, buf, nread);
     if (nwritten != nread) {
       break;
     }
@@ -38,30 +28,23 @@ static void connection_handler(dfk_coro_t* coro, dfk_tcp_socket_t* sock, void* p
   (void) dfk_tcp_socket_close(sock);
 }
 
-
-static void dfk_main(dfk_coro_t* coro, void* p)
+static void dfkmain(dfk_fiber_t* fiber, void* arg)
 {
+  (void) arg;
+  dfk_t* dfk = fiber->dfk;
   dfk_tcp_socket_t sock;
-  args_t* args = (args_t*) p;
-  DFK_CALL_RVOID(coro->dfk, dfk_tcp_socket_init(&sock, coro->dfk));
-  DFK_CALL_RVOID(coro->dfk,
-      dfk_tcp_socket_listen(&sock, args->argv[1], atoi(args->argv[2]), connection_handler, NULL, 0));
+  dfk_tcp_socket_init(&sock, dfk);
+  dfk_tcp_socket_listen(&sock, "127.0.0.1", 20000, connection, NULL, 100);
 }
-
 
 int main(int argc, char** argv)
 {
+  (void) argc;
+  (void) argv;
   dfk_t dfk;
-  args_t args;
-  if (argc != 3) {
-    fprintf(stderr, "usage: %s <ip> <port>\n", argv[0]);
-    return 1;
-  }
-  args.argc = argc;
-  args.argv = argv;
   dfk_init(&dfk);
-  (void) dfk_run(&dfk, dfk_main, &args, 0);
-  DFK_CALL(&dfk, dfk_work(&dfk));
-  return dfk_free(&dfk);
+  dfk_work(&dfk, dfkmain, NULL, 0);
+  dfk_free(&dfk);
+  return 0;
 }
 

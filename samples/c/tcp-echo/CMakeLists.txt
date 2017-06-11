@@ -1,2 +1,2 @@
-add_executable(tcp-echo main.c)
-target_link_libraries(tcp-echo dfk)
+add_executable(dfk-tcp-echo main.c)
+target_link_libraries(dfk-tcp-echo dfk)

@@ -4,7 +4,6 @@
  * Licensed under the MIT License (see LICENSE)
  */
 
-
 #include <stdio.h>
 #include <dfk/context.h>
 #include <dfk/fiber.h>
@@ -35,6 +34,7 @@ int main(int argc, char** argv)
   dfk_t dfk;
   dfk_init(&dfk);
   dfk_work(&dfk, dfkmain, NULL, 0);
+  dfk_free(&dfk);
   return 0;
 }
 
