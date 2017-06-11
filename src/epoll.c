@@ -83,6 +83,9 @@ void dfk__eventloop_main(dfk_fiber_t* fiber, void* arg)
         break;
       }
     }
+    if (nfd) {
+      DFK_SUSPEND(dfk);
+    }
   }
 }
 

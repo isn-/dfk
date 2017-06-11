@@ -26,6 +26,7 @@ static int dfk__eventloop_fd_in_set(dfk_eventloop_t* loop, int fd)
     if (TO_FDLIST_ELEMENT(it.value)->fd == fd) {
       return 1;
     }
+    dfk_list_it_next(&it);
   }
   return 0;
 }
@@ -96,6 +97,7 @@ void dfk__eventloop_main(dfk_fiber_t* fiber, void* arg)
       continue;
     }
     {
+      int any_ready = 0;
       dfk_list_it it, end;
       dfk_list_begin(&loop->fds, &it);
       dfk_list_end(&loop->fds, &end);
@@ -128,11 +130,15 @@ void dfk__eventloop_main(dfk_fiber_t* fiber, void* arg)
           dfk_list_it_next(&it);
           dfk_list_erase(&loop->fds, &itcopy);
           DFK_IORESUME(e->yieldback);
+          any_ready = 1;
         } else {
           DFK_DBG(dfk, "{%p} no events received for fd %d",
               (void*) loop, e->fd);
           dfk_list_it_next(&it);
         }
+      }
+      if (any_ready) {
+        DFK_SUSPEND(dfk);
       }
     }
   }
