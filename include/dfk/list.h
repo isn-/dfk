@@ -184,12 +184,30 @@ size_t dfk_list_sizeof(void);
 
 void dfk_list_begin(dfk_list_t* list, dfk_list_it* it);
 void dfk_list_end(dfk_list_t* list, dfk_list_it* it);
+
+/**
+ * Obtain iterator to the list element
+ *
+ * @par Complexity
+ * Linear, if #DFK_LIST_MEMORY_OPTIMIZED is enabled, constant otherwise.
+ */
+void dfk_list_it_from_value(dfk_list_t* list, dfk_list_hook_t* value,
+    dfk_list_it* it);
 void dfk_list_it_next(dfk_list_it* it);
 int dfk_list_it_equal(dfk_list_it* lhs, dfk_list_it* rhs);
 size_t dfk_list_it_sizeof(void);
 
 void dfk_list_rbegin(dfk_list_t* list, dfk_list_rit* rit);
 void dfk_list_rend(dfk_list_t* list, dfk_list_rit* rit);
+
+/**
+ * Obtain reverse iterator to the list element
+ *
+ * @par Complexity
+ * Linear, if #DFK_LIST_MEMORY_OPTIMIZED is enabled, constant otherwise.
+ */
+void dfk_list_rit_from_value(dfk_list_t* list, dfk_list_hook_t* value,
+    dfk_list_rit* rit);
 void dfk_list_rit_next(dfk_list_rit* rit);
 int dfk_list_rit_equal(dfk_list_rit* lhs, dfk_list_rit* rhs);
 size_t dfk_list_rit_sizeof(void);

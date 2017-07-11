@@ -646,3 +646,29 @@ TEST_F(myint_fixture, list, swap_full_full)
   myint_expect_equal(&dst, fixture->int_values, DFK_SIZE(fixture->int_values));
 }
 
+TEST_F(myint_fixture, list, it_from_value)
+{
+  dfk_list_t* l = &fixture->l;
+  for (size_t i = 0; i < DFK_SIZE(fixture->values); ++i) {
+    dfk_list_append(l, &fixture->values[i].hook);
+  }
+  for (size_t i = 0; i < DFK_SIZE(fixture->values); ++i) {
+    dfk_list_it it;
+    dfk_list_it_from_value(l, &fixture->values[i].hook, &it);
+    EXPECT(((myint_t*) it.value)->value == fixture->values[i].value);
+  }
+}
+
+TEST_F(myint_fixture, list, rit_from_value)
+{
+  dfk_list_t* l = &fixture->l;
+  for (size_t i = 0; i < DFK_SIZE(fixture->values); ++i) {
+    dfk_list_append(l, &fixture->values[i].hook);
+  }
+  for (size_t i = 0; i < DFK_SIZE(fixture->values); ++i) {
+    dfk_list_rit rit;
+    dfk_list_rit_from_value(l, &fixture->values[i].hook, &rit);
+    EXPECT(((myint_t*) rit.value)->value == fixture->values[i].value);
+  }
+}
+

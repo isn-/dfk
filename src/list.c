@@ -760,6 +760,39 @@ void dfk_list_end(dfk_list_t* list, dfk_list_it* it)
 }
 
 
+void dfk_list_it_from_value(dfk_list_t* list, dfk_list_hook_t* value,
+    dfk_list_it* it)
+{
+  DFK_LIST_CHECK_INVARIANTS(list);
+  DFK_LIST_HOOK_CHECK_INVARIANTS(value);
+  DFK_IF_DEBUG(assert(value->_list == list));
+  assert(it);
+#if DFK_LIST_MEMORY_OPTIMIZED
+  dfk_list_begin(list, it);
+  /*
+   * One can not construct a valid iterator without a pointer to the element
+   * prior to the `value', therefore one have to iterate over the entire list
+   * to find an iterator that points to the `value'.
+   */
+  while (it->value != value) {
+    dfk_list_it_next(&it);
+    DFK_IF_DEBUG({
+      dfk_list_it end;
+      dfk_list_end(list, &end);
+      assert(!dfk_list_it_equal(&it, &end));
+    });
+  }
+#else
+  DFK_UNUSED(list);
+  it->value = value;
+#endif
+  DFK_IF_DEBUG(it->_list = value->_list);
+  DFK_LIST_IT_CHECK_INVARIANTS(it);
+  DFK_LIST_HOOK_CHECK_INVARIANTS(value);
+  DFK_LIST_CHECK_INVARIANTS(list);
+}
+
+
 void dfk_list_it_next(dfk_list_it* it)
 {
   DFK_LIST_IT_CHECK_INVARIANTS(it);
@@ -808,6 +841,39 @@ void dfk_list_rend(dfk_list_t* list, dfk_list_rit* rit)
   rit->value = NULL;
   DFK_IF_DEBUG(rit->_list = list);
   DFK_LIST_RIT_CHECK_INVARIANTS(rit);
+}
+
+
+void dfk_list_rit_from_value(dfk_list_t* list, dfk_list_hook_t* value,
+    dfk_list_rit* rit)
+{
+  DFK_LIST_CHECK_INVARIANTS(list);
+  DFK_LIST_HOOK_CHECK_INVARIANTS(value);
+  DFK_IF_DEBUG(assert(value->_list == list));
+  assert(rit);
+#if DFK_LIST_MEMORY_OPTIMIZED
+  dfk_list_rbegin(list, rit);
+  /*
+   * One can not construct a valid iterator without a pointer to the element
+   * next to the `value', therefore one have to iterate over the entire list
+   * to find an iterator that points to the `value'.
+   */
+  while (rit->value != value) {
+    dfk_list_rit_next(&it);
+    DFK_IF_DEBUG({
+      dfk_list_rit end;
+      dfk_list_rend(list, &end);
+      assert(!dfk_list_rit_equal(&it, &end));
+    });
+  }
+#else
+  DFK_UNUSED(list);
+  rit->value = value;
+#endif
+  DFK_IF_DEBUG(rit->_list = value->_list);
+  DFK_LIST_RIT_CHECK_INVARIANTS(rit);
+  DFK_LIST_HOOK_CHECK_INVARIANTS(value);
+  DFK_LIST_CHECK_INVARIANTS(list);
 }
 
 
