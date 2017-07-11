@@ -98,6 +98,7 @@ check_include_files(ucontext.h DFK_HAVE_UCONTEXT_H)
 check_include_files(setjmp.h DFK_HAVE_SETJMP_H)
 check_include_files(time.h DFK_HAVE_TIME_H)
 check_include_files(ctype.h DFK_HAVE_CTYPE_H)
+check_include_files(stdatomic.h DFK_HAVE_STDATOMIC_H)
 
 set(CMAKE_REQUIRED_INCLUDES signal.h)
 check_function_exists(sigaltstack DFK_HAVE_SIGALTSTACK)
