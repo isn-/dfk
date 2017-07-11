@@ -11,6 +11,7 @@
 #include <stddef.h>
 #include <signal.h>
 #include <dfk/misc.h>
+#include <dfk/list.h>
 #include <dfk/thirdparty/libcoro/coro.h>
 
 /**
@@ -68,6 +69,11 @@ typedef struct dfk_t {
    */
   struct coro_context _comeback;
   sig_atomic_t _stopped;
+
+  /**
+   * A list of active tcp servers to wait for when dfk_stop() is called.
+   */
+  dfk_list_t _tcp_servers;
 } dfk_t;
 
 /**

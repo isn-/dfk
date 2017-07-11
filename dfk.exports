@@ -78,3 +78,10 @@ dfk_tcp_socket_listen
 dfk_tcp_socket_read
 dfk_tcp_socket_write
 dfk_tcp_socket_close
+
+dfk_tcp_server_init
+dfk_tcp_server_free
+dfk_tcp_serve
+dfk_tcp_server_is_stopping
+dfk_tcp_server_stop
+dfk_tcp_server_sizeof

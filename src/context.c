@@ -92,6 +92,7 @@ void dfk_init(dfk_t* dfk)
   dfk->_terminator = NULL;
   memset(&dfk->_comeback, 0, sizeof(dfk->_comeback));;
   dfk->_stopped = 0;
+  dfk_list_init(&dfk->_tcp_servers);
 }
 
 void dfk_free(dfk_t* dfk)
