@@ -55,7 +55,7 @@ void dfk__eventloop_main(dfk_fiber_t* fiber, void* arg)
 
   while (1) {
     struct epoll_event fds[64];
-    int nfd = epoll_wait(epoll->fd, fds, DFK_SIZE(fds), 1000);
+    int nfd = epoll_wait(epoll->fd, fds, DFK_SIZE(fds), -1);
     if (nfd == -1) {
       DFK_ERROR_SYSCALL(dfk, "epoll_wait(2)");
       break;
