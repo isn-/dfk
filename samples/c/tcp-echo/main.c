@@ -8,7 +8,7 @@
 #include <stdlib.h>
 #include <dfk/tcp_socket.h>
 
-static void connection(dfk_fiber_t* fiber, dfk_tcp_socket_t* sock, void* arg)
+static void connection(dfk_fiber_t* fiber, dfk_tcp_socket_t* sock, dfk_userdata_t  arg)
 {
   (void) fiber;
   (void) arg;
@@ -34,7 +34,8 @@ static void dfkmain(dfk_fiber_t* fiber, void* arg)
   dfk_t* dfk = fiber->dfk;
   dfk_tcp_socket_t sock;
   dfk_tcp_socket_init(&sock, dfk);
-  dfk_tcp_socket_listen(&sock, "127.0.0.1", 20000, connection, NULL, 100);
+  dfk_tcp_socket_listen(&sock, "127.0.0.1", 20000, connection,
+      (dfk_userdata_t) {.data = NULL}, 100);
 }
 
 int main(int argc, char** argv)

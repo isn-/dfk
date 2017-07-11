@@ -77,8 +77,8 @@ ssize_t dfk_tcp_socket_write(dfk_tcp_socket_t* sock, char* buf, size_t nbytes);
  */
 int dfk_tcp_socket_listen(dfk_tcp_socket_t* sock,
     const char* endpoint, uint16_t port,
-    void (*callback)(dfk_fiber_t*, dfk_tcp_socket_t*, void*),
-    void* cbarg, size_t backlog);
+    void (*callback)(dfk_fiber_t*, dfk_tcp_socket_t*, dfk_userdata_t),
+    dfk_userdata_t callback_ud, size_t backlog);
 
 
 /**

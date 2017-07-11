@@ -223,8 +223,8 @@ ssize_t dfk_tcp_socket_write(dfk_tcp_socket_t* sock, char* buf, size_t nbytes)
 
 typedef struct dfk_tcp_socket_accepted_main_arg_t {
   dfk_tcp_socket_t socket;
-  void (*callback)(dfk_fiber_t*, dfk_tcp_socket_t*, void*);
-  void* cbarg;
+  void (*callback)(dfk_fiber_t*, dfk_tcp_socket_t*, dfk_userdata_t);
+  dfk_userdata_t callback_ud;
 } dfk_tcp_socket_accepted_main_arg_t;
 
 static void dfk__tcp_socket_accepted_main(dfk_fiber_t* fiber, void* arg)
@@ -233,14 +233,13 @@ static void dfk__tcp_socket_accepted_main(dfk_fiber_t* fiber, void* arg)
   assert(fiber);
   assert(a);
   assert(a->callback);
-
-  a->callback(fiber, &a->socket, a->cbarg);
+  a->callback(fiber, &a->socket, a->callback_ud);
 }
 
 int dfk_tcp_socket_listen(dfk_tcp_socket_t* sock,
     const char* endpoint, uint16_t port,
-    void (*callback)(dfk_fiber_t*, dfk_tcp_socket_t*, void*),
-    void* cbarg, size_t backlog)
+    void (*callback)(dfk_fiber_t*, dfk_tcp_socket_t*, dfk_userdata_t),
+    dfk_userdata_t callback_ud, size_t backlog)
 {
   assert(sock);
   assert(endpoint);
@@ -302,7 +301,7 @@ int dfk_tcp_socket_listen(dfk_tcp_socket_t* sock,
        ._socket = s
       },
       .callback = callback,
-      .cbarg = cbarg
+      .callback_ud = callback_ud
     };
     dfk_run(dfk, dfk__tcp_socket_accepted_main, &arg, sizeof(arg));
   }
