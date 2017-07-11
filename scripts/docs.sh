@@ -33,9 +33,10 @@ if [ "$TRAVIS" == "true" ]; then
   fi
 
   # download and unpack latest doxygen release
-  wget http://ftp.stack.nl/pub/users/dimitri/doxygen-1.8.13.linux.bin.tar.gz
-  tar xzvf doxygen-1.8.11.linux.bin.tar.gz
-  DOXYGEN="$(pwd)/doxygen-1.8.11/bin/doxygen"
+  DOXYGEN_VERSION=1.8.13
+  wget http://ftp.stack.nl/pub/users/dimitri/doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz
+  tar xzvf doxygen-${DOXYGEN_VERSION}.linux.bin.tar.gz
+  DOXYGEN="$(pwd)/doxygen-${DOXYGEN_VERSION}/bin/doxygen"
 
   build
 
