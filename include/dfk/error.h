@@ -92,6 +92,11 @@ typedef enum dfk_error_e {
    */
   dfk_err_connection_refused,
 
+  /**
+   * Method dfk_stop() have been called
+   */
+  dfk_err_stopped,
+
   _dfk_err_total
 } dfk_error_e;
 

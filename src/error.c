@@ -55,6 +55,9 @@ const char* dfk_strerr(dfk_t* dfk, int err)
       return "dfk_err_connection_refused(13): "
         "Another part refused the connection";
     }
+    case dfk_err_stopped: {
+      return "dfk_err_stopped(14): Method dfk_stop() have been called";
+    }
     default: {
       return "Unknown error";
     }

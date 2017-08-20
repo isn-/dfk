@@ -88,6 +88,11 @@ void dfk__eventloop_main(dfk_fiber_t* fiber, void* arg)
     DFK_DBG(dfk, "{%p} call select with max fd = %d", (void*) loop, maxfd);
     int nfd = select(maxfd + 1, &readfds, &writefds, &exceptfds, NULL);
     if (nfd == -1) {
+      if (errno == EINTR) {
+        DFK_INFO(dfk, "{%p} select() interrupted by signal, restarting",
+            (void*) dfk);
+        continue;
+      }
       DFK_ERROR_SYSCALL(dfk, "select");
       break;
     }

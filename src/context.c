@@ -13,9 +13,12 @@
 #include <dfk/log.h>
 #include <dfk/error.h>
 #include <dfk/fiber.h>
+#include <dfk/tcp_server.h>
 #include <dfk/internal/fiber.h>
 #include <dfk/scheduler.h>
 #include <dfk/eventloop.h>
+
+#define TO_TCP_SERVER(expr) DFK_CONTAINER_OF((expr), dfk_tcp_server_t, _hook)
 
 #if DFK_THREADS
 #include <pthread.h>
@@ -136,6 +139,33 @@ int dfk_work(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*), void* arg,
 
   DFK_INFO(dfk, "work cycle {%p} done, cleanup", (void*) dfk);
   dfk__fiber_free(dfk, scheduler);
+  return dfk_err_ok;
+}
+
+int dfk_stop(dfk_t* dfk)
+{
+  assert(dfk);
+  if (dfk->_stopped) {
+    return dfk_err_ok;
+  }
+  dfk->_stopped = 1;
+  {
+    /*
+     * Stop TCP servers
+     */
+    dfk_list_it it, end;
+    dfk_list_begin(&dfk->_tcp_servers, &it);
+    dfk_list_end(&dfk->_tcp_servers, &end);
+    while (!dfk_list_it_equal(&it, &end)) {
+      dfk_tcp_server_t* srv = TO_TCP_SERVER(it.value);
+      int err = dfk_tcp_server_stop(srv);
+      if (err != dfk_err_ok) {
+        DFK_ERROR(dfk, "{%p} dfk_tcp_server_stop() failed: %s",
+            (void*) srv, dfk_strerr(dfk, err));
+      }
+      dfk_list_it_next(&it);
+    }
+  }
   return dfk_err_ok;
 }
 

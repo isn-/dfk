@@ -10,27 +10,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <fcntl.h>
 #include <dfk/tcp_socket.h>
 #include <dfk/error.h>
 #include <dfk/internal.h>
-
-static int dfk__tcp_socket_make_nonblock(dfk_t* dfk, int s)
-{
-  int flags = fcntl(s, F_GETFL, 0);
-  if (flags == -1) {
-    DFK_ERROR_SYSCALL(dfk, "fcntl");
-    close(s);
-    return dfk_err_sys;
-  }
-  flags = fcntl(s, F_SETFL, flags | O_NONBLOCK);
-  if (flags == -1) {
-    DFK_ERROR_SYSCALL(dfk, "fnctl");
-    close(s);
-    return dfk_err_sys;
-  }
-  return dfk_err_ok;
-}
+#include <dfk/make_nonblock.h>
+#include <dfk/read.h>
+#include <dfk/close.h>
 
 int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk)
 {
@@ -48,7 +33,7 @@ int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk)
   }
 #if !DFK_HAVE_SOCK_NONBLOCK
   {
-    int err = dfk__tcp_socket_make_nonblock(dfk, s);
+    int err = dfk__make_nonblock(dfk, s);
     if (err != dfk_err_ok) {
       return err;
     }
@@ -63,13 +48,7 @@ int dfk_tcp_socket_close(dfk_tcp_socket_t* sock)
 {
   assert(sock);
   assert(sock->dfk);
-  dfk_t* dfk = sock->dfk;
-  DFK_INFO(dfk, "{%p} closing", (void*) sock);
-  if (close(sock->_socket) == -1) {
-    DFK_ERROR_SYSCALL(dfk, "close");
-    return dfk_err_sys;
-  }
-  return dfk_err_ok;
+  return dfk__close(sock->dfk, sock, sock->_socket);
 }
 
 int dfk_tcp_socket_connect(dfk_tcp_socket_t* sock,
@@ -136,44 +115,7 @@ ssize_t dfk_tcp_socket_read(dfk_tcp_socket_t* sock, char* buf, size_t nbytes)
   assert(buf);
   assert(nbytes);
   assert(sock->dfk);
-
-  dfk_t* dfk = sock->dfk;
-
-  ssize_t nread = read(sock->_socket, buf, nbytes);
-  DFK_DBG(dfk, "{%p} read (possibly blocking) attempt returned %lld, "
-      "errno = %d",
-      (void*) sock, (long long) nread, errno);
-  if (nread >= 0) {
-    DFK_DBG(dfk, "{%p} non-blocking read of %lld bytes", (void*) sock,
-        (long long) nread);
-    return nread;
-  }
-  if (errno != EAGAIN) {
-    DFK_ERROR_SYSCALL(dfk, "read");
-    dfk->dfk_errno = dfk_err_sys;
-    return -1;
-  }
-  int ioret = DFK_IO(dfk, sock->_socket, DFK_IO_IN);
-#if DFK_DEBUG
-  char strev[16];
-  size_t nwritten = dfk__io_events_to_str(ioret, strev, DFK_SIZE(strev));
-  DFK_DBG(dfk, "{%p} DFK_IO returned %d (%.*s)", (void*) sock, ioret,
-      (int) nwritten, strev);
-#endif
-  if (ioret & DFK_IO_ERR) {
-    DFK_ERROR_SYSCALL(dfk, "read");
-    dfk->dfk_errno = dfk_err_sys;
-    return -1;
-  }
-  assert(ioret & DFK_IO_IN);
-  nread = read(sock->_socket, buf, nbytes);
-  DFK_DBG(dfk, "{%p} read returned %lld", (void*) sock, (long long) nread);
-  if (nread < 0) {
-    DFK_ERROR_SYSCALL(dfk, "read");
-    dfk->dfk_errno = dfk_err_sys;
-    return -1;
-  }
-  return nread;
+  return dfk__read(sock->dfk, sock, sock->_socket, buf, nbytes);
 }
 
 ssize_t dfk_tcp_socket_write(dfk_tcp_socket_t* sock, char* buf, size_t nbytes)
@@ -291,7 +233,7 @@ int dfk_tcp_socket_listen(dfk_tcp_socket_t* sock,
       continue;
     }
     DFK_DBG(dfk, "switch socket %d to non-blocking mode", s);
-    int err = dfk__tcp_socket_make_nonblock(dfk, s);
+    int err = dfk__make_nonblock(dfk, s);
     if (err != dfk_err_ok) {
       continue;
     }

@@ -109,6 +109,8 @@ set(CMAKE_REQUIRED_INCLUDES stdio.h)
 check_function_exists(fflush DFK_HAVE_FFLUSH)
 set(CMAKE_REQUIRED_INCLUDES sys/mman.h sys/types.h)
 check_function_exists(mprotect DFK_HAVE_MPROTECT)
+set(CMAKE_REQUIRED_INCLUDES string.h)
+check_function_exists(memmem DFK_HAVE_MEMMEM)
 check_symbol_exists(SOCK_NONBLOCK sys/types.h;sys/socket.h
   DFK_HAVE_SOCK_NONBLOCK)
 
@@ -269,11 +271,13 @@ set(dfk_sources
   "${CMAKE_CURRENT_SOURCE_DIR}/src/context.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/error.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/strtoll.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/memmem.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/misc.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/malloc.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/arena.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/scheduler.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/eventloop.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/signal.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/strmap.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/sponge.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/fiber.c"
@@ -282,6 +286,9 @@ set(dfk_sources
   "${CMAKE_CURRENT_SOURCE_DIR}/src/tcp_socket.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/tcp_server.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/urlencoding.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/make_nonblock.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/read.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/close.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/constants.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/request.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/response.c"

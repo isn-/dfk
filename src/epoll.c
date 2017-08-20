@@ -57,6 +57,11 @@ void dfk__eventloop_main(dfk_fiber_t* fiber, void* arg)
     struct epoll_event fds[64];
     int nfd = epoll_wait(epoll->fd, fds, DFK_SIZE(fds), -1);
     if (nfd == -1) {
+      if (errno == EINTR) {
+        DFK_INFO(dfk, "{%p} epoll_wait() interrupted by signal, restarting",
+            (void*) dfk);
+        continue;
+      }
       DFK_ERROR_SYSCALL(dfk, "epoll_wait(2)");
       break;
     }
@@ -105,7 +110,8 @@ int dfk__io(dfk_eventloop_t* epoll, int socket, int events)
   int ret = epoll_ctl(epoll->fd, EPOLL_CTL_ADD, socket, &event);
   if (ret == -1) {
     DFK_ERROR_SYSCALL(dfk, "epoll_ctl(2)");
-    return dfk_err_sys;
+    dfk->dfk_errno = dfk_err_sys;
+    return DFK_IO_ERR;
   }
 #if DFK_DEBUG
   char strev[16];

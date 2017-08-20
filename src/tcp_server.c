@@ -75,6 +75,8 @@ int dfk_tcp_serve(dfk_tcp_server_t* server,
     return err;
   }
 
+  server->_state = DFK_TCP_SERVER_SERVING;
+
   err = dfk_tcp_socket_listen(&server->_s, endpoint, port,
       dfk_tcp_server_callback, (dfk_userdata_t) {.data = &lud}, backlog);
   if (err != dfk_err_ok) {
