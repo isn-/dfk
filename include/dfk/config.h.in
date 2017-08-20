@@ -142,6 +142,9 @@
 /** Enable Memory Sanitizer */
 #cmakedefine01 DFK_MEMORY_SANITIZER
 
+/** Enable link time optimization */
+#cmakedefine01 DFK_LTO
+
 /**
  * Maximum number of requests for a single keepalive connection.
  *

@@ -51,6 +51,7 @@ set(DFK_COVERAGE FALSE CACHE BOOL "Collect gcov coverage statistics.")
 set(DFK_VALGRIND FALSE CACHE BOOL "In addition to regular mode, run unit tests under valgrind.")
 set(DFK_THREAD_SANITIZER FALSE CACHE BOOL "Enable Thread Sanitizer.")
 set(DFK_MEMORY_SANITIZER FALSE CACHE BOOL "Enable Memory Sanitizer.")
+set(DFK_LTO FALSE CACHE BOOL "Enable link time optimization.")
 set(DFK_HTTP_KEEPALIVE_REQUESTS 100 CACHE STRING "Maximum number of requests for a single keepalive connection. Negative values mean no limit.")
 set(DFK_HTTP_HEADERS_BUFFER_SIZE 16384 CACHE STRING "Size of the buffer allocated for HTTP header parsing.")
 set(DFK_HTTP_HEADERS_BUFFER_COUNT 8 CACHE STRING "Maximum number of buffers of size DFK_HTTP_HEADERS_BUFFER_SIZE consumed by HTTP request parser.")
@@ -176,6 +177,16 @@ if(DFK_MAINTAINER_MODE)
         "this warning.")
     endif()
   endforeach()
+  set(recommended_options
+    DFK_LTO)
+  foreach(opt ${recommended_options})
+    if(NOT ${${opt}})
+      message(WARNING
+        "${opt} is recommended in maintainer mode.\n"
+        "Set ${opt} to ON, or enable DFK_MAINTAINER_MODE to suppress "
+        "this warning.")
+    endif()
+  endforeach()
 endif()
 
 # Deduce options specified as "AUTO"
@@ -205,6 +216,10 @@ endif()
 
 if(DFK_COVERAGE)
   fw_c_cxx_flags("--coverage -O0")
+endif()
+
+if(DFK_LTO)
+  fw_c_cxx_flags("-flto")
 endif()
 
 if(NOT DFK_MAINTAINER_MODE)
