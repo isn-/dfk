@@ -82,7 +82,7 @@ def format_parameters(params, formatstr, joinsep=os.linesep):
             for k, v in params.items()]
     return joinsep.join(lines)
 
-def run_job(queue, njob, totaljobs, parameters, source_dir):
+def run_job(queue, njob, totaljobs, parameters, source_dir, debug):
     jobid = str(uuid.uuid4())
     scriptwd = os.path.join("/tmp", "dfk", jobid)
     scriptsh = os.path.join(scriptwd, "run.sh")
@@ -101,7 +101,8 @@ def run_job(queue, njob, totaljobs, parameters, source_dir):
     except Exception as ex:
         queue.put((njob, ex))
     finally:
-        shutil.rmtree(scriptwd, ignore_errors=True)
+        if not debug:
+            shutil.rmtree(scriptwd, ignore_errors=True)
     queue.put((njob, None))
 
 def main():
@@ -116,6 +117,8 @@ def main():
             help="skip first COUNT jobs")
     parser.add_argument("--print-matrix", action="store_true",
             help="print testm matrix and return, do not actually run any tests")
+    parser.add_argument("-d", "--debug", action="store_true", default=False,
+            help="do not remove temporary files")
     args = parser.parse_args()
     if args.print_matrix:
         for k, v in sorted(CMAKE_OPTIONS.items()):
@@ -131,7 +134,7 @@ def main():
     pool = Pool(processes=args.jobs)
     m = Manager()
     queue = m.Queue()
-    jobs = [(queue, i, len(configurations), c, source_dir) \
+    jobs = [(queue, i, len(configurations), c, source_dir, args.debug) \
             for i, c in enumerate(configurations, start=1)]
     pool.starmap_async(run_job, jobs)
     start_time = datetime.now()
