@@ -85,3 +85,5 @@ dfk_tcp_serve
 dfk_tcp_server_is_stopping
 dfk_tcp_server_stop
 dfk_tcp_server_sizeof
+
+dfkp_memmem

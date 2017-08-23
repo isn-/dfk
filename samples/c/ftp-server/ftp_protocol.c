@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <dfk/error.h>
-#include <dfk/memmem.h>
 #include <dfk/tcp_server.h>
+#include <dfk/portable/memmem.h>
 
 
 void ftp_connection(dfk_tcp_server_t* server, dfk_fiber_t* fiber,
@@ -42,7 +42,7 @@ static int read_command(dfk_tcp_socket_t* sock, char* buf, size_t size,
   char* end = buf + capacity;
   /* Read from socket until a full string that ends with \r\n is obtained */
   do {
-    char* pos = dfk_memmem(buf, readbuf - buf, "\r\n", 2);
+    char* pos = dfkp_memmem(buf, readbuf - buf, "\r\n", 2);
     if (pos) {
       *eoc = pos;
       *eob = readbuf;
@@ -178,8 +178,8 @@ void ftp_connection(dfk_tcp_server_t* server, dfk_fiber_t* fiber,
   size_t size = 0;
   while (1) {
     command_t cmd;
-    char* eoc;
-    char* eob;
+    char* eoc = NULL;
+    char* eob = NULL;
     err = read_command(sock, cmdbuf, size, sizeof(cmdbuf), &cmd, &eoc, &eob);
     if (err != dfk_err_ok) {
       break;

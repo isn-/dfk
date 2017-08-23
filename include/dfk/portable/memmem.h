@@ -1,6 +1,6 @@
 /**
- * @file dfk/memmem.h
- * Contains dfk_memmem function prototype
+ * @file dfk/portable/memmem.h
+ * Contains dfkp_memmem function prototype
  *
  * @copyright
  * Copyright (c) 2017 Stanislav Ivochkin
@@ -21,6 +21,6 @@
  * @returns A pointer to the beginning of the substring,
  * or NULL if the substring is not found.
  */
-void* dfk_memmem(const void *haystack, size_t haystacklen,
+void* dfkp_memmem(const void *haystack, size_t haystacklen,
     const void *needle, size_t needlelen);
 
