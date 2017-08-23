@@ -16,6 +16,7 @@ ssize_t dfk__read(dfk_t* dfk, void* dfkhandle, int fd, char* buf, size_t nbytes)
   assert(buf);
   assert(nbytes);
   assert(dfk);
+  DFK_UNUSED(dfkhandle);
 
   ssize_t nread = read(fd, buf, nbytes);
   DFK_DBG(dfk, "{%p} read (possibly blocking) attempt returned %lld, "

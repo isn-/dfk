@@ -2,7 +2,7 @@
 # The script checks that <dfk.h> and <dfk.hpp> are not included anywhere
 # in the dfk sources.
 #
-# Header files <dfk.h> and <dfk.hpp> are for external usage only. To increate
+# Header files <dfk.h> and <dfk.hpp> are for external usage only. To increase
 # compilation speed and keep #include's meaningful, including these headers
 # directly inside dfk sources is prohibited.
 

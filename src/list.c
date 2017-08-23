@@ -775,11 +775,11 @@ void dfk_list_it_from_value(dfk_list_t* list, dfk_list_hook_t* value,
    * to find an iterator that points to the `value'.
    */
   while (it->value != value) {
-    dfk_list_it_next(&it);
+    dfk_list_it_next(it);
     DFK_IF_DEBUG({
       dfk_list_it end;
       dfk_list_end(list, &end);
-      assert(!dfk_list_it_equal(&it, &end));
+      assert(!dfk_list_it_equal(it, &end));
     });
   }
 #else
@@ -859,11 +859,11 @@ void dfk_list_rit_from_value(dfk_list_t* list, dfk_list_hook_t* value,
    * to find an iterator that points to the `value'.
    */
   while (rit->value != value) {
-    dfk_list_rit_next(&it);
+    dfk_list_rit_next(rit);
     DFK_IF_DEBUG({
       dfk_list_rit end;
       dfk_list_rend(list, &end);
-      assert(!dfk_list_rit_equal(&it, &end));
+      assert(!dfk_list_rit_equal(rit, &end));
     });
   }
 #else

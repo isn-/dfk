@@ -244,6 +244,7 @@
 
 #if DFK_THREADS
 #if DFK_HAVE_STDATOMIC_H
+#include <stdatomic.h>
 #define dfk_atomic_size_t atomic_size_t
 #else
 #error
