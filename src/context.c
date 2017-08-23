@@ -85,6 +85,7 @@ void dfk_init(dfk_t* dfk)
 #else
   dfk->log = NULL;
 #endif
+  dfk->log_is_signal_safe = 1;
   dfk->default_stack_size = DFK_STACK_SIZE;
 
   dfk->sys_errno = 0;

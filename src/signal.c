@@ -12,10 +12,34 @@ typedef struct waiting_fiber_t {
   dfk_list_hook_t hook;
   int wfd;
   int signum;
+  dfk_t* dfk;
 } waiting_fiber_t;
 
 #define TO_WAITING_FIBER(expr) DFK_CONTAINER_OF((expr), waiting_fiber_t, hook)
 
+#define DFK_SS_INFO(dfk, ...) \
+do { \
+  if ((dfk)->log_is_signal_safe) {\
+    DFK_INFO((dfk), __VA_ARGS__); \
+  } \
+} while (0)
+
+#define DFK_SS_ERROR(dfk, ...) \
+do { \
+  if ((dfk)->log_is_signal_safe) {\
+    DFK_ERROR((dfk), __VA_ARGS__); \
+  } \
+} while (0)
+
+/**
+ * Static list of fibers waiting for signals definately sucks.
+ * The same approach is used in libuv, however.
+ *
+ * If you have an idea how to implement it without static list, please
+ * share your thoughts via https://github.com/ivochkin/dfk/issues/new.
+ *
+ * @todo Invent a better approach for per-context signal handling
+ */
 static dfk_list_t waiting_fibers;
 
 static void dfk__sighandler(int signum)
@@ -25,9 +49,16 @@ static void dfk__sighandler(int signum)
   dfk_list_end(&waiting_fibers, &end);
   while (!dfk_list_it_equal(&it, &end)) {
     waiting_fiber_t* wf = TO_WAITING_FIBER(it.value);
+    DFK_SS_INFO(wf->dfk, "Signal %d received, waiting for %d",
+        signum, wf->signum);
     if (wf->signum == signum) {
       char c = 18;
-      write(wf->wfd, &c, sizeof(c));
+      ssize_t nwritten = write(wf->wfd, &c, sizeof(c));
+      if (nwritten < 0) {
+        if (wf->dfk->log_is_signal_safe) {
+          DFK_SS_ERROR(wf->dfk, "Write to pipe failed");
+        }
+      }
     }
     dfk_list_it_next(&it);
   }
@@ -66,7 +97,8 @@ int dfk_sigwait(dfk_t* dfk, int signum)
 
   waiting_fiber_t wf = {
     .wfd = pipefd[1],
-    .signum = signum
+    .signum = signum,
+    .dfk = dfk
   };
   dfk_list_hook_init(&wf.hook);
   dfk_list_append(&waiting_fibers, &wf.hook);

@@ -54,13 +54,15 @@
  * Suggested by http://stackoverflow.com/a/27048575
  */
 #define DFK_LOG(dfk, channel, ...) \
-if (((void*) (dfk) != NULL) && (dfk)->log) {\
-  char msg[512] = {0};\
-  int printed;\
-  printed = snprintf(msg, sizeof(msg), "%s (%s:%d) ", __func__, DFK_FILENAME, __LINE__);\
-  snprintf(msg + printed , sizeof(msg) - printed, __VA_ARGS__);\
-  (dfk)->log((dfk), channel, msg);\
-}
+do { \
+  if (((void*) (dfk) != NULL) && (dfk)->log) {\
+    char msg[512] = {0};\
+    int printed;\
+    printed = snprintf(msg, sizeof(msg), "%s (%s:%d) ", __func__, DFK_FILENAME, __LINE__);\
+    snprintf(msg + printed , sizeof(msg) - printed, __VA_ARGS__);\
+    (dfk)->log((dfk), channel, msg);\
+  } \
+} while (0)
 #else
 #define DFK_LOG(dfk, channel, ...) \
 { \

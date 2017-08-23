@@ -41,6 +41,12 @@ typedef struct dfk_t {
   /** User-provided logging function */
   void (*log)(struct dfk_t*, int, const char*);
 
+  /** Set to 1, if user-provided logging function is async-signal-safe
+   *
+   * @see http://man7.org/linux/man-pages/man7/signal-safety.7.html
+   */
+  int log_is_signal_safe;
+
   /**
    * Initial stack size for new fibers
    *
