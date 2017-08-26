@@ -123,7 +123,7 @@
  * @note If #DFK_LOGGING is disabled, debug messages will **not** be emitted
  * regardless of the #DFK_DEBUG value.
  */
-#cmakedefine01 DFK_DEBUG
+#cmakedefine01 DFK_DEBUG /* Use DFK_DBG() to log debug messages */
 
 /** Enable object mocking for unit testing */
 #cmakedefine01 DFK_MOCKS

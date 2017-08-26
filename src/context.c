@@ -146,14 +146,13 @@ int dfk_work(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*), void* arg,
 int dfk_stop(dfk_t* dfk)
 {
   assert(dfk);
+  DFK_INFO(dfk, "{%p} already stopped ? %d", (void*) dfk, dfk->_stopped);
   if (dfk->_stopped) {
     return dfk_err_ok;
   }
   dfk->_stopped = 1;
   {
-    /*
-     * Stop TCP servers
-     */
+    DFK_DBG(dfk, "{%p} stop tcp servers", (void*) dfk);
     dfk_list_it it, end;
     dfk_list_begin(&dfk->_tcp_servers, &it);
     dfk_list_end(&dfk->_tcp_servers, &end);
@@ -166,6 +165,7 @@ int dfk_stop(dfk_t* dfk)
       }
       dfk_list_it_next(&it);
     }
+    DFK_DBG(dfk, "{%p} stop tcp servers done", (void*) dfk);
   }
   return dfk_err_ok;
 }

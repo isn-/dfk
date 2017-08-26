@@ -101,7 +101,8 @@ static int dfk__scheduler(dfk_scheduler_t* scheduler)
      * Pending fibers list is empty, while IO hungry fibers
      * exist - switch to IO with possible blocking.
      */
-    DFK_DBG(dfk, "no pending fibers, will do I/O");
+    DFK_DBG(dfk, "no pending fibers, %lu I/O hungry fibers, will do I/O",
+        (unsigned long) scheduler->iowait);
     scheduler->current = scheduler->eventloop;
     dfk_yield(scheduler->fiber, scheduler->eventloop);
   }
@@ -206,6 +207,7 @@ void dfk__scheduler_main(dfk_fiber_t* fiber, void* arg)
     /* A proper way of terminating scheduler */
     coro_transfer(&fiber->_ctx, &dfk->_comeback);
   }
+  dfk_fiber_name(loopf, "eventloop");
   dfk__eventloop_init(&eventloop, dfk);
 
   dfk_scheduler_t scheduler;
