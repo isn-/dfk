@@ -1,5 +1,6 @@
 language: c
 sudo: required
+dist: trusty
 os:
 - linux
 - osx
@@ -40,9 +41,6 @@ matrix:
   - os: linux
     compiler: clang
     env: CMAKE_ARGS="-DDFK_THREAD_SANITIZER=ON -DCMAKE_BUILD_TYPE=RelWithDebInfo -DDFK_DEBUG=ON -DDFK_BUILD_CPP_BINDINGS=OFF"
-  - os: linux
-    compiler: gcc
-    env: CMAKE_ARGS="-DCMAKE_BUILD_TYPE=Debug -DDFK_DEBUG=ON -DDFK_NAMED_COROUTINES=OFF"
 script:
 - git fetch --unshallow
 - bash scripts/bootstrap.sh > bootstrap.stdout

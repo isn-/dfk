@@ -46,6 +46,8 @@ typedef struct dfk_avltree_t {
 
 /**
  * dfk_avltree_t iterator
+ *
+ * @warning Any changes to the struct layout will affect dfk_strmap_it.
  */
 typedef struct dfk_avltree_it {
   dfk_avltree_hook_t* value;

@@ -276,7 +276,7 @@ set(dfk_sources
   "${CMAKE_CURRENT_SOURCE_DIR}/src/scheduler.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/eventloop.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/signal.c"
-  # "${CMAKE_CURRENT_SOURCE_DIR}/src/strmap.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/strmap.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/sponge.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/fiber.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/mutex.c"

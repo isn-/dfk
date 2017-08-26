@@ -9,25 +9,23 @@
 
 #pragma once
 #include <stddef.h>
-#include <dfk/core.h>
-#include <dfk/internal/arena.h>
-#include <dfk/internal/avltree.h>
-
-/**
- * @addtogroup util util
- * @{
- */
+#include <dfk/misc.h>
+#include <dfk/context.h>
+#include <dfk/arena.h>
+#include <dfk/avltree.h>
 
 /**
  * Element of dfk_strmap_t
  */
 typedef struct dfk_strmap_item_t {
-  /** @private */
+  /**
+   * @private
+   * @warning Should be the first struct member for dfk_strmap_it layout trick.
+   */
   dfk_avltree_hook_t _hook;
   dfk_buf_t key;
   dfk_buf_t value;
 } dfk_strmap_item_t;
-
 
 /**
  * Associative container, maps dfk_buf_t to dfk_buf_t
@@ -37,56 +35,39 @@ typedef struct dfk_strmap_t {
   dfk_avltree_t _cont;
 } dfk_strmap_t;
 
-
 /**
  * dfk_strmap_t iterator
  */
 typedef struct dfk_strmap_it {
   union {
-    dfk_avltree_it_t _;
     dfk_strmap_item_t* item;
+    /** @private */
+    dfk_avltree_it _it;
   };
 } dfk_strmap_it;
 
+void dfk_strmap_item_init(dfk_strmap_item_t* item,
+    dfk_buf_t key, dfk_buf_t value);
 
-int dfk_strmap_item_init(dfk_strmap_item_t* item,
-                         const char* key, size_t keylen,
-                         const char* value, size_t valuelen);
+dfk_strmap_item_t* dfk_strmap_item_copy(dfk_t* dfk,
+    dfk_buf_t key, dfk_buf_t value);
 
-dfk_strmap_item_t* dfk_strmap_item_copy(
-    dfk_t* dfk,
-    const char* key, size_t keylen,
-    const char* value, size_t valuelen);
+dfk_strmap_item_t* dfk_strmap_item_copy_key(dfk_t* dfk,
+    dfk_buf_t key, dfk_buf_t value);
 
-dfk_strmap_item_t* dfk_strmap_item_copy_key(
-    dfk_t* dfk,
-    const char* key, size_t keylen,
-    const char* value, size_t valuelen);
+dfk_strmap_item_t* dfk_strmap_item_copy_value(dfk_t* dfk,
+    dfk_buf_t key, dfk_buf_t value);
 
-dfk_strmap_item_t* dfk_strmap_item_copy_value(
-    dfk_t* dfk,
-    const char* key, size_t keylen,
-    const char* value, size_t valuelen);
+dfk_strmap_item_t* dfk_strmap_item_acopy(dfk_arena_t* arena,
+    dfk_buf_t key, dfk_buf_t value);
 
-dfk_strmap_item_t* dfk_strmap_item_acopy(
-    dfk_arena_t* arena,
-    const char* key, size_t keylen,
-    const char* value, size_t valuelen);
+dfk_strmap_item_t* dfk_strmap_item_acopy_key(dfk_arena_t* arena,
+    dfk_buf_t key, dfk_buf_t value);
 
-dfk_strmap_item_t* dfk_strmap_item_acopy_key(
-    dfk_arena_t* arena,
-    const char* key, size_t keylen,
-    const char* value, size_t valuelen);
+dfk_strmap_item_t* dfk_strmap_item_acopy_value(dfk_arena_t* arena,
+    dfk_buf_t key, dfk_buf_t value);
 
-dfk_strmap_item_t* dfk_strmap_item_acopy_value(
-    dfk_arena_t* arena,
-    const char* key, size_t keylen,
-    const char* value, size_t valuelen);
-
-int dfk_strmap_item_free(dfk_strmap_item_t* item);
-
-int dfk_strmap_init(dfk_strmap_t* map);
-int dfk_strmap_free(dfk_strmap_t* map);
+void dfk_strmap_init(dfk_strmap_t* map);
 
 /**
  * Returns size of the dfk_strmap_t structure.
@@ -95,17 +76,16 @@ int dfk_strmap_free(dfk_strmap_t* map);
  */
 size_t dfk_strmap_sizeof(void);
 size_t dfk_strmap_size(dfk_strmap_t* map);
-dfk_buf_t dfk_strmap_get(dfk_strmap_t* map, const char* key, size_t keylen);
-int dfk_strmap_insert(dfk_strmap_t* map, dfk_strmap_item_t* item);
-int dfk_strmap_erase(dfk_strmap_t* map, dfk_strmap_it* it);
-int dfk_strmap_erase_find(dfk_strmap_t* map, const char* key, size_t keylen);
 
-int dfk_strmap_begin(dfk_strmap_t* map, dfk_strmap_it* it);
-int dfk_strmap_it_next(dfk_strmap_it* it);
-int dfk_strmap_it_valid(dfk_strmap_it* it);
+dfk_buf_t dfk_strmap_get(dfk_strmap_t* map, dfk_buf_t key);
 
-int dfk_strmap_find(dfk_strmap_t* map, const char* key, size_t keylen,
-                    dfk_strmap_it* it);
+void dfk_strmap_insert(dfk_strmap_t* map, dfk_strmap_item_t* item);
 
-/** @} */
+void dfk_strmap_erase(dfk_strmap_t* map, dfk_strmap_it* it);
+
+void dfk_strmap_begin(dfk_strmap_t* map, dfk_strmap_it* it);
+void dfk_strmap_end(dfk_strmap_t* map, dfk_strmap_it* it);
+void dfk_strmap_it_next(dfk_strmap_it* it);
+int dfk_strmap_it_equal(dfk_strmap_it* lhs, dfk_strmap_it* rhs);
+size_t dfk_strmap_it_sizeof(void);
 

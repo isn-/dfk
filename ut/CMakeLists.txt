@@ -14,7 +14,7 @@ set(ut_sources
   test_mutex.c
   test_cond.c
   test_sponge.c
-  #  test_strmap.c
+  test_strmap.c
   #  test_tcp_socket.c
   test_urlencoding.c
   #  http/test_http_constants.c
@@ -98,11 +98,13 @@ if(VALGRIND AND NOT DFK_ENABLE_COVERAGE)
     alvtree
     strtoll
     context
-    strerror
-    buf
-    iovec
+    error
+    misc
     arena
     fiber
+    mutex
+    cond
+    sponge
     urlencoding)
   foreach(i ${ut_modules})
     add_test(valgrind.${i} ${VALGRIND} --error-exitcode=1 --leak-check=full --suppressions=${suppressions} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ut-dfk" ${i})
