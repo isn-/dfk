@@ -17,6 +17,21 @@
 #include <dfk/read.h>
 #include <dfk/close.h>
 
+static const char* dfk__str_shutdown_type(dfk_shutdown_type how)
+{
+  switch(how) {
+    case DFK_SHUT_RD:
+      return "RD";
+    case DFK_SHUT_WR:
+      return "WR";
+    case DFK_SHUT_RDWR:
+      return "RDWR";
+    default:
+      assert(0 && "Unexpected dfk_shutdown_type value");
+  }
+  return "Unknown";
+}
+
 int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk)
 {
   assert(sock);
@@ -35,6 +50,7 @@ int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk)
   {
     int err = dfk__make_nonblock(dfk, s);
     if (err != dfk_err_ok) {
+      dfk__close(dfk, NULL, s);
       return err;
     }
   }
@@ -48,6 +64,7 @@ int dfk_tcp_socket_close(dfk_tcp_socket_t* sock)
 {
   assert(sock);
   assert(sock->dfk);
+  DFK_DBG(sock->dfk, "{%p}", (void*) sock);
   return dfk__close(sock->dfk, sock, sock->_socket);
 }
 
@@ -191,6 +208,9 @@ int dfk_tcp_socket_listen(dfk_tcp_socket_t* sock,
 
   dfk_t* dfk = sock->dfk;
 
+  DFK_DBG(sock->dfk, "{%p} listen address %s:%u, backlog %lu",
+      (void*) sock, endpoint, (unsigned int) port, (unsigned long) backlog);
+
   struct sockaddr_in bindaddr;
   bindaddr.sin_family = AF_INET;
   inet_aton(endpoint, (struct in_addr*) &bindaddr.sin_addr.s_addr);
@@ -235,6 +255,7 @@ int dfk_tcp_socket_listen(dfk_tcp_socket_t* sock,
     DFK_DBG(dfk, "switch socket %d to non-blocking mode", s);
     int err = dfk__make_nonblock(dfk, s);
     if (err != dfk_err_ok) {
+      dfk__close(dfk, NULL, s);
       continue;
     }
     dfk_tcp_socket_accepted_main_arg_t arg = {
@@ -248,6 +269,34 @@ int dfk_tcp_socket_listen(dfk_tcp_socket_t* sock,
     dfk_run(dfk, dfk__tcp_socket_accepted_main, &arg, sizeof(arg));
   }
 }
+
+int dfk_tcp_socket_shutdown(dfk_tcp_socket_t* sock, dfk_shutdown_type how)
+{
+  assert(sock);
+  dfk_t* dfk = sock->dfk;
+  DFK_DBG(sock->dfk, "{%p} %s", (void*) sock, dfk__str_shutdown_type(how));
+  int native_how = 0;
+  switch(how) {
+    case DFK_SHUT_RD:
+      native_how = SHUT_RD;
+      break;
+    case DFK_SHUT_WR:
+      native_how = SHUT_WR;
+      break;
+    case DFK_SHUT_RDWR:
+      native_how = SHUT_RDWR;
+      break;
+    default:
+      assert(0 && "Unexpected dfk_shutdown_type value");
+  }
+  int err = shutdown(sock->_socket, native_how);
+  if (err) {
+    DFK_ERROR_SYSCALL(dfk, "shutdown");
+    return dfk_err_sys;
+  }
+  return dfk_err_ok;
+}
+
 
 /*
 typedef struct dfk_tcp_socket_accepted_main_arg_t {

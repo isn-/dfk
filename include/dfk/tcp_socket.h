@@ -15,6 +15,21 @@
 #include <dfk/fiber.h>
 
 /**
+ * A method how to shutdown TCP connection
+ *
+ * @todo Implement compile-time guessing of enum values to get rid
+ * of dfk-to-native constants convertion in the `dfk_tcp_socket_shutdown'.
+ */
+typedef enum {
+  /** Disables further receive operations */
+  DFK_SHUT_RD = 1,
+  /** Disables further send operations */
+  DFK_SHUT_WR = 2,
+  /** Disables further send and receive operations */
+  DFK_SHUT_RDWR = 3
+} dfk_shutdown_type;
+
+/**
  * TCP socket object
  */
 typedef struct dfk_tcp_socket_t {
@@ -27,7 +42,6 @@ typedef struct dfk_tcp_socket_t {
   /** @private */
   int _socket;
 } dfk_tcp_socket_t;
-
 
 /**
  * Initialize TCP socket object
@@ -80,11 +94,12 @@ int dfk_tcp_socket_listen(dfk_tcp_socket_t* sock,
     void (*callback)(dfk_fiber_t*, dfk_tcp_socket_t*, dfk_userdata_t),
     dfk_userdata_t callback_ud, size_t backlog);
 
-
 /**
- * Close the outgoing part of the socket.
-int dfk_tcp_socket_shutdown(dfk_tcp_socket_t* sock);
+ * Close part of the socket.
+ *
+ * @see https://linux.die.net/man/3/shutdown
  */
+int dfk_tcp_socket_shutdown(dfk_tcp_socket_t* sock, dfk_shutdown_type how);
 
 
 /**
