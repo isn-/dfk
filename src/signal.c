@@ -11,7 +11,7 @@
 typedef struct waiting_fiber_t {
   dfk_list_hook_t hook;
   int wfd;
-  int signum;
+  int signum[2];
   dfk_t* dfk;
 } waiting_fiber_t;
 
@@ -49,10 +49,10 @@ static void dfk__sighandler(int signum)
   dfk_list_end(&waiting_fibers, &end);
   while (!dfk_list_it_equal(&it, &end)) {
     waiting_fiber_t* wf = TO_WAITING_FIBER(it.value);
-    DFK_SS_INFO(wf->dfk, "Signal %d received, waiting for %d",
-        signum, wf->signum);
-    if (wf->signum == signum) {
-      char c = 18;
+    DFK_SS_INFO(wf->dfk, "{%p} Signal %d received, waiting for %d, %d",
+        (void*) wf->dfk, signum, wf->signum[0], wf->signum[1]);
+    if (wf->signum[0] == signum || wf->signum[1] == signum) {
+      char c = 27; /* Live fast, die young, leave a beautiful corpse */
       ssize_t nwritten = write(wf->wfd, &c, sizeof(c));
       if (nwritten < 0) {
         if (wf->dfk->log_is_signal_safe) {
@@ -74,20 +74,26 @@ static int dfk__create_pipe(dfk_t* dfk, int fd[])
   return dfk_err_ok;
 #else
   if (pipe(fd) != 0) {
-    DFK_ERROR_SYSCALL(dfk, "pipe2");
+    DFK_ERROR_SYSCALL(dfk, "pipe");
     return dfk_err_sys;
   }
-  int err = dfk__make_nonblock(dfk, fd[0]);
-  if (err != dfk_err_ok) {
-    return err;
+  for (int i = 0; i < 2; ++i) {
+    int err = dfk__make_nonblock(dfk, fd[i]);
+    if (err != dfk_err_ok) {
+      dfk__close(dfk, NULL, fd[0]);
+      dfk__close(dfk, NULL, fd[1]);
+      return err;
+    }
   }
-  return dfk__make_nonblock(dfk, fd[1]);
+  return dfk_err_ok;
 #endif
 }
 
-int dfk_sigwait(dfk_t* dfk, int signum)
+static int dfk__sigwait(dfk_t* dfk, size_t nsignals, int* signum)
 {
   assert(dfk);
+  assert(nsignals);
+  assert(signum);
 
   int pipefd[2];
   int err = dfk__create_pipe(dfk, pipefd);
@@ -97,7 +103,10 @@ int dfk_sigwait(dfk_t* dfk, int signum)
 
   waiting_fiber_t wf = {
     .wfd = pipefd[1],
-    .signum = signum,
+    .signum = {
+      signum[0],
+      nsignals ? signum[1] : 0
+    },
     .dfk = dfk
   };
   dfk_list_hook_init(&wf.hook);
@@ -107,14 +116,15 @@ int dfk_sigwait(dfk_t* dfk, int signum)
     .sa_handler = dfk__sighandler,
     .sa_flags = SA_RESTART
   };
-  if (sigaction(signum, &sa, NULL) != 0) {
-    DFK_ERROR_SYSCALL(dfk, "close");
-    dfk__close(dfk, NULL, pipefd[0]);
-    dfk__close(dfk, NULL, pipefd[1]);
-    return dfk_err_sys;
-  }
 
-  DFK_DBG(dfk, "{%p} waiting for %d", (void*) DFK_THIS_FIBER(dfk), signum);
+  for (size_t i = 0; i < nsignals; ++i) {
+    if (sigaction(signum[i], &sa, NULL) != 0) {
+      DFK_ERROR_SYSCALL(dfk, "sigaction");
+      dfk__close(dfk, NULL, pipefd[0]);
+      dfk__close(dfk, NULL, pipefd[1]);
+      return dfk_err_sys;
+    }
+  }
 
   char c;
   int finalerr = dfk_err_ok;
@@ -134,5 +144,19 @@ int dfk_sigwait(dfk_t* dfk, int signum)
     }
   }
   return finalerr;
+}
+
+int dfk_sigwait(dfk_t* dfk, int signum)
+{
+  DFK_DBG(dfk, "{%p} waiting for %d", (void*) DFK_THIS_FIBER(dfk), signum);
+  return dfk__sigwait(dfk, 1, &signum);
+}
+
+int dfk_sigwait2(dfk_t* dfk, int signum1, int signum2)
+{
+  DFK_DBG(dfk, "{%p} waiting for %d, %d",
+      (void*) DFK_THIS_FIBER(dfk), signum1, signum2);
+  int signals[] = {signum1, signum2};
+  return dfk__sigwait(dfk, 2, signals);
 }
 

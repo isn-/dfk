@@ -58,6 +58,7 @@ dfk_work
 dfk_run
 dfk_stop
 dfk_sigwait
+dfk_sigwait2
 dfk_sizeof
 
 dfk_strerr
