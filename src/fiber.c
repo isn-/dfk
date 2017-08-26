@@ -9,7 +9,7 @@
 #include <dfk/internal/fiber.h>
 #include <dfk/error.h>
 #include <dfk/internal.h>
-#include <dfk/internal/malloc.h>
+#include <dfk/malloc.h>
 #include <dfk/scheduler.h>
 
 #if DFK_STACK_GUARD_SIZE

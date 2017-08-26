@@ -13,7 +13,7 @@ set(ut_sources
   test_fiber.c
   test_mutex.c
   test_cond.c
-  #  test_sponge.c
+  test_sponge.c
   #  test_strmap.c
   #  test_tcp_socket.c
   test_urlencoding.c

@@ -64,7 +64,6 @@ set(DFK_LIST_MEMORY_OPTIMIZED FALSE CACHE BOOL
 set(DFK_AVLTREE_CONSTANT_TIME_SIZE TRUE CACHE BOOL "Store size of the dfk_avltree_t")
 set(DFK_ARENA_SEGMENT_SIZE 40960 CACHE STRING
   "Size of arena's segment, in bytes.")
-set(DFK_SPONGE_INITIAL_SIZE 4096 CACHE STRING "Size of sponge data structure initial size, in bytes.")
 set(DFK_URLENCODING_HINT_HEURISTICS TRUE CACHE BOOL
   "Enable heuristics for dfk_urlencode_hint, dfk_urldecode_hint.")
 set(DFK_FILESERVER TRUE CACHE BOOL "Enable fileserver middleware")
@@ -278,7 +277,7 @@ set(dfk_sources
   "${CMAKE_CURRENT_SOURCE_DIR}/src/eventloop.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/signal.c"
   # "${CMAKE_CURRENT_SOURCE_DIR}/src/strmap.c"
-  # "${CMAKE_CURRENT_SOURCE_DIR}/src/sponge.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/sponge.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/fiber.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/mutex.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/cond.c"

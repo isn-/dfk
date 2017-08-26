@@ -6,7 +6,7 @@
 
 #include <assert.h>
 #include <dfk/config.h>
-#include <dfk/internal/malloc.h>
+#include <dfk/malloc.h>
 
 #define ALIGNED(ptr) (!(((ptrdiff_t) (ptr)) % DFK_MALLOC_ALIGNMENT))
 

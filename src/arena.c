@@ -6,8 +6,8 @@
 
 #include <assert.h>
 #include <dfk/arena.h>
+#include <dfk/malloc.h>
 #include <dfk/internal.h>
-#include <dfk/internal/malloc.h>
 
 typedef struct segment_t {
   dfk_list_hook_t hook;

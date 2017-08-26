@@ -1,5 +1,5 @@
 /**
- * @file dfk/internal/sponge.h
+ * @file dfk/sponge.h
  * In-memory byte stream
  *
  * @copyright
@@ -8,8 +8,8 @@
  */
 
 #pragma once
-#include <stddef.h>
-#include <dfk/core.h>
+#include <sys/types.h>
+#include <dfk/context.h>
 
 /**
  * In-memory byte stream
@@ -21,19 +21,19 @@
  *
  * @warning Does a lot of allocations, therefore is not efficient
  */
-typedef struct dfk_sponge_t {
+typedef struct dfk__sponge_t {
   char* base;
   char* cur;
   size_t size;
   size_t capacity;
   dfk_t* dfk;
-} dfk_sponge_t;
+} dfk__sponge_t;
 
 
-void dfk_sponge_init(dfk_sponge_t* sponge, dfk_t* dfk);
-void dfk_sponge_free(dfk_sponge_t* sponge);
-int dfk_sponge_write(dfk_sponge_t* sponge, char* buf, size_t nbytes);
-int dfk_sponge_writev(dfk_sponge_t* sponge, dfk_iovec_t* iov, size_t niov);
-ssize_t dfk_sponge_read(dfk_sponge_t* sponge, char* buf, size_t nbytes);
-ssize_t dfk_sponge_readv(dfk_sponge_t* sponge, dfk_iovec_t* iov, size_t niov);
+void dfk__sponge_init(dfk__sponge_t* sponge, dfk_t* dfk);
+void dfk__sponge_free(dfk__sponge_t* sponge);
+int dfk__sponge_write(dfk__sponge_t* sponge, char* buf, size_t nbytes);
+int dfk__sponge_writev(dfk__sponge_t* sponge, dfk_iovec_t* iov, size_t niov);
+ssize_t dfk__sponge_read(dfk__sponge_t* sponge, char* buf, size_t nbytes);
+ssize_t dfk__sponge_readv(dfk__sponge_t* sponge, dfk_iovec_t* iov, size_t niov);
 

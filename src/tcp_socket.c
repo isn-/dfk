@@ -17,6 +17,7 @@
 #include <dfk/read.h>
 #include <dfk/close.h>
 
+#if DFK_DEBUG
 static const char* dfk__str_shutdown_type(dfk_shutdown_type how)
 {
   switch(how) {
@@ -31,6 +32,7 @@ static const char* dfk__str_shutdown_type(dfk_shutdown_type how)
   }
   return "Unknown";
 }
+#endif
 
 int dfk_tcp_socket_init(dfk_tcp_socket_t* sock, dfk_t* dfk)
 {

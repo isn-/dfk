@@ -5,8 +5,8 @@
  */
 
 #include <dfk/arena.h>
+#include <dfk/malloc.h>
 #include <dfk/internal.h>
-#include <dfk/internal/malloc.h>
 #include <ut.h>
 
 typedef struct fixture_t {
