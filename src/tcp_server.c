@@ -87,6 +87,12 @@ int dfk_tcp_serve(dfk_tcp_server_t* server,
     server->_state = DFK_TCP_SERVER_STOP_WAIT_CONNECTIONS;
     DFK_SUSPEND(dfk);
   }
+
+  err = dfk_tcp_socket_close(&server->_s);
+  if (err != dfk_err_ok) {
+    return err;
+  }
+
   server->_state = DFK_TCP_SERVER_STOPPED;
   return dfk_err_ok;
 }
@@ -103,7 +109,7 @@ int dfk_tcp_server_stop(dfk_tcp_server_t* server)
 {
   assert(server);
   assert(server->_state == DFK_TCP_SERVER_SERVING);
-  int err = dfk_tcp_socket_close(&server->_s);
+  int err = dfk_tcp_socket_shutdown(&server->_s, DFK_SHUT_RDWR);
   if (err != dfk_err_ok) {
     return err;
   }
