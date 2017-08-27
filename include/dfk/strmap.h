@@ -23,7 +23,7 @@ typedef struct dfk_strmap_item_t {
    * @warning Should be the first struct member for dfk_strmap_it layout trick.
    */
   dfk_avltree_hook_t _hook;
-  dfk_buf_t key;
+  dfk_cbuf_t key;
   dfk_buf_t value;
 } dfk_strmap_item_t;
 
@@ -47,25 +47,25 @@ typedef struct dfk_strmap_it {
 } dfk_strmap_it;
 
 void dfk_strmap_item_init(dfk_strmap_item_t* item,
-    dfk_buf_t key, dfk_buf_t value);
+    const char* key, size_t keylen, char* value, size_t valuelen);
 
 dfk_strmap_item_t* dfk_strmap_item_copy(dfk_t* dfk,
-    dfk_buf_t key, dfk_buf_t value);
+    const char* key, size_t keylen, const char* value, size_t valuelen);
 
 dfk_strmap_item_t* dfk_strmap_item_copy_key(dfk_t* dfk,
-    dfk_buf_t key, dfk_buf_t value);
+    const char* key, size_t keylen, char* value, size_t valuelen);
 
 dfk_strmap_item_t* dfk_strmap_item_copy_value(dfk_t* dfk,
-    dfk_buf_t key, dfk_buf_t value);
+    const char* key, size_t keylen, const char* value, size_t valuelen);
 
 dfk_strmap_item_t* dfk_strmap_item_acopy(dfk_arena_t* arena,
-    dfk_buf_t key, dfk_buf_t value);
+    const char* key, size_t keylen, const char* value, size_t valuelen);
 
 dfk_strmap_item_t* dfk_strmap_item_acopy_key(dfk_arena_t* arena,
-    dfk_buf_t key, dfk_buf_t value);
+    const char* key, size_t keylen, char* value, size_t valuelen);
 
 dfk_strmap_item_t* dfk_strmap_item_acopy_value(dfk_arena_t* arena,
-    dfk_buf_t key, dfk_buf_t value);
+    const char* key, size_t keylen, const char* value, size_t valuelen);
 
 void dfk_strmap_init(dfk_strmap_t* map);
 
@@ -77,7 +77,7 @@ void dfk_strmap_init(dfk_strmap_t* map);
 size_t dfk_strmap_sizeof(void);
 size_t dfk_strmap_size(dfk_strmap_t* map);
 
-dfk_buf_t dfk_strmap_get(dfk_strmap_t* map, dfk_buf_t key);
+dfk_buf_t dfk_strmap_get(dfk_strmap_t* map, const char* key, size_t keylen);
 
 void dfk_strmap_insert(dfk_strmap_t* map, dfk_strmap_item_t* item);
 
@@ -85,7 +85,7 @@ void dfk_strmap_erase(dfk_strmap_t* map, dfk_strmap_it* it);
 
 void dfk_strmap_begin(dfk_strmap_t* map, dfk_strmap_it* it);
 void dfk_strmap_end(dfk_strmap_t* map, dfk_strmap_it* it);
+size_t dfk_strmap_it_sizeof(void);
 void dfk_strmap_it_next(dfk_strmap_it* it);
 int dfk_strmap_it_equal(dfk_strmap_it* lhs, dfk_strmap_it* rhs);
-size_t dfk_strmap_it_sizeof(void);
 

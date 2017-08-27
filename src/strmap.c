@@ -36,90 +36,89 @@ static int dfk__strmap_cmp(dfk_avltree_hook_t* l, dfk_avltree_hook_t* r)
 }
 
 void dfk_strmap_item_init(dfk_strmap_item_t* item,
-    dfk_buf_t key, dfk_buf_t value)
+    const char* key, size_t keylen, char* value, size_t valuelen)
 {
   assert(item);
-  assert(key.data);
-  assert(key.size);
-  assert(value.data || !value.size);
+  assert(key);
+  assert(keylen);
+  assert(value || !valuelen);
   dfk_avltree_hook_init(&item->_hook);
-  item->key = key;
-  item->value = value;
+  item->key = (dfk_cbuf_t) {key, keylen};
+  item->value = (dfk_buf_t) {value, valuelen};
 }
 
-dfk_strmap_item_t* dfk_strmap_item_copy(
-    dfk_t* dfk, dfk_buf_t key, dfk_buf_t value)
+dfk_strmap_item_t* dfk_strmap_item_copy(dfk_t* dfk,
+    const char* key, size_t keylen, const char* value, size_t valuelen)
 {
   assert(dfk);
-  assert(key.data);
-  assert(key.size);
-  assert(value.data || !value.size);
+  assert(key);
+  assert(keylen);
+  assert(value || !valuelen);
   /* Store key, value and item_t in the one memory block, save 2 alloc's */
-  size_t toalloc = sizeof(dfk_strmap_item_t) + key.size + value.size;
+  size_t toalloc = sizeof(dfk_strmap_item_t) + keylen + valuelen;
   dfk_strmap_item_t* item = dfk__malloc(dfk, toalloc);
   if (!item) {
     return NULL;
   }
   char* pkey = (char*) item + sizeof(dfk_strmap_item_t);
-  char* pvalue = pkey + key.size;
-  memcpy(pkey, key.data, key.size);
-  memcpy(pvalue, value.data, value.size);
-  dfk_strmap_item_init(item,
-      (dfk_buf_t) {pkey, key.size}, (dfk_buf_t) {pvalue, value.size});
+  char* pvalue = pkey + keylen;
+  memcpy(pkey, key, keylen);
+  memcpy(pvalue, value, valuelen);
+  dfk_strmap_item_init(item, pkey, keylen, pvalue, valuelen);
   return item;
 }
 
 dfk_strmap_item_t* dfk_strmap_item_copy_key(dfk_t* dfk,
-    dfk_buf_t key, dfk_buf_t value)
+    const char* key, size_t keylen, char* value, size_t valuelen)
 {
   assert(dfk);
-  assert(key.data);
-  assert(key.size);
-  assert(value.data || !value.size);
+  assert(key);
+  assert(keylen);
+  assert(value || !valuelen);
   /* Store key and item_t in the one memory block, save 1 alloc */
-  size_t toalloc = sizeof(dfk_strmap_item_t) + key.size;
+  size_t toalloc = sizeof(dfk_strmap_item_t) + keylen;
   dfk_strmap_item_t* item = dfk__malloc(dfk, toalloc);
   if (!item) {
     return NULL;
   }
   char* pkey = (char*) item + sizeof(dfk_strmap_item_t);
-  memcpy(pkey, key.data, key.size);
-  dfk_strmap_item_init(item, (dfk_buf_t) {pkey, key.size}, value);
+  memcpy(pkey, key, keylen);
+  dfk_strmap_item_init(item, pkey, keylen, value, valuelen);
   return item;
 }
 
 dfk_strmap_item_t* dfk_strmap_item_copy_value(dfk_t* dfk,
-    dfk_buf_t key, dfk_buf_t value)
+    const char* key, size_t keylen, const char* value, size_t valuelen)
 {
   assert(dfk);
-  assert(key.data);
-  assert(key.size);
-  assert(value.data || !value.size);
+  assert(key);
+  assert(keylen);
+  assert(value || !valuelen);
   /* Store value and item_t in the one memory block, save 1 alloc */
-  size_t toalloc = sizeof(dfk_strmap_item_t) + value.size;
+  size_t toalloc = sizeof(dfk_strmap_item_t) + valuelen;
   dfk_strmap_item_t* item = dfk__malloc(dfk, toalloc);
   if (!item) {
     return NULL;
   }
   char* pvalue = (char*) item + sizeof(dfk_strmap_item_t);
-  memcpy(pvalue, value.data, value.size);
-  dfk_strmap_item_init(item, key, (dfk_buf_t) {pvalue, value.size});
+  memcpy(pvalue, value, valuelen);
+  dfk_strmap_item_init(item, key, keylen, pvalue, valuelen);
   return item;
 }
 
 dfk_strmap_item_t* dfk_strmap_item_acopy(dfk_arena_t* arena,
-    dfk_buf_t key, dfk_buf_t value)
+    const char* key, size_t keylen, const char* value, size_t valuelen)
 {
   assert(arena);
   assert(arena->dfk);
-  assert(key.data);
-  assert(key.size);
-  assert(value.data || !value.size);
-  char* pkey = dfk_arena_alloc_copy(arena, key.data, key.size);
+  assert(key);
+  assert(keylen);
+  assert(value || !valuelen);
+  char* pkey = dfk_arena_alloc_copy(arena, key, keylen);
   if (!pkey) {
     return NULL;
   }
-  char* pvalue = dfk_arena_alloc_copy(arena, value.data, value.size);
+  char* pvalue = dfk_arena_alloc_copy(arena, value, valuelen);
   if (!pvalue) {
     return NULL;
   }
@@ -127,20 +126,19 @@ dfk_strmap_item_t* dfk_strmap_item_acopy(dfk_arena_t* arena,
   if (!item) {
     return NULL;
   }
-  dfk_strmap_item_init(item,
-      (dfk_buf_t) {pkey, key.size}, (dfk_buf_t) {pvalue, value.size});
+  dfk_strmap_item_init(item, pkey, keylen, pvalue, valuelen);
   return item;
 }
 
 dfk_strmap_item_t* dfk_strmap_item_acopy_key(dfk_arena_t* arena,
-    dfk_buf_t key, dfk_buf_t value)
+    const char* key, size_t keylen, char* value, size_t valuelen)
 {
   assert(arena);
   assert(arena->dfk);
-  assert(key.data);
-  assert(key.size);
-  assert(value.data || !value.size);
-  char* pkey = dfk_arena_alloc_copy(arena, key.data, key.size);
+  assert(key);
+  assert(keylen);
+  assert(value || !valuelen);
+  char* pkey = dfk_arena_alloc_copy(arena, key, keylen);
   if (!pkey) {
     return NULL;
   }
@@ -148,19 +146,19 @@ dfk_strmap_item_t* dfk_strmap_item_acopy_key(dfk_arena_t* arena,
   if (!item) {
     return NULL;
   }
-  dfk_strmap_item_init(item, (dfk_buf_t) {pkey, key.size}, value);
+  dfk_strmap_item_init(item, pkey, keylen, value, valuelen);
   return item;
 }
 
 dfk_strmap_item_t* dfk_strmap_item_acopy_value(dfk_arena_t* arena,
-    dfk_buf_t key, dfk_buf_t value)
+    const char* key, size_t keylen, const char* value, size_t valuelen)
 {
   assert(arena);
   assert(arena->dfk);
-  assert(key.data);
-  assert(key.size);
-  assert(value.data || !value.size);
-  char* pvalue = dfk_arena_alloc_copy(arena, value.data, value.size);
+  assert(key);
+  assert(keylen);
+  assert(value || !valuelen);
+  char* pvalue = dfk_arena_alloc_copy(arena, value, valuelen);
   if (!pvalue) {
     return NULL;
   }
@@ -168,7 +166,7 @@ dfk_strmap_item_t* dfk_strmap_item_acopy_value(dfk_arena_t* arena,
   if (!item) {
     return NULL;
   }
-  dfk_strmap_item_init(item, key, (dfk_buf_t) {pvalue, value.size});
+  dfk_strmap_item_init(item, key, keylen, pvalue, valuelen);
   return item;
 }
 
@@ -189,13 +187,14 @@ size_t dfk_strmap_size(dfk_strmap_t* map)
   return dfk_avltree_size(&map->_cont);
 }
 
-dfk_buf_t dfk_strmap_get(dfk_strmap_t* map, dfk_buf_t key)
+dfk_buf_t dfk_strmap_get(dfk_strmap_t* map, const char* key, size_t keylen)
 {
   assert(map);
-  assert(key.data);
-  assert(key.size);
+  assert(key);
+  assert(keylen);
+  dfk_cbuf_t kkey = (dfk_cbuf_t) {key, keylen};
   dfk_strmap_item_t* item = TO_STRMAP_ITEM(
-      dfk_avltree_find(&map->_cont, &key, dfk__strmap_lookup_cmp));
+      dfk_avltree_find(&map->_cont, &kkey, dfk__strmap_lookup_cmp));
   return item ? item->value : (dfk_buf_t) {NULL, 0};
 }
 
