@@ -82,7 +82,6 @@ ssize_t dfk_tcp_socket_read(dfk_tcp_socket_t* sock, char* buf, size_t nbytes);
  */
 ssize_t dfk_tcp_socket_write(dfk_tcp_socket_t* sock, char* buf, size_t nbytes);
 
-
 /**
  * Listen for connections on endpoint:port
  *
@@ -101,27 +100,19 @@ int dfk_tcp_socket_listen(dfk_tcp_socket_t* sock,
  */
 int dfk_tcp_socket_shutdown(dfk_tcp_socket_t* sock, dfk_shutdown_type how);
 
-
-/**
- * Wait for other side of the socket to close connection.
-int dfk_tcp_socket_wait_disconnect(dfk_tcp_socket_t* sock, uint64_t timeout);
- */
-
-
 /**
  * Read data from the socket into several buffers at once
-ssize_t dfk_tcp_socket_readv(
-    dfk_tcp_socket_t* sock,
-    dfk_iovec_t* iov,
-    size_t niov);
+ *
+ * @todo Provide optimal implementation
  */
-
+ssize_t dfk_tcp_socket_readv(dfk_tcp_socket_t* sock,
+    dfk_iovec_t* iov, size_t niov);
 
 /**
  * Write data from several buffers to socket at once
-ssize_t dfk_tcp_socket_writev(
-    dfk_tcp_socket_t* sock,
-    dfk_iovec_t* iov,
-    size_t niov);
+ *
+ * @todo Provide optimal implementation
  */
+ssize_t dfk_tcp_socket_writev(dfk_tcp_socket_t* sock,
+    dfk_iovec_t* iov, size_t niov);
 

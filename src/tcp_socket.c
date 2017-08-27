@@ -299,3 +299,45 @@ int dfk_tcp_socket_shutdown(dfk_tcp_socket_t* sock, dfk_shutdown_type how)
   return dfk_err_ok;
 }
 
+ssize_t dfk_tcp_socket_readv(dfk_tcp_socket_t* sock,
+    dfk_iovec_t* iov, size_t niov)
+{
+  assert(sock);
+  assert(iov);
+  assert(niov);
+
+  ssize_t totalread = 0;
+  for (size_t i = 0; i < niov; ++i) {
+    ssize_t nread = dfk_tcp_socket_read(sock, iov[i].data, iov[i].size);
+    if (nread < 0) {
+      return nread;
+    }
+    totalread += nread;
+    if ((size_t) nread != iov[i].size) {
+      return totalread;
+    }
+  }
+  return totalread;
+}
+
+ssize_t dfk_tcp_socket_writev(dfk_tcp_socket_t* sock,
+    dfk_iovec_t* iov, size_t niov)
+{
+  assert(sock);
+  assert(iov);
+  assert(niov);
+
+  ssize_t totalwritten = 0;
+  for (size_t i = 0; i < niov; ++i) {
+    ssize_t nwritten = dfk_tcp_socket_write(sock, iov[i].data, iov[i].size);
+    if (nwritten < 0) {
+      return nwritten;
+    }
+    totalwritten += nwritten;
+    if ((size_t) nwritten != iov[i].size) {
+      return nwritten;
+    }
+  }
+  return totalwritten;
+}
+
