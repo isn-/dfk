@@ -9,17 +9,12 @@
 
 #pragma once
 #include <dfk/config.h>
-#include <dfk/core.h>
-#include <dfk/sync.h>
+#include <dfk/mutex.h>
+#include <dfk/cond.h>
+#include <dfk/list.h>
 #include <dfk/tcp_socket.h>
 #include <dfk/http/request.h>
 #include <dfk/http/response.h>
-#include <dfk/internal/list.h>
-
-/**
- * @addtogroup http
- * @{
- */
 
 struct dfk_http_t;
 
@@ -90,8 +85,9 @@ typedef struct dfk_http_t {
 } dfk_http_t;
 
 int dfk_http_init(dfk_http_t* http, dfk_t* dfk);
-int dfk_http_stop(dfk_http_t* http);
 int dfk_http_free(dfk_http_t* http);
+
+int dfk_http_stop(dfk_http_t* http);
 
 /**
  * Returns size of the dfk_http_t structure.
@@ -105,6 +101,4 @@ int dfk_http_serve(dfk_http_t* http,
     uint16_t port,
     dfk_http_handler handler,
     dfk_userdata_t handler_ud);
-
-/** @} */
 

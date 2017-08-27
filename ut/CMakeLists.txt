@@ -17,15 +17,15 @@ set(ut_sources
   test_strmap.c
   #  test_tcp_socket.c
   test_urlencoding.c
-  #  http/test_http_constants.c
+  http/test_http_constants.c
   #  test_http.c
 )
 
-#if(DFK_MOCKS)
-#  list(APPEND ut_sources
-#    http/test_http_request.c
-#    http/test_http_response.c)
-#endif()
+if(DFK_MOCKS)
+  list(APPEND ut_sources
+    http/test_http_request.c
+    http/test_http_response.c)
+endif()
 
 set(ut_init_c "${CMAKE_CURRENT_BINARY_DIR}/ut_init.c")
 set(ut_init_h "${CMAKE_CURRENT_BINARY_DIR}/ut_init.h")

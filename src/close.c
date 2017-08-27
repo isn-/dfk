@@ -16,6 +16,7 @@
 
 int dfk__close(dfk_t* dfk, void* dfkhandle, int sock)
 {
+  DFK_UNUSED(dfkhandle);
   DFK_INFO(dfk, "{%p} closing", dfkhandle);
   if (close(sock) == -1) {
     DFK_ERROR_SYSCALL(dfk, "close");

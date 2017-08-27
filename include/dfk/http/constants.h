@@ -9,18 +9,12 @@
 
 #pragma once
 
-/**
- * @addtogroup http
- * @{
- */
-
 #define DFK_HTTP_USER_AGENT "User-Agent"
 #define DFK_HTTP_HOST "Host"
 #define DFK_HTTP_ACCEPT "Accept"
 #define DFK_HTTP_CONTENT_TYPE "Content-Type"
 #define DFK_HTTP_CONTENT_LENGTH "Content-Length"
 #define DFK_HTTP_CONNECTION "Connection"
-
 
 typedef enum dfk_http_method_e {
   DFK_HTTP_DELETE = 0,
@@ -57,7 +51,6 @@ typedef enum dfk_http_method_e {
   DFK_HTTP_LINK = 31,
   DFK_HTTP_UNLINK = 32
 } dfk_http_method_e;
-
 
 typedef enum dfk_http_status_e {
   DFK_HTTP_CONTINUE = 100,
@@ -127,11 +120,5 @@ typedef enum dfk_http_status_e {
   DFK_HTTP_NETWORK_AUTHENTICATION_REQUIRED = 511 /* RFC 6585 */
 } dfk_http_status_e;
 
-
-/**
- * @private
- */
 const char* dfk_http_reason_phrase(dfk_http_status_e status);
-
-/** @} */
 

@@ -6,7 +6,6 @@
 
 #include <dfk/http/constants.h>
 
-
 const char* dfk_http_reason_phrase(dfk_http_status_e status)
 {
   switch (status) {
