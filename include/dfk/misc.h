@@ -20,6 +20,11 @@ typedef struct dfk_buf_t {
   size_t size;
 } dfk_buf_t;
 
+typedef struct dfk_cbuf_t {
+  const char* data;
+  size_t size;
+} dfk_cbuf_t;
+
 /**
  * Append memory chunk to the buffer @p to.
  *
@@ -28,6 +33,15 @@ typedef struct dfk_buf_t {
  * @pre to->data + to->size == data
  */
 void dfk_buf_append(dfk_buf_t* to, const char* data, size_t size);
+
+/**
+ * Append memory chunk to the buffer @p to.
+ *
+ * Buffers should be placed continuously in memory.
+ * @private
+ * @pre to->data + to->size == data
+ */
+void dfk_cbuf_append(dfk_cbuf_t* to, const char* data, size_t size);
 
 /**
  * A struct to associate client data with library object.
@@ -46,6 +60,13 @@ typedef union dfk_userdata_t {
  * @see dfk_sizeof
  */
 size_t dfk_buf_sizeof(void);
+
+/**
+ * Returns size of the dfk_cbuf_t structure.
+ *
+ * @see dfk_sizeof
+ */
+size_t dfk_cbuf_sizeof(void);
 
 /**
  * Returns size of the dfk_iovec_t structure.

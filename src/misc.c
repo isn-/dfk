@@ -13,6 +13,11 @@ size_t dfk_buf_sizeof(void)
   return sizeof(dfk_buf_t);
 }
 
+size_t dfk_cbuf_sizeof(void)
+{
+  return sizeof(dfk_cbuf_t);
+}
+
 size_t dfk_iovec_sizeof(void)
 {
   return sizeof(dfk_iovec_t);
@@ -28,5 +33,10 @@ void dfk_buf_append(dfk_buf_t* to, const char* data, size_t size)
     to->data = (char*) data;
     to->size = size;
   }
+}
+
+void dfk_cbuf_append(dfk_cbuf_t* to, const char* data, size_t size)
+{
+  dfk_buf_append((dfk_buf_t*) to, data, size);
 }
 

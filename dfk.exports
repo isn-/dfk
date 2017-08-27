@@ -65,6 +65,8 @@ dfk_strerr
 
 dfk_buf_append
 dfk_buf_sizeof
+dfk_cbuf_append
+dfk_cbuf_sizeof
 dfk_iovec_sizeof
 
 dfk_strtoll
