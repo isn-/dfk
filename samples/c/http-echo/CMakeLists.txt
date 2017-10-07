@@ -1,2 +1,2 @@
-add_executable(http-echo main.c)
-target_link_libraries(http-echo dfk)
+add_executable(dfk-http-echo main.c)
+target_link_libraries(dfk-http-echo dfk)

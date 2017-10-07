@@ -8,49 +8,27 @@
  */
 
 #pragma once
-#include <dfk/config.h>
-#include <dfk/mutex.h>
-#include <dfk/cond.h>
+#include <dfk/context.h>
 #include <dfk/list.h>
-#include <dfk/tcp_socket.h>
+#include <dfk/tcp_server.h>
 #include <dfk/http/request.h>
 #include <dfk/http/response.h>
 
-struct dfk_http_t;
-
-typedef int (*dfk_http_handler)(dfk_userdata_t ud, struct dfk_http_t*, dfk_http_request_t*,
-                                dfk_http_response_t*);
-
 typedef struct dfk_http_t {
+  union {
+    /**
+     * @public
+     */
+    dfk_t* dfk;
+    /**
+     * @private
+     */
+    dfk_tcp_server_t _server;
+  };
   /** @privatesection */
   dfk_list_hook_t _hook;
-  dfk_tcp_socket_t _listensock;
-  dfk_http_handler _handler;
-  dfk_userdata_t _handler_ud;
-  dfk_list_t _connections;
-  /**
-   * Server state
-   *
-   * Can be one of
-   * @li 0 - initialized, idle
-   * @li 1 - serving
-   * @li 2 - stopping
-   * @li 3 - stopped
-   */
-  int _state;
-
-  /**
-   * Protects _state
-   */
-  dfk_mutex_t _state_mut;
-
-  /**
-   * Notifies about _state changes
-   */
-  dfk_cond_t _state_cv;
 
   /** @publicsection */
-  dfk_t* dfk;
   dfk_userdata_t user;
 
   /**
@@ -84,9 +62,25 @@ typedef struct dfk_http_t {
   size_t header_max_size;
 } dfk_http_t;
 
-int dfk_http_init(dfk_http_t* http, dfk_t* dfk);
-int dfk_http_free(dfk_http_t* http);
+void dfk_http_init(dfk_http_t* http, dfk_t* dfk);
+void dfk_http_free(dfk_http_t* http);
 
+typedef int (*dfk_http_handler)(dfk_http_t*,
+    dfk_http_request_t*, dfk_http_response_t*, dfk_userdata_t ud);
+
+/**
+ *
+ * @todo Think about socket lingering
+ * @todo Think about proper socket closing
+ */
+int dfk_http_serve(dfk_http_t* http,
+    const char* endpoint,
+    uint16_t port,
+    size_t backlog,
+    dfk_http_handler handler,
+    dfk_userdata_t handler_ud);
+
+int dfk_http_is_stopping(dfk_http_t* http);
 int dfk_http_stop(dfk_http_t* http);
 
 /**
@@ -95,10 +89,4 @@ int dfk_http_stop(dfk_http_t* http);
  * @see dfk_sizeof
  */
 size_t dfk_http_sizeof(void);
-
-int dfk_http_serve(dfk_http_t* http,
-    const char* endpoint,
-    uint16_t port,
-    dfk_http_handler handler,
-    dfk_userdata_t handler_ud);
 

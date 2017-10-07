@@ -6,30 +6,32 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <dfk.h>
-
+#include <dfk/error.h>
+#include <dfk/http/server.h>
 
 typedef struct args_t {
   int argc;
   char** argv;
 } args_t;
 
-
-#define CALL_DFK_API(c) if ((c) != dfk_err_ok) { return -1; }
-
-
-static int echo(dfk_userdata_t ud, dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+static int echo(dfk_http_t* http, dfk_http_request_t* req,
+    dfk_http_response_t* resp, dfk_userdata_t ud)
 {
-  dfk_strmap_it it;
   (void) ud;
   (void) http;
-  CALL_DFK_API(dfk_strmap_begin(&req->headers, &it));
-  while (dfk_strmap_it_valid(&it) == dfk_err_ok) {
-    dfk_buf_t name = it.item->key;
+
+  /* Copy HTTP headers */
+  dfk_strmap_it it, end;
+  dfk_strmap_begin(&req->headers, &it);
+  dfk_strmap_end(&req->headers, &end);
+  while (!dfk_strmap_it_equal(&it, &end)) {
+    dfk_cbuf_t name = it.item->key;
     dfk_buf_t value = it.item->value;
-    CALL_DFK_API(dfk_http_response_bset(resp, name, value));
-    CALL_DFK_API(dfk_strmap_it_next(&it));
+    dfk_http_response_set(resp, name.data, name.size, value.data, value.size);
+    dfk_strmap_it_next(&it);
   }
+
+  /* Copy request body */
   if (req->content_length > 0) {
     char buf[4096] = {0};
     ssize_t nread = 0;
@@ -49,35 +51,23 @@ static int echo(dfk_userdata_t ud, dfk_http_t* http, dfk_http_request_t* req, df
   return dfk_err_ok;;
 }
 
-
-static void dfk_main(dfk_coro_t* coro, void* p)
+static void dfkmain(dfk_fiber_t* fiber, void* p)
 {
+  (void) p;
   dfk_http_t srv;
-  dfk_userdata_t ud = {NULL};
-  args_t* args = (args_t*) p;
-  if (dfk_http_init(&srv, coro->dfk) != dfk_err_ok) {
-    return;
-  }
-  if (dfk_http_serve(&srv, args->argv[1], atoi(args->argv[2]), echo, ud) != dfk_err_ok) {
-    return;
-  }
+  dfk_http_init(&srv, fiber->dfk);
+  dfk_http_serve(&srv, "127.0.0.1", 10080, 128, echo, (dfk_userdata_t) {.data = NULL});
   dfk_http_free(&srv);
 }
 
-
 int main(int argc, char** argv)
 {
+  (void) argc;
+  (void) argv;
   dfk_t dfk;
-  args_t args;
-  if (argc != 3) {
-    fprintf(stderr, "usage: %s <ip> <port>\n", argv[0]);
-    return 1;
-  }
-  args.argc = argc;
-  args.argv = argv;
   dfk_init(&dfk);
-  (void) dfk_run(&dfk, dfk_main, &args, 0);
-  CALL_DFK_API(dfk_work(&dfk));
-  return dfk_free(&dfk);
+  dfk_work(&dfk, dfkmain, NULL, 0);
+  dfk_free(&dfk);
+  return 0;
 }
 

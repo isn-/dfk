@@ -8,20 +8,15 @@
  */
 
 #pragma once
-#include <dfk/core.h>
+#include <dfk/fiber.h>
 #include <dfk/tcp_socket.h>
+#include <dfk/misc.h>
 #include <dfk/http/server.h>
-
-/**
- * @addtogroup http
- * @{
- */
 
 /**
  * HTTP protocol implementation
  * @private
  */
-void dfk_http(dfk_coro_t* coro, dfk_tcp_socket_t* sock, dfk_http_t* http);
-
-/** @} */
+void dfk__http_protocol(dfk_http_t* http, dfk_fiber_t* fiber, dfk_tcp_socket_t* sock,
+    dfk_http_handler handler, dfk_userdata_t user);
 

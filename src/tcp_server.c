@@ -57,9 +57,9 @@ static void dfk_tcp_server_callback(dfk_fiber_t* fiber,
 int dfk_tcp_serve(dfk_tcp_server_t* server,
     const char* endpoint,
     uint16_t port,
+    size_t backlog,
     dfk_tcp_handler handler,
-    dfk_userdata_t handler_ud,
-    size_t backlog)
+    dfk_userdata_t handler_ud)
 {
   dfk_t* dfk = server->dfk;
   dfk_list_append(&dfk->_tcp_servers, &server->_hook);

@@ -60,7 +60,7 @@ static ssize_t dfk__mocked_read(dfk_http_request_t* req,
 #endif
 }
 
-static int dfk_http_request_allocate_headers_buf(dfk_http_request_t* req, dfk_buf_t* outbuf)
+static int dfk__http_request_allocate_headers_buf(dfk_http_request_t* req, dfk_buf_t* outbuf)
 {
   assert(req);
   assert(outbuf);
@@ -122,9 +122,8 @@ size_t dfk_http_request_sizeof(void)
 
 typedef struct dfk_header_parser_data_t {
   dfk_http_request_t* req;
-  dfk_strmap_item_t* cheader; /* current header */
-  const char* cheader_field;
-  const char* cheader_value;
+  dfk_cbuf_t cheader_field;
+  dfk_cbuf_t cheader_value;
   int dfk_errno;
 } dfk_header_parser_data_t;
 
@@ -153,25 +152,34 @@ static int dfk_http_request_on_url(http_parser* parser, const char* at, size_t s
   return 0;
 }
 
+static int dfk__http_request_flush_header(dfk_header_parser_data_t* p)
+{
+  assert(p);
+  dfk_strmap_item_t* item = dfk_arena_alloc(p->req->_request_arena, sizeof(dfk_strmap_item_t));
+  if (!item) {
+    p->dfk_errno = dfk_err_nomem;
+    return 1;
+  }
+  dfk_strmap_item_init(item, p->cheader_field.data, p->cheader_field.size,
+      (char*) p->cheader_value.data, p->cheader_value.size);
+  dfk_strmap_insert(&p->req->headers, item);
+  return 0;
+}
+
 static int dfk_http_request_on_header_field(http_parser* parser, const char* at, size_t size)
 {
   dfk_header_parser_data_t* p = (dfk_header_parser_data_t*) parser->data;
   DFK_DBG(p->req->http->dfk, "{%p} %.*s", (void*) p->req, (int) size, at);
-  if (!p->cheader || p->cheader->value.data) {
-    if (p->cheader) {
-      dfk_strmap_insert(&p->req->headers, p->cheader);
-    }
-    p->cheader = dfk_arena_alloc(p->req->_request_arena, sizeof(dfk_strmap_item_t));
-    if (!p->cheader) {
-      p->dfk_errno = dfk_err_nomem;
+  if (p->cheader_value.data) {
+    if (dfk__http_request_flush_header(p)) {
       return 1;
     }
-    dfk_strmap_item_init(p->cheader, NULL, 0, NULL, 0);
-    p->cheader_field = at;
-    p->cheader_value = 0;
+    p->cheader_value.data = NULL;
+    p->cheader_field = (dfk_cbuf_t) {.data = at, .size = size};
+  } else {
+    dfk_cbuf_append(&p->cheader_field, at, size);
   }
-  dfk_cbuf_append(&p->cheader->key, at, size);
-  if (p->cheader->key.size > DFK_HTTP_HEADER_MAX_SIZE) {
+  if (p->cheader_field.size > DFK_HTTP_HEADER_MAX_SIZE) {
     p->dfk_errno = dfk_err_overflow;
     return 1;
   }
@@ -182,11 +190,12 @@ static int dfk_http_request_on_header_value(http_parser* parser, const char* at,
 {
   dfk_header_parser_data_t* p = (dfk_header_parser_data_t*) parser->data;
   DFK_DBG(p->req->http->dfk, "{%p} %.*s", (void*) p->req, (int) size, at);
-  if (!p->cheader_value) {
-    p->cheader_value = at;
+  if (!p->cheader_value.data) {
+    p->cheader_value = (dfk_cbuf_t) {.data = at, .size = size};
+  } else {
+    dfk_cbuf_append(&p->cheader_value, at, size);
   }
-  dfk_buf_append(&p->cheader->value, at, size);
-  if (p->cheader->value.size > DFK_HTTP_HEADER_MAX_SIZE) {
+  if (p->cheader_value.size > DFK_HTTP_HEADER_MAX_SIZE) {
     p->dfk_errno = dfk_err_overflow;
     return 1;
   }
@@ -197,9 +206,9 @@ static int dfk_http_request_on_headers_complete(http_parser* parser)
 {
   dfk_header_parser_data_t* p = (dfk_header_parser_data_t*) parser->data;
   DFK_DBG(p->req->http->dfk, "{%p}", (void*) p->req);
-  if (p->cheader) {
-    dfk_strmap_insert(&p->req->headers, p->cheader);
-    p->cheader = NULL;
+  if (p->cheader_field.data) {
+    assert(p->cheader_value.data);
+    dfk__http_request_flush_header(p);
   }
   http_parser_pause(parser, 1);
   return 0;
@@ -254,7 +263,7 @@ static http_parser_settings dfk_parser_settings = {
 #if HTTP_PARSER_HAVE_ON_STATUS
   .on_status = NULL, /* For HTTP responses only */
 #endif
-#if HTTP_PARSER_HAVE_ON_STATUS
+#if HTTP_PARSER_HAVE_ON_STATUS_COMPLETE
   .on_status_complete = NULL, /* For HTTP responses only */
 #endif
   .on_header_field = dfk_http_request_on_header_field,
@@ -300,9 +309,8 @@ int dfk__http_request_read_headers(dfk_http_request_t* req)
   /* A pointer to pdata is passed to http_parser callbacks */
   dfk_header_parser_data_t pdata = {
     .req = req,
-    .cheader = NULL,
-    .cheader_field = NULL,
-    .cheader_value = NULL,
+    .cheader_field = {NULL, 0},
+    .cheader_value = {NULL, 0},
     .dfk_errno = dfk_err_ok
   };
 
@@ -312,7 +320,7 @@ int dfk__http_request_read_headers(dfk_http_request_t* req)
 
   /* Allocate first per-request buffer */
   dfk_buf_t curbuf;
-  DFK_CALL(dfk, dfk_http_request_allocate_headers_buf(req, &curbuf));
+  DFK_CALL(dfk, dfk__http_request_allocate_headers_buf(req, &curbuf));
 
   while (1) {
     assert(curbuf.size >= DFK_HTTP_HEADER_MAX_SIZE);
@@ -342,30 +350,40 @@ int dfk__http_request_read_headers(dfk_http_request_t* req)
     if (req->_parser.http_errno == HPE_PAUSED) {
       /* on_headers_complete was called */
       req->_remainder = (dfk_buf_t) {curbuf.data + nparsed, nread - nparsed};
+      DFK_DBG(dfk, "{%p} all headers parsed, remainder %llu bytes",
+          (void*) req, (unsigned long long) req->_remainder.size);
       http_parser_pause(&req->_parser, 0);
       break;
     }
     if (HPE_CB_message_begin <= req->_parser.http_errno
         && req->_parser.http_errno <= HTTP_PARSER_MAX_CALLBACK_ERR_CODE) {
+      DFK_DBG(dfk, "{%p} http parser returned error %u",
+          (void*) req, req->_parser.http_errno);
       return pdata.dfk_errno;
     }
     if (req->_parser.http_errno != HPE_OK) {
+      DFK_DBG(dfk, "{%p} http parser returned error %u",
+          (void*) req, req->_parser.http_errno);
       return dfk_err_protocol;
     }
 
-    if (pdata.cheader) {
-      if (curbuf.data + curbuf.size - pdata.cheader_field < DFK_HTTP_HEADER_MAX_SIZE) {
-        if (dfk_list_size(&req->_buffers) == req->http->headers_buffer_count) {
-          return dfk_err_overflow;
-        }
-        DFK_CALL(dfk, dfk_http_request_allocate_headers_buf(req, &curbuf));
-        memcpy(curbuf.data, pdata.cheader, nparsed);
-        if (pdata.cheader_value) {
-          pdata.cheader->value.data += (curbuf.data - pdata.cheader_field);
-        }
-        assert(pdata.cheader_field);
-        pdata.cheader->key.data = curbuf.data;
+    /*
+     * If the buffer's remainder isn't large enough to hold up to DFK_HTTP_HEADER_MAX_SIZE
+     * bytes, which is the maximum size of the current header, one have to reallocate current
+     * buffer.
+     */
+    if (pdata.cheader_field.data &&
+        curbuf.data + curbuf.size - pdata.cheader_field.data < DFK_HTTP_HEADER_MAX_SIZE) {
+      if (dfk_list_size(&req->_buffers) == req->http->headers_buffer_count) {
+        return dfk_err_overflow;
       }
+      DFK_CALL(dfk, dfk__http_request_allocate_headers_buf(req, &curbuf));
+      memcpy(curbuf.data, pdata.cheader_field.data, nparsed);
+      if (pdata.cheader_value.data) {
+        pdata.cheader_value.data = curbuf.data +
+          (pdata.cheader_value.data - pdata.cheader_field.data);
+      }
+      pdata.cheader_field.data = curbuf.data;
     }
     curbuf = (dfk_buf_t) {curbuf.data + nparsed, curbuf.size - nparsed};
   }

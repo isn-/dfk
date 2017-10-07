@@ -39,9 +39,9 @@ typedef void (*dfk_tcp_handler)(dfk_tcp_server_t*,
 int dfk_tcp_serve(dfk_tcp_server_t* server,
     const char* endpoint,
     uint16_t port,
+    size_t backlog,
     dfk_tcp_handler handler,
-    dfk_userdata_t handler_ud,
-    size_t backlog);
+    dfk_userdata_t user);
 
 int dfk_tcp_server_is_stopping(dfk_tcp_server_t* server);
 int dfk_tcp_server_stop(dfk_tcp_server_t* server);

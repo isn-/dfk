@@ -291,8 +291,8 @@ set(dfk_sources
   "${CMAKE_CURRENT_SOURCE_DIR}/src/http/constants.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/http/request.c"
   "${CMAKE_CURRENT_SOURCE_DIR}/src/http/response.c"
-  # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/protocol.c"
-  # "${CMAKE_CURRENT_SOURCE_DIR}/src/http/server.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/http/protocol.c"
+  "${CMAKE_CURRENT_SOURCE_DIR}/src/http/server.c"
 )
 
 if(DFK_EVENT_LOOP_EPOLL)

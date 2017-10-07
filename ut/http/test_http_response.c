@@ -140,31 +140,10 @@ TEST_F(fixture, http_response, set_copy_value)
 
 TEST_F(fixture, http_response, set_errors)
 {
-  EXPECT(dfk_http_response_set(NULL, "n", 1, "v", 1) == dfk_err_badarg);
-  EXPECT(dfk_http_response_set(&fixture->resp, NULL, 1, "v", 1) == dfk_err_badarg);
-  EXPECT(dfk_http_response_set(&fixture->resp, "n", 1, NULL, 1) == dfk_err_badarg);
   ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_ALWAYS, 0);
   EXPECT(dfk_http_response_set(&fixture->resp, "n", 1, "v", 1) == dfk_err_nomem);
-  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_NEVER, 0);
-
-  EXPECT(dfk_http_response_set_copy(NULL, "n", 1, "v", 1) == dfk_err_badarg);
-  EXPECT(dfk_http_response_set_copy(&fixture->resp, NULL, 1, "v", 1) == dfk_err_badarg);
-  EXPECT(dfk_http_response_set_copy(&fixture->resp, "n", 1, NULL, 1) == dfk_err_badarg);
-  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_ALWAYS, 0);
   EXPECT(dfk_http_response_set_copy(&fixture->resp, "n", 1, "v", 1) == dfk_err_nomem);
-  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_NEVER, 0);
-
-  EXPECT(dfk_http_response_set_copy_name(NULL, "n", 1, "v", 1) == dfk_err_badarg);
-  EXPECT(dfk_http_response_set_copy_name(&fixture->resp, NULL, 1, "v", 1) == dfk_err_badarg);
-  EXPECT(dfk_http_response_set_copy_name(&fixture->resp, "n", 1, NULL, 1) == dfk_err_badarg);
-  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_ALWAYS, 0);
   EXPECT(dfk_http_response_set_copy_name(&fixture->resp, "n", 1, "v", 1) == dfk_err_nomem);
-  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_NEVER, 0);
-
-  EXPECT(dfk_http_response_set_copy_value(NULL, "n", 1, "v", 1) == dfk_err_badarg);
-  EXPECT(dfk_http_response_set_copy_value(&fixture->resp, NULL, 1, "v", 1) == dfk_err_badarg);
-  EXPECT(dfk_http_response_set_copy_value(&fixture->resp, "n", 1, NULL, 1) == dfk_err_badarg);
-  ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_ALWAYS, 0);
   EXPECT(dfk_http_response_set_copy_value(&fixture->resp, "n", 1, "v", 1) == dfk_err_nomem);
   ut_simulate_out_of_memory(&fixture->dfk, UT_OOM_NEVER, 0);
 }

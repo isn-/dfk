@@ -35,8 +35,8 @@ static void dfkmain(dfk_fiber_t* fiber, void* arg)
   dfk_tcp_server_t server;
   dfk_tcp_server_init(&server, dfk);
   dfk_run(dfk, wait_for_terminate, NULL, 0);
-  dfk_tcp_serve(&server, "127.0.0.1", 10021,
-      ftp_connection, (dfk_userdata_t) {.data = NULL}, 128);
+  dfk_tcp_serve(&server, "127.0.0.1", 10021, 128,
+      ftp_connection, (dfk_userdata_t) {.data = NULL});
 }
 
 int main(int argc, char** argv)

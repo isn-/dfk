@@ -130,26 +130,16 @@ int dfk__http_response_flush_headers(dfk_http_response_t* resp)
 
 ssize_t dfk_http_response_write(dfk_http_response_t* resp, char* buf, size_t nbytes)
 {
-  if (!resp) {
-    return -1;
-  }
-  if (!buf && nbytes) {
-    resp->http->dfk->dfk_errno = dfk_err_badarg;
-    return -1;
-  }
+  assert(resp);
+  assert(buf && nbytes);
   dfk_iovec_t iov = {buf, nbytes};
   return dfk_http_response_writev(resp, &iov, 1);
 }
 
 ssize_t dfk_http_response_writev(dfk_http_response_t* resp, dfk_iovec_t* iov, size_t niov)
 {
-  if (!resp) {
-    return -1;
-  }
-  if (!iov && niov) {
-    resp->http->dfk->dfk_errno = dfk_err_badarg;
-    return -1;
-  }
+  assert(resp);
+  assert(iov && niov);
   dfk__http_response_flush_headers(resp);
   return dfk__mocked_writev(resp, iov, niov);
 }
@@ -157,9 +147,9 @@ ssize_t dfk_http_response_writev(dfk_http_response_t* resp, dfk_iovec_t* iov, si
 int dfk_http_response_set(dfk_http_response_t* resp,
     const char* name, size_t namelen, const char* value, size_t valuelen)
 {
-  if (!resp || (!name && namelen) || (!value && valuelen)) {
-    return dfk_err_badarg;
-  }
+  assert(resp);
+  assert(name && namelen);
+  assert(value && valuelen);
   DFK_DBG(resp->http->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
       (int) namelen, name, (int) valuelen, value);
   dfk_strmap_item_t* item = dfk_arena_alloc(
@@ -176,15 +166,15 @@ int dfk_http_response_set_copy(
     dfk_http_response_t* resp,
     const char* name, size_t namelen, const char* value, size_t valuelen)
 {
-  if (!resp || (!name && namelen) || (!value && valuelen)) {
-    return dfk_err_badarg;
-  }
+  assert(resp);
+  assert(name && namelen);
+  assert(value && valuelen);
   DFK_DBG(resp->http->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
       (int) namelen, name, (int) valuelen, value);
   dfk_strmap_item_t* i = dfk_strmap_item_acopy(
       resp->_request_arena, name, namelen, value, valuelen);
   if (!i) {
-    return resp->_request_arena->dfk->dfk_errno;
+    return dfk_err_nomem;
   }
   dfk_strmap_insert(&resp->headers, i);
   return dfk_err_ok;
@@ -194,15 +184,15 @@ int dfk_http_response_set_copy_name(
     dfk_http_response_t* resp,
     const char* name, size_t namelen, const char* value, size_t valuelen)
 {
-  if (!resp || (!name && namelen) || (!value && valuelen)) {
-    return dfk_err_badarg;
-  }
+  assert(resp);
+  assert(name && namelen);
+  assert(value && valuelen);
   DFK_DBG(resp->http->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
       (int) namelen, name, (int) valuelen, value);
   dfk_strmap_item_t* i = dfk_strmap_item_acopy_key(
       resp->_request_arena, name, namelen, (char*) value, valuelen);
   if (!i) {
-    return resp->_request_arena->dfk->dfk_errno;
+    return dfk_err_nomem;
   }
   dfk_strmap_insert(&resp->headers, i);
   return dfk_err_ok;
@@ -212,15 +202,15 @@ int dfk_http_response_set_copy_value(
     dfk_http_response_t* resp,
     const char* name, size_t namelen, const char* value, size_t valuelen)
 {
-  if (!resp || (!name && namelen) || (!value && valuelen)) {
-    return dfk_err_badarg;
-  }
+  assert(resp);
+  assert(name && namelen);
+  assert(value && valuelen);
   DFK_DBG(resp->http->dfk, "{%p} '%.*s': '%.*s'", (void*) resp,
       (int) namelen, name, (int) valuelen, value);
   dfk_strmap_item_t* i = dfk_strmap_item_acopy_value(
       resp->_request_arena, name, namelen, value, valuelen);
   if (!i) {
-    return resp->_request_arena->dfk->dfk_errno;
+    return dfk_err_nomem;
   }
   dfk_strmap_insert(&resp->headers, i);
   return dfk_err_ok;
