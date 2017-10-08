@@ -48,8 +48,9 @@ static void fixture_setup(fixture_t* f)
 
 static void fixture_teardown(fixture_t* f)
 {
-  dfk_arena_free(&f->conn_arena);
+  dfk__sponge_free(&f->respbuf);
   dfk_arena_free(&f->req_arena);
+  dfk_arena_free(&f->conn_arena);
   dfk_free(&f->dfk);
 }
 

@@ -105,7 +105,10 @@ if(VALGRIND AND NOT DFK_ENABLE_COVERAGE)
     mutex
     cond
     sponge
-    urlencoding)
+    urlencoding
+    http
+    http_request
+    http_response)
   foreach(i ${ut_modules})
     add_test(valgrind.${i} ${VALGRIND} --error-exitcode=1 --leak-check=full --suppressions=${suppressions} "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/ut-dfk" ${i})
   endforeach()
