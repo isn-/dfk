@@ -26,7 +26,7 @@ lcov $lcov_args --remove lcov.info '*/ut/*' --output lcov.info
 
 if [ "$TRAVIS" == "true" ]; then
   # deploy
-  bash <(curl -s https://codecov.io/bash)
+  curl -s https://codecov.io/bash | bash -s - -X gcov
 else
   # generate html localy
   mkdir -p doc/coverage
