@@ -1,0 +1,7 @@
+<map id="dfk_tcp_socket_t" name="dfk_tcp_socket_t">
+<area shape="rect" id="node2" href="$structdfk__t.html" title="dfk_t" alt="" coords="169,203,220,229"/>
+<area shape="rect" id="node5" href="$structdfk__fiber__t.html" title="dfk_fiber_t" alt="" coords="284,293,365,320"/>
+<area shape="rect" id="node3" href="$structdfk__list__t.html" title="dfk_list_t" alt="" coords="5,112,79,139"/>
+<area shape="rect" id="node4" href="$structdfk__list__hook__t.html" title="dfk_list_hook_t" alt="" coords="250,7,360,33"/>
+<area shape="rect" id="node6" href="$uniondfk__userdata__t.html" title="dfk_userdata_t" alt="" coords="141,112,248,139"/>
+</map>

@@ -1,0 +1,19 @@
+<map id="fileserver.h" name="fileserver.h">
+<area shape="rect" id="node2" href="$config_8h.html" title="dfk/config.h" alt="" coords="923,693,1013,720"/>
+<area shape="rect" id="node4" href="$http_8h.html" title="dfk/http.h" alt="" coords="943,80,1019,107"/>
+<area shape="rect" id="node5" href="$constants_8h.html" title="dfk/http/constants.h" alt="" coords="1053,379,1192,405"/>
+<area shape="rect" id="node6" href="$request_8h.html" title="dfk/http/request.h" alt="" coords="811,304,935,331"/>
+<area shape="rect" id="node21" href="$response_8h.html" title="dfk/http/response.h" alt="" coords="667,229,801,256"/>
+<area shape="rect" id="node23" href="$server_8h.html" title="dfk/http/server.h" alt="" coords="567,155,683,181"/>
+<area shape="rect" id="node8" href="$tcp__socket_8h.html" title="dfk/tcp_socket.h" alt="" coords="429,379,547,405"/>
+<area shape="rect" id="node18" href="$strmap_8h.html" title="dfk/strmap.h" alt="" coords="761,379,855,405"/>
+<area shape="rect" id="node11" href="$context_8h.html" title="dfk/context.h" alt="" coords="385,528,484,555"/>
+<area shape="rect" id="node14" href="$misc_8h.html" title="dfk/misc.h" alt="" coords="563,611,644,637"/>
+<area shape="rect" id="node17" href="$fiber_8h.html" title="dfk/fiber.h" alt="" coords="245,453,324,480"/>
+<area shape="rect" id="node13" href="$signal_8h.html" title="signal.h" alt="" coords="472,611,539,637"/>
+<area shape="rect" id="node15" href="$list_8h.html" title="dfk/list.h" alt="" coords="160,611,232,637"/>
+<area shape="rect" id="node19" href="$arena_8h_source.html" title="dfk/arena.h" alt="" coords="683,453,769,480"/>
+<area shape="rect" id="node20" href="$avltree_8h.html" title="dfk/avltree.h" alt="" coords="878,611,972,637"/>
+<area shape="rect" id="node24" href="$tcp__server_8h_source.html" title="dfk/tcp_server.h" alt="" coords="343,304,459,331"/>
+<area shape="rect" id="node25" href="$mutex_8h.html" title="dfk/mutex.h" alt="" coords="292,379,383,405"/>
+</map>

@@ -1,0 +1,25 @@
+var searchData=
+[
+  ['dfk_5ferr_5fbadarg',['dfk_err_badarg',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5aac06d62bb2c1036683d8f4ccec80af50',1,'error.h']]],
+  ['dfk_5ferr_5fbusy',['dfk_err_busy',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5a35235b842ebe2de8e34550cf5cb9b3d7',1,'error.h']]],
+  ['dfk_5ferr_5fconnection_5frefused',['dfk_err_connection_refused',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5aaa645ac29ca56858da9013b3c251e72a',1,'error.h']]],
+  ['dfk_5ferr_5feof',['dfk_err_eof',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5a90a67fe59c62c1ebf13c7d77bf27996e',1,'error.h']]],
+  ['dfk_5ferr_5finprog',['dfk_err_inprog',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5a3dde7f5aa73515154430504616922ab2',1,'error.h']]],
+  ['dfk_5ferr_5fnomem',['dfk_err_nomem',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5a7e11c87321d39548cafb9568134574fe',1,'error.h']]],
+  ['dfk_5ferr_5fnot_5fimplemented',['dfk_err_not_implemented',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5aa1405e4b79e386d03d1c70925f337756',1,'error.h']]],
+  ['dfk_5ferr_5fnotfound',['dfk_err_notfound',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5aee74f684999c57ceafca3b75e2ba7812',1,'error.h']]],
+  ['dfk_5ferr_5fok',['dfk_err_ok',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5a06ddc7f37149dd8516e4922e34593360',1,'error.h']]],
+  ['dfk_5ferr_5foverflow',['dfk_err_overflow',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5abb7363f43eb9cbb5894a5aa54a9b95d2',1,'error.h']]],
+  ['dfk_5ferr_5fpanic',['dfk_err_panic',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5ae69a86a3dcb590425f678ad86062bea9',1,'error.h']]],
+  ['dfk_5ferr_5fprotocol',['dfk_err_protocol',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5a1f1f2074c63c691ee205bd41f2993bdd',1,'error.h']]],
+  ['dfk_5ferr_5fstopped',['dfk_err_stopped',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5a57b344e00bcd2d1d77650aae0ba74340',1,'error.h']]],
+  ['dfk_5ferr_5fsys',['dfk_err_sys',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5ad77d4320bcbf44b563b86456209b6971',1,'error.h']]],
+  ['dfk_5ferr_5ftimeout',['dfk_err_timeout',['../error_8h.html#a36143e00340b3e4dcb7ee056842044a5a1d6e4107586466a2fe246c77147c5d95',1,'error.h']]],
+  ['dfk_5flog_5fdebug',['dfk_log_debug',['../log_8h.html#ae89982269f0236135054e1454d63abfea76802f6bf74d41b29e4c6ccf798c7146',1,'log.h']]],
+  ['dfk_5flog_5ferror',['dfk_log_error',['../log_8h.html#ae89982269f0236135054e1454d63abfeae28219d87830afeb2c9620f130a6990d',1,'log.h']]],
+  ['dfk_5flog_5finfo',['dfk_log_info',['../log_8h.html#ae89982269f0236135054e1454d63abfea3bd9faeeda1e3ffdbd5f81af263aa064',1,'log.h']]],
+  ['dfk_5flog_5fwarning',['dfk_log_warning',['../log_8h.html#ae89982269f0236135054e1454d63abfea265f0cd4103fd8aaa2746356497d0e37',1,'log.h']]],
+  ['dfk_5fshut_5frd',['DFK_SHUT_RD',['../tcp__socket_8h.html#af2cb91521bca6036f15c6994a314f178add341fdbd5b4a76ed44fcef42c99584d',1,'tcp_socket.h']]],
+  ['dfk_5fshut_5frdwr',['DFK_SHUT_RDWR',['../tcp__socket_8h.html#af2cb91521bca6036f15c6994a314f178ab9af821412ed9f0c727d5a0724e21a1b',1,'tcp_socket.h']]],
+  ['dfk_5fshut_5fwr',['DFK_SHUT_WR',['../tcp__socket_8h.html#af2cb91521bca6036f15c6994a314f178a9bb26ff58ddfb36ba749878e43dc8e17',1,'tcp_socket.h']]]
+];
