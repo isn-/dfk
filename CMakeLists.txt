@@ -124,9 +124,9 @@ find_package(http-parser REQUIRED)
 include_directories(${HTTP_PARSER_INCLUDE_DIR})
 
 if(DFK_BUILD_UNIT_TESTS)
-  find_package(CURL REQUIRED)
-  include_directories(${CURL_INCLUDE_DIR})
   find_package(Threads REQUIRED)
+  find_package(PythonLibs REQUIRED)
+  include_directories(${PYTHON_INCLUDE_DIRS})
 endif()
 
 # User-provided compile-time options verification goes below.

@@ -26,6 +26,11 @@ typedef enum ut_oom_policy_e {
 void ut_simulate_out_of_memory(struct dfk_t* dfk, ut_oom_policy_e policy,
                                size_t arg);
 
+int ut_pyrun(const char* pyscript, int argc, char** argv);
+
+void* ut_pyrun_async(const char* pyscript, int argc, char** argv);
+int ut_pyrun_join(void* taskhandle);
+
 
 /**
  * Unit test declaration macros
@@ -111,3 +116,5 @@ if (!(expr)) { \
   EXPECT((buf).size == strlen((str))); \
   EXPECT(!strncmp((buf).data, (str), strlen((str)))); \
 }
+
+#define EXPECT_PYRUN(...) EXPECT(ut_pyrun(__VA_ARGS__) == 0)

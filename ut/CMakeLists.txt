@@ -15,7 +15,7 @@ set(ut_sources
   test_cond.c
   test_sponge.c
   test_strmap.c
-  #  test_tcp_socket.c
+  test_tcp_socket.c
   test_urlencoding.c
   http/test_http_constants.c
   #  test_http.c
@@ -29,6 +29,8 @@ endif()
 
 set(ut_init_c "${CMAKE_CURRENT_BINARY_DIR}/ut_init.c")
 set(ut_init_h "${CMAKE_CURRENT_BINARY_DIR}/ut_init.h")
+
+add_definitions(-DUT_TOOLS=${CMAKE_CURRENT_SOURCE_DIR}/tools)
 
 add_executable(ut-dfk
   ${dfk_sources}
@@ -46,8 +48,8 @@ add_executable(ut-dfk
 target_link_libraries(ut-dfk
   coro
   ${HTTP_PARSER_LIBRARIES}
-  ${CURL_LIBRARIES}
   ${CMAKE_THREAD_LIBS_INIT}
+  ${PYTHON_LIBRARIES}
 )
 
 file(WRITE ${ut_init_h}
@@ -76,7 +78,7 @@ void ut_register_all_test_cases(void)
 
 foreach(source ${ut_sources})
   file(READ "${source}" contents)
-  string(REGEX MATCHALL "((DISABLED_))?TEST((_F))?\\(([A-Za-z_0-9 ,]+)\\)" found_tests ${contents})
+  string(REGEX MATCHALL "\n((DISABLED_))?TEST((_F))?\\(([A-Za-z_0-9 ,]+)\\)" found_tests ${contents})
   foreach(hit ${found_tests})
     string(REGEX REPLACE ".*\\(( *[A-Za-z_0-9]+ *,)? *([A-Za-z_0-9]+), *([A-Za-z_0-9]+) *\\).*" "\\2" test_group ${hit})
     string(REGEX REPLACE ".*\\(( *[A-Za-z_0-9]+ *,)? *([A-Za-z_0-9]+), *([A-Za-z_0-9]+) *\\).*" "\\3" test_name ${hit})
