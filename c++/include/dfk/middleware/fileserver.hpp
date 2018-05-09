@@ -7,7 +7,7 @@
  */
 
 #pragma once
-#include <dfk.h>
+#include <dfk/middleware/fileserver.h>
 #include <dfk/wrapper.hpp>
 #include <dfk/context.hpp>
 #include <dfk/buffer.hpp>

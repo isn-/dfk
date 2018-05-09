@@ -37,7 +37,7 @@ static void logProxy(dfk_t* dfk, int level, const char* msg)
 Context::Context()
 {
   dfk_t* dfk = nativeHandle();
-  DFK_ENSURE_OK(this, dfk_init(dfk));
+  dfk_init(dfk);
   dfk->user.data = this;
   defaultMalloc = dfk->malloc;
   defaultFree = dfk->free;
@@ -51,7 +51,7 @@ Context::Context()
 
 Context::~Context()
 {
-  DFK_ENSURE_OK(this, dfk_free(nativeHandle()));
+  dfk_free(nativeHandle());
 }
 
 void* Context::malloc(std::size_t nbytes)
@@ -86,9 +86,9 @@ std::size_t Context::defaultStackSize() const
   return nativeHandle()->default_stack_size;
 }
 
-void Context::work()
+int Context::work(void (*func)(Fiber, void*), void* arg, size_t argSize)
 {
-  DFK_ENSURE_OK(this, dfk_work(nativeHandle()));
+  return dfk_work(nativeHandle(), (void (*)(dfk_fiber_t*, void*)) func, arg, argSize);
 }
 
 void Context::stop()
@@ -96,19 +96,19 @@ void Context::stop()
   DFK_ENSURE_OK(this, dfk_stop(nativeHandle()));
 }
 
-void Context::sleep(uint64_t msec)
+void Context::sleep(uint64_t)
 {
-  DFK_ENSURE_OK(this, dfk_sleep(nativeHandle(), msec));
+  throw Exception(this, dfk_err_not_implemented);
 }
 
-Coroutine Context::run(void (*func)(Coroutine, void*), void* arg, size_t argSize)
+Fiber Context::spawn(void (*func)(Fiber, void*), void* arg, size_t argSize)
 {
-  dfk_coro_t* coro = dfk_run(nativeHandle(), (void (*)(dfk_coro_t*, void*)) func, arg, argSize);
-  if (!coro) {
+  dfk_fiber_t* fiber = dfk_spawn(nativeHandle(), (void (*)(dfk_fiber_t*, void*)) func, arg, argSize);
+  if (!fiber) {
     throw Exception(this, nativeHandle()->dfk_errno);
   }
-  coro->user.data = this;
-  return Coroutine(coro);
+  fiber->user.data = this;
+  return Fiber(fiber);
 }
 
 } // namespace dfk

@@ -11,7 +11,7 @@
 #include <dfk.h>
 #include <dfk/core.hpp>
 #include <dfk/wrapper.hpp>
-#include <dfk/coroutine.hpp>
+#include <dfk/fiber.hpp>
 
 namespace dfk {
 
@@ -33,11 +33,12 @@ public:
 
   void setDefaultStackSize(std::size_t stackSize);
   std::size_t defaultStackSize() const;
-  void work();
+  /// @todo Refactor it. Need template method similar to boost::bind
+  int work(void (*func)(Fiber, void*), void* arg, size_t argSize);
   void stop();
   void sleep(uint64_t msec);
   /// @todo Refactor it. Need template method similar to boost::bind
-  Coroutine run(void (*func)(Coroutine, void*), void* arg, size_t argSize);
+  Fiber spawn(void (*func)(Fiber, void*), void* arg, size_t argSize);
 
 private:
   void* (*defaultMalloc)(dfk_t*, size_t);

@@ -268,7 +268,7 @@ int dfk_tcp_socket_listen(dfk_tcp_socket_t* sock,
       .callback = callback,
       .callback_ud = callback_ud
     };
-    dfk_run(dfk, dfk__tcp_socket_accepted_main, &arg, sizeof(arg));
+    dfk_spawn(dfk, dfk__tcp_socket_accepted_main, &arg, sizeof(arg));
   }
 }
 

@@ -166,7 +166,7 @@ int ut_pyrun_join(void* taskhandle)
     return (WIFEXITED(status) && !WEXITSTATUS(status)) ? 0 : -1;
   }
   /* Kill the child, hang until terminated */
-  if (kill(task->pid, SIGKILL)) {
+  if (kill(task->pid, SIGTERM)) {
     return -1;
   }
   if (waitpid(task->pid, &status, WUNTRACED | WCONTINUED) < 0) {

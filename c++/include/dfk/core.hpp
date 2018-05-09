@@ -7,7 +7,8 @@
  */
 
 #pragma once
-#include <dfk.h>
+#include <dfk/log.h>
+#include <dfk/misc.h>
 
 namespace dfk {
 

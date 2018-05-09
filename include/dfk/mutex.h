@@ -12,6 +12,10 @@
 #include <dfk/context.h>
 #include <dfk/fiber.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 
 /**
  * A recursive mutex
@@ -51,4 +55,7 @@ void dfk_mutex_lock(dfk_mutex_t* mutex);
 void dfk_mutex_unlock(dfk_mutex_t* mutex);
 int dfk_mutex_trylock(dfk_mutex_t* mutex);
 
+#ifdef __cplusplus
+}
+#endif
 

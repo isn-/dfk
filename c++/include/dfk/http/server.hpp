@@ -7,7 +7,7 @@
  */
 
 #pragma once
-#include <dfk.h>
+#include <dfk/http/server.h>
 #include <dfk/wrapper.hpp>
 #include <dfk/context.hpp>
 #include <dfk/http/request_handler.hpp>
@@ -31,11 +31,12 @@ public:
   ~Server();
   const Context* context() const;
   Context* context();
-  void serve(const char* endpoint, uint16_t port, IRequestHandler* handler);
+  void serve(const char* endpoint, uint16_t port, std::size_t backlog,
+      IRequestHandler* handler);
   void stop();
 
 private:
-  static int handler(dfk_userdata_t user, dfk_http_t*, dfk_http_request_t*, dfk_http_response_t*);
+  static int handler(dfk_http_t*, dfk_http_request_t*, dfk_http_response_t*, dfk_userdata_t);
 };
 
 }} // namespace dfk::http

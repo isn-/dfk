@@ -11,6 +11,10 @@
 #include <stddef.h>
 #include <dfk/config.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct dfk_avltree_hook_t {
   /**
    * @privatesection
@@ -86,4 +90,8 @@ void dfk_avltree_it_next(dfk_avltree_it* it);
 int dfk_avltree_it_equal(dfk_avltree_it* lhs, dfk_avltree_it* rhs);
 
 size_t dfk_avltree_it_sizeof(void);
+
+#ifdef __cplusplus
+}
+#endif
 

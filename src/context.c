@@ -116,12 +116,12 @@ int dfk_work(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*), void* arg,
 #endif
 
   /* mainf stands for main fiber */
-  dfk_fiber_t* mainf = dfk__run(dfk, ep, arg, argsize);
+  dfk_fiber_t* mainf = dfk__spawn(dfk, ep, arg, argsize);
   if (!mainf) {
     return dfk->dfk_errno;
   }
 
-  dfk_fiber_t* scheduler = dfk__run(dfk, dfk__scheduler_main, mainf, 0);
+  dfk_fiber_t* scheduler = dfk__spawn(dfk, dfk__scheduler_main, mainf, 0);
   if (!scheduler) {
     dfk__fiber_free(dfk, mainf);
     return dfk->dfk_errno;

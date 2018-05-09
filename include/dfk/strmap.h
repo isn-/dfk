@@ -14,6 +14,10 @@
 #include <dfk/arena.h>
 #include <dfk/avltree.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Element of dfk_strmap_t
  */
@@ -88,4 +92,8 @@ void dfk_strmap_end(dfk_strmap_t* map, dfk_strmap_it* it);
 size_t dfk_strmap_it_sizeof(void);
 void dfk_strmap_it_next(dfk_strmap_it* it);
 int dfk_strmap_it_equal(dfk_strmap_it* lhs, dfk_strmap_it* rhs);
+
+#ifdef __cplusplus
+}
+#endif
 

@@ -13,6 +13,10 @@
 #include <dfk/misc.h>
 #include <dfk/thirdparty/libcoro/coro.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Fiber - a lightweight userspace thread
  */
@@ -63,7 +67,7 @@ typedef struct dfk_fiber_t {
  * Set argsize to zero if arg is guaranteed to be accessible within spawned
  * fiber lifetime.
  */
-dfk_fiber_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*),
+dfk_fiber_t* dfk_spawn(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*),
     void* arg, size_t argsize);
 
 /**
@@ -91,4 +95,8 @@ void dfk_yield(dfk_fiber_t* from, dfk_fiber_t* to);
  * @see dfk_sizeof
  */
 size_t dfk_fiber_sizeof(void);
+
+#ifdef __cplusplus
+}
+#endif
 

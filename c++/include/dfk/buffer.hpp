@@ -8,7 +8,7 @@
 
 #pragma once
 #include <cstddef>
-#include <dfk.h>
+#include <dfk/misc.h>
 #include <dfk/wrapper.hpp>
 
 namespace dfk {

@@ -17,6 +17,10 @@
 #endif
 #include <dfk/http/constants.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * HTTP request type
  */
@@ -81,4 +85,8 @@ ssize_t dfk_http_request_read(dfk_http_request_t* req, char* buf, size_t size);
  */
 ssize_t dfk_http_request_readv(dfk_http_request_t* req,
     dfk_iovec_t* iov, size_t niov);
+
+#ifdef __cplusplus
+}
+#endif
 

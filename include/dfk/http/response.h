@@ -18,6 +18,10 @@
 #include <dfk/sponge.h>
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * HTTP response
  */
@@ -82,4 +86,8 @@ int dfk_http_response_bset_copy_name(dfk_http_response_t* resp,
 
 int dfk_http_response_bset_copy_value(dfk_http_response_t* resp,
     dfk_buf_t name, dfk_buf_t value);
+
+#ifdef __cplusplus
+}
+#endif
 

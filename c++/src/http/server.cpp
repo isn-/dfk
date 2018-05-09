@@ -16,13 +16,13 @@ namespace http {
 
 Server::Server(Context* context)
 {
-  DFK_ENSURE_OK(context, dfk_http_init(nativeHandle(), context->nativeHandle()));
+  dfk_http_init(nativeHandle(), context->nativeHandle());
   nativeHandle()->user.data = this;
 }
 
 Server::~Server()
 {
-  DFK_ENSURE_OK(context(), dfk_http_free(nativeHandle()));
+  dfk_http_free(nativeHandle());
 }
 
 const Context* Server::context() const
@@ -35,10 +35,11 @@ Context* Server::context()
   return static_cast<Context*>(nativeHandle()->dfk->user.data);
 }
 
-void Server::serve(const char* endpoint, uint16_t port, IRequestHandler* handler)
+void Server::serve(const char* endpoint, uint16_t port, std::size_t backlog,
+    IRequestHandler* handler)
 {
   dfk_userdata_t user = (dfk_userdata_t) {handler};
-  DFK_ENSURE_OK(context(), dfk_http_serve(nativeHandle(), endpoint, port, Server::handler, user));
+  DFK_ENSURE_OK(context(), dfk_http_serve(nativeHandle(), endpoint, port, backlog, Server::handler, user));
 }
 
 void Server::stop()
@@ -46,7 +47,7 @@ void Server::stop()
   DFK_ENSURE_OK(context(), dfk_http_stop(nativeHandle()));
 }
 
-int Server::handler(dfk_userdata_t user, dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp)
+int Server::handler(dfk_http_t* http, dfk_http_request_t* req, dfk_http_response_t* resp, dfk_userdata_t user)
 {
   // This method is called from the C code.
   // Therefore, no exception should pass boundaries of this method.

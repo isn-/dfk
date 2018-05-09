@@ -14,6 +14,10 @@
 #include <dfk/misc.h>
 #include <dfk/fiber.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * A method how to shutdown TCP connection
  *
@@ -115,4 +119,8 @@ ssize_t dfk_tcp_socket_readv(dfk_tcp_socket_t* sock,
  */
 ssize_t dfk_tcp_socket_writev(dfk_tcp_socket_t* sock,
     dfk_iovec_t* iov, size_t niov);
+
+#ifdef __cplusplus
+}
+#endif
 

@@ -7,7 +7,7 @@
  */
 
 #pragma once
-#include <dfk.h>
+#include <dfk/http/constants.h>
 
 namespace dfk {
 namespace http {

@@ -1,13 +1,11 @@
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-fw_cxx_flags(-std=c++03)
-
 set(dfkcpp_sources
   src/buffer.cpp
   src/string_map.cpp
   src/exception.cpp
   src/context.cpp
-  src/coroutine.cpp
+  src/fiber.cpp
   src/http/status.cpp
   src/http/request.cpp
   src/http/request_handler.cpp

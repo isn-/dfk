@@ -8,11 +8,16 @@
  */
 
 #pragma once
+#include <stddef.h>
 #include <dfk/context.h>
 #include <dfk/list.h>
 #include <dfk/tcp_server.h>
 #include <dfk/http/request.h>
 #include <dfk/http/response.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct dfk_http_t {
   union {
@@ -89,4 +94,8 @@ int dfk_http_stop(dfk_http_t* http);
  * @see dfk_sizeof
  */
 size_t dfk_http_sizeof(void);
+
+#ifdef __cplusplus
+}
+#endif
 

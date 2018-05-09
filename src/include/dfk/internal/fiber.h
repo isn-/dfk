@@ -11,11 +11,11 @@
 #include <dfk/fiber.h>
 
 /**
- * Same as dfk_run(), but do not schedule fiber for execution.
+ * Same as dfk_spawn(), but do not schedule fiber for execution.
  *
  * Used in dfk_work to create system fibers - scheduler, eventloop, main.
  */
-dfk_fiber_t* dfk__run(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*),
+dfk_fiber_t* dfk__spawn(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*),
     void* arg, size_t argsize);
 
 /**

@@ -7,7 +7,7 @@
  */
 
 #pragma once
-#include <dfk.h>
+#include <dfk/http/request.h>
 #include <dfk/wrapper.hpp>
 #include <dfk/core.hpp>
 #include <dfk/http/method.hpp>

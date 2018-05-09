@@ -200,7 +200,7 @@ void dfk__scheduler_main(dfk_fiber_t* fiber, void* arg)
   dfk_fiber_t* mainf = (dfk_fiber_t*) arg;
 
   dfk_eventloop_t eventloop;
-  dfk_fiber_t* loopf = dfk__run(dfk, dfk__eventloop_main, &eventloop, 0);
+  dfk_fiber_t* loopf = dfk__spawn(dfk, dfk__eventloop_main, &eventloop, 0);
   if (!loopf) {
     DFK_ERROR(dfk, "can not spawn fiber for eventloop");
     dfk__fiber_free(dfk, mainf);

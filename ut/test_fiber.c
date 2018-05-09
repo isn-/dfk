@@ -38,7 +38,7 @@ static void spawn_child_main(dfk_fiber_t* fiber, void* arg)
   (*spawned)++;
   if (*spawned == 1) {
     /* Only first fiber should spawn a child */
-    dfk_run(fiber->dfk, spawn_child_main, arg, 0);
+    dfk_spawn(fiber->dfk, spawn_child_main, arg, 0);
   }
 }
 
@@ -86,7 +86,7 @@ TEST(fiber, no_need_to_align_stack)
 
 static void spawn_child_oom_main(dfk_fiber_t* fiber, void* arg)
 {
-  EXPECT(!dfk_run(fiber->dfk, noop_fiber, arg, 0));
+  EXPECT(!dfk_spawn(fiber->dfk, noop_fiber, arg, 0));
 }
 
 TEST(fiber, spawn_child_oom)

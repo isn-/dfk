@@ -12,6 +12,10 @@
 #include <dfk/context.h>
 #include <dfk/mutex.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Condition variable
  *
@@ -36,4 +40,8 @@ void dfk_cond_free(dfk_cond_t* cond);
 void dfk_cond_wait(dfk_cond_t* cond, dfk_mutex_t* mutex);
 void dfk_cond_signal(dfk_cond_t* cond);
 void dfk_cond_broadcast(dfk_cond_t* cond);
+
+#ifdef __cplusplus
+}
+#endif
 

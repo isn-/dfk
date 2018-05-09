@@ -10,6 +10,10 @@
 #pragma once
 #include <dfk/context.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Error codes returned by dfk functions
  */
@@ -107,4 +111,8 @@ typedef enum dfk_error_e {
  * is returned.
  */
 const char* dfk_strerr(dfk_t* dfk, int err);
+
+#ifdef __cplusplus
+}
+#endif
 

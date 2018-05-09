@@ -111,11 +111,11 @@ static void signal_single_wait_main(dfk_fiber_t* fiber, void* arg)
   cond_fixture_t* f = (cond_fixture_t*) arg;
   dfk_mutex_init(&f->mutex, dfk);
   dfk_cond_init(&f->cv, dfk);
-  EXPECT(dfk_run(dfk, signal_single_wait_fiber_0, arg, 0));
+  EXPECT(dfk_spawn(dfk, signal_single_wait_fiber_0, arg, 0));
   while (f->state != 1) {
     DFK_POSTPONE(dfk);
   }
-  EXPECT(dfk_run(dfk, signal_single_wait_fiber_1, arg, 0));
+  EXPECT(dfk_spawn(dfk, signal_single_wait_fiber_1, arg, 0));
 }
 
 /**
@@ -170,15 +170,15 @@ static void wait_unlock_mutex_fiber_main(dfk_fiber_t* fiber, void* arg)
   dfk_t* dfk = fiber->dfk;
   dfk_mutex_init(&f->mutex, dfk);
   dfk_cond_init(&f->cv, dfk);
-  EXPECT(dfk_run(dfk, wait_unlock_mutex_fiber_0, arg, 0));
+  EXPECT(dfk_spawn(dfk, wait_unlock_mutex_fiber_0, arg, 0));
   while (f->state != 1) {
     DFK_POSTPONE(dfk);
   }
-  EXPECT(dfk_run(dfk, wait_unlock_mutex_fiber_1, arg, 0));
+  EXPECT(dfk_spawn(dfk, wait_unlock_mutex_fiber_1, arg, 0));
   while (f->state != 4) {
     DFK_POSTPONE(dfk);
   }
-  EXPECT(dfk_run(dfk, wait_unlock_mutex_fiber_2, arg, 0));
+  EXPECT(dfk_spawn(dfk, wait_unlock_mutex_fiber_2, arg, 0));
   while (f->state != 5) {
     DFK_POSTPONE(dfk);
   }
@@ -242,15 +242,15 @@ static void signal_multi_wait(dfk_fiber_t* fiber, void* arg)
   cond_fixture_t* f = (cond_fixture_t*) arg;
   dfk_mutex_init(&f->mutex, dfk);
   dfk_cond_init(&f->cv, dfk);
-  EXPECT(dfk_run(dfk, signal_multi_wait_fiber_0, arg, 0));
+  EXPECT(dfk_spawn(dfk, signal_multi_wait_fiber_0, arg, 0));
   while (f->state != 1) {
     DFK_POSTPONE(dfk);
   }
-  EXPECT(dfk_run(dfk, signal_multi_wait_fiber_1, arg, 0));
+  EXPECT(dfk_spawn(dfk, signal_multi_wait_fiber_1, arg, 0));
   while (f->state != 2) {
     DFK_POSTPONE(dfk);
   }
-  EXPECT(dfk_run(dfk, signal_multi_wait_fiber_2, arg, 0));
+  EXPECT(dfk_spawn(dfk, signal_multi_wait_fiber_2, arg, 0));
   while (f->state != 6) {
     DFK_POSTPONE(dfk);
   }
@@ -309,15 +309,15 @@ static void broadcast_multi_wait_fiber_main(dfk_fiber_t* fiber, void* arg)
   dfk_t* dfk = fiber->dfk;
   dfk_mutex_init(&f->mutex, dfk);
   dfk_cond_init(&f->cv, dfk);
-  EXPECT(dfk_run(dfk, broadcast_multi_wait_fiber_0, arg, 0));
+  EXPECT(dfk_spawn(dfk, broadcast_multi_wait_fiber_0, arg, 0));
   while (f->state != 1) {
     DFK_POSTPONE(dfk);
   }
-  EXPECT(dfk_run(dfk, broadcast_multi_wait_fiber_1, arg, 0));
+  EXPECT(dfk_spawn(dfk, broadcast_multi_wait_fiber_1, arg, 0));
   while (f->state != 2) {
     DFK_POSTPONE(dfk);
   }
-  EXPECT(dfk_run(dfk, broadcast_multi_wait_fiber_2, arg, 0));
+  EXPECT(dfk_spawn(dfk, broadcast_multi_wait_fiber_2, arg, 0));
   while (f->state != 3) {
     DFK_POSTPONE(dfk);
   }

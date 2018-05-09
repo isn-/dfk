@@ -9,6 +9,10 @@
 #include <dfk/mutex.h>
 #include <dfk/tcp_socket.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct dfk_tcp_server_t {
   dfk_t* dfk;
   /**
@@ -47,4 +51,8 @@ int dfk_tcp_server_is_stopping(dfk_tcp_server_t* server);
 int dfk_tcp_server_stop(dfk_tcp_server_t* server);
 
 size_t dfk_tcp_server_sizeof(void);
+
+#ifdef __cplusplus
+}
+#endif
 

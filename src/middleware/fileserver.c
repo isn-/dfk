@@ -7,7 +7,11 @@
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
+#include <sys/types.h>
+#include <sys/dir.h>
+#include <sys/stat.h>
 #include <dfk/config.h>
+#include <dfk/error.h>
 #include <dfk/middleware/fileserver.h>
 #include <dfk/internal.h>
 
@@ -56,7 +60,7 @@ int dfk_fileserver_init(dfk_fileserver_t* fs, dfk_t* dfk, const char* basepath, 
   assert(fs);
   assert(dfk);
   assert(basepath);
-  fs->_basepath = DFK_MALLOC(dfk, basepathlen);
+  fs->_basepath = dfk->malloc(dfk, basepathlen);
   if (fs->_basepath == NULL) {
     return dfk_err_nomem;
   }
@@ -70,7 +74,7 @@ int dfk_fileserver_init(dfk_fileserver_t* fs, dfk_t* dfk, const char* basepath, 
 
 int dfk_fileserver_free(dfk_fileserver_t* fs)
 {
-  DFK_FREE(fs->dfk, fs->_basepath);
+  fs->dfk->free(fs->dfk, fs->_basepath);
   return dfk_err_ok;
 }
 
@@ -142,10 +146,10 @@ int dfk_fileserver_handler(dfk_userdata_t ud, dfk_http_t* http,
           } while (res);
         } while (res);
         closedir(dp);
-        size_t niov = 6 + 6 * filelist.size;
+        size_t niov = 6 + 6 * dfk_list_size(&filelist);
         int add_separator_after_path = request->path.data[request->path.size - 1] != '/';
         if (add_separator_after_path) {
-          niov += filelist.size;
+          niov += dfk_list_size(&filelist);
         }
         dfk_iovec_t* iov = dfk_arena_alloc(request->_request_arena, niov * sizeof(dfk_iovec_t));
         if (!iov) {
@@ -158,8 +162,11 @@ int dfk_fileserver_handler(dfk_userdata_t ud, dfk_http_t* http,
         iov[iiov++] = (dfk_iovec_t) {(char*) autoindex_header_2, DFK_SIZE(autoindex_header_2)};
         iov[iiov++] = (dfk_iovec_t) {request->path.data, request->path.size};
         iov[iiov++] = (dfk_iovec_t) {(char*) autoindex_header_3, DFK_SIZE(autoindex_header_3)};
-        for (dfk_list_hook_t* it = filelist.head; it; it = it->next) {
-          dirent_list_item_t* i = (dirent_list_item_t*) it;
+        dfk_list_it it, end;
+        dfk_list_begin(&filelist, &it);
+        dfk_list_end(&filelist, &end);
+        while (!dfk_list_it_equal(&it, &end)) {
+          dirent_list_item_t* i = (dirent_list_item_t*) it.value;
           iov[iiov++] = (dfk_iovec_t) {"      <li><a href=\"", 19};
           iov[iiov++] = (dfk_iovec_t) {request->path.data, request->path.size};
           if (add_separator_after_path) {
@@ -174,6 +181,7 @@ int dfk_fileserver_handler(dfk_userdata_t ud, dfk_http_t* http,
           iov[iiov++] = (dfk_iovec_t) {"\">", 2};
           iov[iiov++] = (dfk_iovec_t) {i->de.d_name, namelen};
           iov[iiov++] = (dfk_iovec_t) {"</a></li>\n", 10};
+          dfk_list_it_next(&it);
         }
         iov[iiov++] = (dfk_iovec_t) {(char*) autoindex_footer, DFK_SIZE(autoindex_footer)};
         size_t content_length = 0;
@@ -182,7 +190,6 @@ int dfk_fileserver_handler(dfk_userdata_t ud, dfk_http_t* http,
         }
         response->content_length = content_length;
         dfk_http_response_writev(response, iov, niov);
-        dfk_list_free(&filelist);
         response->status = DFK_HTTP_OK;
         return dfk_err_ok;
       }
@@ -195,7 +202,7 @@ int dfk_fileserver_handler(dfk_userdata_t ud, dfk_http_t* http,
         response->status = DFK_HTTP_INTERNAL_SERVER_ERROR;
         return dfk_err_ok;
       }
-      char* buffer = DFK_MALLOC(fs->dfk, fs->io_buf_size);
+      char* buffer = fs->dfk->malloc(fs->dfk, fs->io_buf_size);
       if (buffer == NULL) {
         DFK_ERROR(fs->dfk, "out of memory");
         fclose(f);
@@ -210,20 +217,20 @@ int dfk_fileserver_handler(dfk_userdata_t ud, dfk_http_t* http,
           fs->dfk->sys_errno = errno;
           DFK_ERROR(fs->dfk, "error reading file: %s", dfk_strerr(fs->dfk, dfk_err_sys));
           fclose(f);
-          DFK_FREE(fs->dfk, buffer);
+          fs->dfk->free(fs->dfk, buffer);
           return dfk_err_sys;
         }
         ssize_t nwritten = dfk_http_response_write(response, buffer, nread);
         if (nwritten < 0) {
           fclose(f);
-          DFK_FREE(fs->dfk, buffer);
+          fs->dfk->free(fs->dfk, buffer);
           return fs->dfk->dfk_errno;
         }
         assert(nwritten <= (ssize_t) towrite);
         towrite -= nwritten;
       }
       fclose(f);
-      DFK_FREE(fs->dfk, buffer);
+      fs->dfk->free(fs->dfk, buffer);
     }
   } else {
     response->status = DFK_HTTP_METHOD_NOT_ALLOWED;

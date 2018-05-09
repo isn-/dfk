@@ -9,6 +9,10 @@
 #pragma once
 #include <dfk/misc.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * strtoll, but for pascal strings
  *
@@ -16,4 +20,8 @@
  * @warning Does not preserve errno upon success
  */
 int dfk_strtoll(dfk_buf_t nbuf, char** endptr, int base, long long* out);
+
+#ifdef __cplusplus
+}
+#endif
 

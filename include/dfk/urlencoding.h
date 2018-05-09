@@ -12,6 +12,10 @@
 #pragma once
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Returns size of the buffer needed to store the result of percent-decoding.
  */
@@ -35,4 +39,8 @@ size_t dfk_urlencode_hint(const char* buf, size_t size);
  * Percent encode buffer.
  */
 size_t dfk_urlencode(const char* buf, size_t size, char* out);
+
+#ifdef __cplusplus
+}
+#endif
 

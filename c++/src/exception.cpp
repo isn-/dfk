@@ -4,7 +4,7 @@
  * Licensed under the MIT License (see LICENSE)
  */
 
-#include <dfk.h>
+#include <dfk/error.h>
 #include <dfk/exception.hpp>
 #include <dfk/context.hpp>
 

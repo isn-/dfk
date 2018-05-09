@@ -9,6 +9,10 @@
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Logging stream
  *
@@ -51,4 +55,8 @@ typedef enum dfk_log_e {
    */
   dfk_log_debug = 3
 } dfk_log_stream;
+
+#ifdef __cplusplus
+}
+#endif
 

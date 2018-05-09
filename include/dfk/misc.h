@@ -10,6 +10,10 @@
 #pragma once
 #include <stddef.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct dfk_iovec_t {
   char* data;
   size_t size;
@@ -74,4 +78,8 @@ size_t dfk_cbuf_sizeof(void);
  * @see dfk_sizeof
  */
 size_t dfk_iovec_sizeof(void);
+
+#ifdef __cplusplus
+}
+#endif
 

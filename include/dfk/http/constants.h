@@ -9,6 +9,10 @@
 
 #pragma once
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #define DFK_HTTP_USER_AGENT "User-Agent"
 #define DFK_HTTP_HOST "Host"
 #define DFK_HTTP_ACCEPT "Accept"
@@ -121,4 +125,8 @@ typedef enum dfk_http_status_e {
 } dfk_http_status_e;
 
 const char* dfk_http_reason_phrase(dfk_http_status_e status);
+
+#ifdef __cplusplus
+}
+#endif
 

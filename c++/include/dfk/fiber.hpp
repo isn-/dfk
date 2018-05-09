@@ -1,5 +1,5 @@
 /**
- * @file dfk/coroutine.hpp
+ * @file dfk/fiber.hpp
  *
  * @copyright
  * Copyright (c) 2016-2017 Stanislav Ivochkin
@@ -7,24 +7,24 @@
  */
 
 #pragma once
-#include <dfk.h>
+#include <dfk/fiber.h>
 #include <dfk/wrapper.hpp>
 
 namespace dfk {
 
 class Context;
 
-class Coroutine : public Wrapper<dfk_coro_t, dfk_coro_sizeof>
+class Fiber : public Wrapper<dfk_fiber_t, dfk_fiber_sizeof>
 {
   friend class Context;
 
 private:
-  Coroutine(dfk_coro_t* coro);
+  Fiber(dfk_fiber_t* fiber);
 
 public:
   void setName(const char* name);
   Context* context();
-  void yield(Coroutine* to);
+  void yield(Fiber* to);
 };
 
 } // namespace dfk

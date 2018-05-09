@@ -5,7 +5,7 @@
  */
 
 #pragma once
-#include <dfk.h>
+#include <dfk/error.h>
 #include <dfk/exception.hpp>
 
 #define DFK_ENSURE_OK(ctx, expr) \

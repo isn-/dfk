@@ -10,6 +10,10 @@
 #include <stddef.h>
 #include <dfk/config.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Portable version of memmem - locate a substring
  *
@@ -23,4 +27,8 @@
  */
 void* dfkp_memmem(const void *haystack, size_t haystacklen,
     const void *needle, size_t needlelen);
+
+#ifdef __cplusplus
+}
+#endif
 

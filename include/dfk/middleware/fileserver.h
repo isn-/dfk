@@ -9,8 +9,12 @@
 
 #pragma once
 #include <dfk/config.h>
-#include <dfk/core.h>
+#include <dfk/context.h>
 #include <dfk/http.h>
+
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 #if DFK_FILESERVER
 
@@ -41,5 +45,9 @@ size_t dfk_fileserver_sizeof(void);
 int dfk_fileserver_handler(dfk_userdata_t ud, dfk_http_t* http,
     dfk_http_request_t* request, dfk_http_response_t* response);
 
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 

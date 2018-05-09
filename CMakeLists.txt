@@ -248,7 +248,7 @@ configure_file("${CMAKE_CURRENT_SOURCE_DIR}/include/dfk/config.h.in"
 
 execute_process(
   COMMAND "${CMAKE_COMMAND}" -E create_symlink
-    "${CMAKE_SOURCE_DIR}/thirdparty" thirdparty
+    "${CMAKE_CURRENT_SOURCE_DIR}/thirdparty" thirdparty
   WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/dfk")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
@@ -303,10 +303,10 @@ if(DFK_EVENT_LOOP_SELECT)
   list(APPEND dfk_sources "${CMAKE_CURRENT_SOURCE_DIR}/src/select.c")
 endif()
 
-#if(DFK_FILESERVER)
-#  list(APPEND dfk_sources
-#    "${CMAKE_CURRENT_SOURCE_DIR}/src/middleware/fileserver.c")
-#endif()
+if(DFK_FILESERVER)
+  list(APPEND dfk_sources
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/middleware/fileserver.c")
+endif()
 
 add_library(dfk ${dfk_sources})
 

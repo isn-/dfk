@@ -43,7 +43,7 @@ static void dfk__fiber_main(void* arg)
   dfk__terminate(fiber->dfk->_scheduler, fiber);
 } /* LCOV_EXCL_LINE */
 
-dfk_fiber_t* dfk__run(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*),
+dfk_fiber_t* dfk__spawn(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*),
     void* arg, size_t argsize)
 {
   assert(dfk);
@@ -108,10 +108,10 @@ void dfk__fiber_free(dfk_t* dfk, dfk_fiber_t* fiber)
   dfk__free(dfk, fiber);
 }
 
-dfk_fiber_t* dfk_run(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*),
+dfk_fiber_t* dfk_spawn(dfk_t* dfk, void (*ep)(dfk_fiber_t*, void*),
     void* arg, size_t argsize)
 {
-  dfk_fiber_t* fiber = dfk__run(dfk, ep, arg, argsize);
+  dfk_fiber_t* fiber = dfk__spawn(dfk, ep, arg, argsize);
   if (!fiber) {
     return NULL;
   }

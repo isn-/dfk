@@ -17,4 +17,4 @@ def probe(host, port):
     return False
 
 if not probe(host, port):
-    raise Exception("Can not connect to" + host + ":" + port)
+    raise Exception("Can not connect to " + host + ":" + str(port))

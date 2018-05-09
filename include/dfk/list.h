@@ -11,6 +11,10 @@
 #include <stddef.h>
 #include <dfk/config.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Intrusive doubly linked list
  */
@@ -211,4 +215,8 @@ void dfk_list_rit_from_value(dfk_list_t* list, dfk_list_hook_t* value,
 void dfk_list_rit_next(dfk_list_rit* rit);
 int dfk_list_rit_equal(dfk_list_rit* lhs, dfk_list_rit* rhs);
 size_t dfk_list_rit_sizeof(void);
+
+#ifdef __cplusplus
+}
+#endif
 

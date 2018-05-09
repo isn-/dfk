@@ -12,6 +12,10 @@
 #include <dfk/context.h>
 #include <dfk/list.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Memory arena, manages small object allocation.
  */
@@ -72,4 +76,8 @@ void* dfk_arena_alloc_ex(dfk_arena_t* arena, size_t size,
  */
 void* dfk_arena_alloc_copy_ex(dfk_arena_t* arena, const char* data, size_t size,
     dfk_arena_cleanup clean);
+
+#ifdef __cplusplus
+}
+#endif
 

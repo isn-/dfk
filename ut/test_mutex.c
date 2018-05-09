@@ -118,8 +118,8 @@ static void two_fibers_contention_main(dfk_fiber_t* fiber, void* arg)
   two_fibers_contention_data* data = arg;
   dfk_fiber_name(fiber, "utmain");
   dfk_mutex_init(data->mutex, dfk);
-  dfk_fiber_t* w1 = dfk_run(dfk, two_fibers_contention_worker, data, 0);
-  dfk_fiber_t* w2 = dfk_run(dfk, two_fibers_contention_worker, data + 1, 0);
+  dfk_fiber_t* w1 = dfk_spawn(dfk, two_fibers_contention_worker, data, 0);
+  dfk_fiber_t* w2 = dfk_spawn(dfk, two_fibers_contention_worker, data + 1, 0);
   dfk_fiber_name(w1, "worker1");
   dfk_fiber_name(w2, "worker2");
 }
@@ -163,8 +163,8 @@ static void try_lock_main(dfk_fiber_t* fiber, void* arg)
 {
   dfk_t* dfk = fiber->dfk;
   try_lock_data* data = arg;
-  EXPECT(dfk_run(dfk, try_lock_worker, data, 0));
-  EXPECT(dfk_run(dfk, try_lock_worker, data + 1, 0));
+  EXPECT(dfk_spawn(dfk, try_lock_worker, data, 0));
+  EXPECT(dfk_spawn(dfk, try_lock_worker, data + 1, 0));
 }
 
 TEST_F(mutex_fixture, mutex, try_lock)

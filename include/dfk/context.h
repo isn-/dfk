@@ -14,6 +14,10 @@
 #include <dfk/list.h>
 #include <dfk/thirdparty/libcoro/coro.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Library context
  *
@@ -119,3 +123,6 @@ int dfk_stop(dfk_t* dfk);
  */
 size_t dfk_sizeof(void);
 
+#ifdef __cplusplus
+}
+#endif

@@ -7,7 +7,7 @@
  */
 
 #pragma once
-#include <dfk.h>
+#include <dfk/strmap.h>
 #include <dfk/wrapper.hpp>
 
 namespace dfk {
